@@ -2,442 +2,197 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#07111f">
 <title>JON FM ETHIOPIA</title>
 
-<!-- HLS support for Android/Chrome -->
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-
 <style>
-*{box-sizing:border-box}
-
-:root{
- --bg:#07111f;
- --card:#111d2e;
- --card2:#0d1727;
- --border:#263750;
- --text:#fff;
- --muted:#8797aa;
- --red:#e31b23;
-}
-
-body.light{
- --bg:#f1f4f8;
- --card:#fff;
- --card2:#eef2f7;
- --border:#d6dee9;
- --text:#101820;
- --muted:#66758a;
+*{
+  box-sizing:border-box;
 }
 
 body{
- margin:0;
- font-family:Arial,Helvetica,sans-serif;
- background:var(--bg);
- color:var(--text);
- transition:.25s;
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#07111f;
+  color:#fff;
 }
 
 .container{
- max-width:650px;
- margin:auto;
- padding:16px;
+  max-width:560px;
+  margin:auto;
+  padding:18px;
 }
 
-button{
- border:0;
- border-radius:13px;
- padding:13px;
- color:#fff;
- background:var(--red);
- font-size:14px;
- font-weight:700;
- cursor:pointer;
-}
-
-button:active{transform:scale(.98)}
-
-.topbar{
- display:flex;
- justify-content:space-between;
- align-items:center;
- margin-bottom:10px;
-}
-
-.clock{
- color:var(--muted);
- font-size:12px;
- font-weight:bold;
-}
-
-.theme-btn{
- width:45px;
- height:42px;
- padding:0;
-}
-
+/* LOGO */
 .brand{
- text-align:center;
- padding:8px 0 20px;
+  text-align:center;
+  padding:8px 0 20px;
 }
 
 .logo{
- width:135px;
- height:135px;
- object-fit:cover;
- border-radius:28px;
- display:block;
- margin:auto;
- box-shadow:0 8px 30px rgba(0,0,0,.55);
+  width:135px;
+  height:135px;
+  object-fit:cover;
+  border-radius:28px;
+  display:block;
+  margin:auto;
+  box-shadow:0 8px 30px rgba(0,0,0,.55);
 }
 
 .brand h1{
- margin:14px 0 5px;
- font-size:27px;
+  margin:15px 0 5px;
+  font-size:28px;
 }
 
 .brand p{
- margin:0;
- color:var(--muted);
+  margin:0;
+  color:#9eabba;
 }
 
-.featured{
- background:linear-gradient(145deg,#e31b23,#7d0c12);
- border-radius:22px;
- padding:20px;
- margin-bottom:18px;
-}
-
-.featured-top{
- display:flex;
- align-items:center;
- gap:14px;
-}
-
-.featured-logo{
- width:65px;
- height:65px;
- object-fit:cover;
- border-radius:17px;
-}
-
-.featured-name{
- font-size:21px;
- font-weight:900;
- margin-top:4px;
-}
-
-.featured-title{
- font-size:12px;
- font-weight:bold;
- opacity:.85;
-}
-
-.featured p{
- font-size:13px;
-}
-
-.featured button{
- width:100%;
- background:#fff;
- color:#111;
-}
-
-.section{
- margin-top:25px;
-}
-
-.section-head{
- display:flex;
- align-items:center;
- justify-content:space-between;
- margin-bottom:12px;
-}
-
-.section-head h2{
- margin:0;
- font-size:21px;
-}
-
-.player,
-.tv-player-box{
- background:linear-gradient(145deg,var(--card2),var(--card));
- border:1px solid var(--border);
- border-radius:22px;
- padding:18px;
- margin-bottom:18px;
+/* PLAYER */
+.player{
+  background:linear-gradient(145deg,#121f32,#0d1727);
+  border:1px solid #263750;
+  border-radius:22px;
+  padding:20px;
+  margin-bottom:18px;
 }
 
 .live{
- text-align:center;
- color:#ff4b55;
- font-weight:800;
- font-size:19px;
+  text-align:center;
+  color:#ff4b55;
+  font-weight:800;
+  font-size:19px;
 }
 
 .now{
- text-align:center;
- margin-top:9px;
- color:var(--muted);
- font-size:14px;
- min-height:20px;
+  text-align:center;
+  margin-top:9px;
+  color:#c6d0dc;
+  font-size:14px;
 }
 
-audio,
-video{
- width:100%;
- margin-top:17px;
- border-radius:12px;
- background:#000;
+audio{
+  width:100%;
+  margin-top:18px;
 }
 
 .buttons{
- display:flex;
- gap:8px;
- margin-top:12px;
+  display:flex;
+  gap:10px;
+  margin-top:14px;
+}
+
+button{
+  border:0;
+  border-radius:13px;
+  padding:14px;
+  color:white;
+  background:#e31b23;
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
 }
 
 .buttons button{
- flex:1;
+  flex:1;
 }
 
 .stop{
- background:#263750!important;
+  background:#263750;
 }
 
-.volume-box{
- display:flex;
- align-items:center;
- gap:8px;
- margin-top:14px;
+/* SEARCH */
+.search{
+  margin-bottom:16px;
 }
 
-.volume-box input{
- flex:1;
+.search input{
+  width:100%;
+  padding:15px 17px;
+  border-radius:14px;
+  border:1px solid #293c55;
+  outline:none;
+  background:#111d2e;
+  color:#fff;
+  font-size:16px;
 }
 
-.volume-box button{
- padding:9px 12px;
+.search input::placeholder{
+  color:#78889c;
 }
 
-.status{
- text-align:center;
- color:var(--muted);
- font-size:12px;
- margin-top:10px;
+/* TITLE */
+.title{
+  font-size:20px;
+  margin:18px 3px 12px;
 }
 
-.search input,
-.tv-search input{
- width:100%;
- padding:15px;
- border-radius:14px;
- border:1px solid var(--border);
- outline:none;
- background:var(--card);
- color:var(--text);
- font-size:16px;
+/* RADIO */
+.station{
+  background:#111d2e;
+  border:1px solid #253750;
+  border-radius:17px;
+  padding:15px;
+  margin-bottom:10px;
+  display:flex;
+  align-items:center;
+  gap:12px;
 }
 
-.station,
-.tv-card{
- background:var(--card);
- border:1px solid var(--border);
- border-radius:17px;
- padding:12px;
- margin-bottom:9px;
- display:flex;
- align-items:center;
- gap:9px;
+.station-info{
+  flex:1;
+  min-width:0;
 }
 
-.station-info,
-.tv-info{
- flex:1;
- min-width:0;
+.station-name{
+  font-size:16px;
+  font-weight:700;
+  margin-bottom:5px;
 }
 
-.station-name,
-.tv-name{
- font-size:15px;
- font-weight:700;
- margin-bottom:5px;
- word-break:break-word;
-}
-
-.station-status,
-.tv-country{
- font-size:11px;
- color:var(--muted);
+.station-status{
+  font-size:12px;
+  color:#8797aa;
 }
 
 .live-dot{
- width:10px;
- height:10px;
- background:var(--red);
- border-radius:50%;
- flex-shrink:0;
- box-shadow:0 0 10px var(--red);
+  width:11px;
+  height:11px;
+  background:#e31b23;
+  border-radius:50%;
+  flex-shrink:0;
+  box-shadow:0 0 10px #e31b23;
 }
 
-.station-play,
-.favorite-btn,
-.tv-play,
-.tv-favorite{
- width:45px;
- height:43px;
- padding:0;
- flex-shrink:0;
+.station button{
+  width:62px;
+  height:48px;
+  padding:0;
+  font-size:19px;
+  flex-shrink:0;
 }
 
-.favorite-btn,
-.tv-favorite{
- background:#263750;
- font-size:19px;
-}
-
-.favorite-btn.active,
-.tv-favorite.active{
- background:var(--red);
-}
-
-.favorite-box,
-.timer-box{
- background:var(--card);
- border:1px solid var(--border);
- border-radius:17px;
- padding:15px;
- margin:16px 0;
-}
-
-.box-title{
- font-weight:800;
- margin-bottom:11px;
-}
-
-.empty{
- color:var(--muted);
- text-align:center;
- padding:15px;
- font-size:13px;
-}
-
-.timer-row{
- display:flex;
- flex-wrap:wrap;
- gap:7px;
-}
-
-.timer-row button{
- flex:1;
- min-width:70px;
- font-size:11px;
-}
-
-.timer-display{
- text-align:center;
- color:#ff4b55;
- font-size:20px;
- font-weight:800;
- margin-top:13px;
-}
-
-.tv-player-box{
- display:none;
-}
-
-.tv-player-title{
- text-align:center;
- font-weight:800;
- margin-bottom:8px;
-}
-
-.tv-controls{
- display:grid;
- grid-template-columns:1fr 1fr;
- gap:8px;
- margin-top:12px;
-}
-
-.tv-controls button{
- width:100%;
-}
-
-.fullscreen{
- background:#263750;
-}
-
-.tv-filter-row{
- display:flex;
- gap:8px;
- margin:10px 0;
-}
-
-.tv-filter-row button{
- flex:1;
- font-size:12px;
-}
-
-.tv-filter-row .selected{
- background:#fff;
- color:#111;
-}
-
-.country-select{
- width:100%;
- padding:13px;
- border-radius:13px;
- border:1px solid var(--border);
- background:var(--card);
- color:var(--text);
- margin:5px 0 12px;
-}
-
-.channel-count{
- text-align:center;
- color:var(--muted);
- font-size:12px;
- margin:10px 0;
-}
-
-.tv-logo{
- width:48px;
- height:48px;
- object-fit:contain;
- border-radius:10px;
- background:#fff;
- flex-shrink:0;
-}
-
-.quality{
- display:flex;
- justify-content:center;
- gap:8px;
- flex-wrap:wrap;
- margin-top:10px;
-}
-
-.quality span{
- padding:6px 9px;
- background:#263750;
- border-radius:8px;
- font-size:11px;
- color:#fff;
-}
-
+/* FOOTER */
 .footer{
- text-align:center;
- padding:28px 10px 15px;
- color:var(--muted);
- font-size:13px;
+  text-align:center;
+  padding:28px 10px 15px;
+  color:#718096;
+  font-size:13px;
+}
+
+.footer strong{
+  color:#fff;
+  font-size:14px;
 }
 
 .footer-logo{
- width:65px;
- height:65px;
- object-fit:cover;
- border-radius:15px;
+  width:65px;
+  height:65px;
+  object-fit:cover;
+  border-radius:15px;
+  margin-bottom:10px;
 }
 </style>
 </head>
@@ -446,267 +201,93 @@ video{
 
 <div class="container">
 
-<!-- TOP -->
-<div class="topbar">
- <div class="clock" id="clock">🕐 --:--:--</div>
- <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
-</div>
-
-<!-- BRAND -->
+<!-- JON MEDIA SERVICE LOGO -->
 <div class="brand">
- <img src="logo.png" class="logo" alt="JON FM ETHIOPIA">
- <h1>JON FM ETHIOPIA</h1>
- <p>🇪🇹 Ethiopian Digital Radio & TV</p>
-</div>
 
-<!-- FEATURED -->
-<div class="featured">
- <div class="featured-top">
-  <img src="logo.png" class="featured-logo" alt="JON FM">
-  <div>
-   <div class="featured-title">⭐ FEATURED</div>
-   <div class="featured-name">JON FM ETHIOPIA</div>
-  </div>
- </div>
+  <img
+    src="logo.png"
+    class="logo"
+    alt="JON Media Service Logo">
 
- <p>🔴 Live Ethiopian Digital Radio</p>
+  <h1>JON FM ETHIOPIA</h1>
 
- <button onclick="selectStation(0)">
-  ▶ LISTEN LIVE
- </button>
+  <p>🇪🇹 Ethiopian Digital Radio</p>
+
 </div>
 
 
-<!-- =====================================================
-                     RADIO ONLY
-===================================================== -->
-
-<div class="section">
-
-<div class="section-head">
- <h2>📻 RADIO</h2>
-</div>
-
+<!-- RADIO PLAYER -->
 <div class="player">
 
- <div class="live">🔴 LIVE RADIO</div>
+  <div class="live">
+    🔴 LIVE RADIO
+  </div>
 
- <div class="now" id="nowPlaying">
-  Select a radio station
- </div>
+  <div class="now" id="nowPlaying">
+    Select a radio station
+  </div>
 
- <audio id="radioPlayer"
-  controls
-  preload="none">
- </audio>
+  <audio
+    id="radioPlayer"
+    controls
+    preload="none">
+  </audio>
 
- <div class="volume-box">
+  <div class="buttons">
 
-  <span id="volumeIcon">🔊</span>
+    <button onclick="playCurrent()">
+      ▶ PLAY
+    </button>
+
+    <button
+      class="stop"
+      onclick="stopRadio()">
+      ⏹ STOP
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- SEARCH -->
+<div class="search">
 
   <input
-   id="volume"
-   type="range"
-   min="0"
-   max="1"
-   step="0.01"
-   value="1">
-
-  <button onclick="toggleMute()" id="muteBtn">
-   🔊
-  </button>
-
- </div>
-
- <div class="buttons">
-
-  <button onclick="playCurrent()">
-   ▶ PLAY
-  </button>
-
-  <button onclick="pauseRadio()">
-   ⏸ PAUSE
-  </button>
-
-  <button class="stop" onclick="stopRadio()">
-   ⏹ STOP
-  </button>
-
- </div>
-
- <div class="status" id="radioStatus">
-  ⚪ Ready
- </div>
+    type="text"
+    id="search"
+    placeholder="🔎 Search radio station..."
+    oninput="searchStations()">
 
 </div>
 
-<div class="search">
- <input
-  id="search"
-  type="text"
-  placeholder="🔎 Search radio station..."
-  oninput="searchStations()">
-</div>
 
-<div class="favorite-box">
+<h2 class="title">
+  📻 Ethiopian Radio Stations
+</h2>
 
- <div class="box-title">
-  ⭐ Favorite Radio
- </div>
 
- <div id="favoriteStations"></div>
-
-</div>
-
+<!-- STATIONS -->
 <div id="stations"></div>
-
-<div class="timer-box">
-
- <div class="box-title">
-  ⏱️ Sleep Timer
- </div>
-
- <div class="timer-row">
-  <button onclick="startTimer(15)">15 MIN</button>
-  <button onclick="startTimer(30)">30 MIN</button>
-  <button onclick="startTimer(45)">45 MIN</button>
-  <button onclick="startTimer(60)">60 MIN</button>
-  <button onclick="startTimer(90)">90 MIN</button>
-  <button onclick="startTimer(120)">120 MIN</button>
-  <button class="stop" onclick="cancelTimer()">CANCEL</button>
- </div>
-
- <div class="timer-display" id="timerDisplay">
-  Timer OFF
- </div>
-
-</div>
-
-</div>
-
-
-<!-- =====================================================
-                       TV ONLY
-===================================================== -->
-
-<div class="section">
-
-<div class="section-head">
- <h2>📺 TV</h2>
-</div>
-
-<div class="tv-search">
- <input
-  id="tvSearch"
-  type="text"
-  placeholder="🔎 Search TV channel..."
-  oninput="searchTVChannels()">
-</div>
-
-<div class="tv-filter-row">
-
- <button
-  id="allFilter"
-  class="selected"
-  onclick="setTVFilter('all')">
-  🌍 ALL
- </button>
-
- <button
-  id="ethFilter"
-  onclick="setTVFilter('ethiopia')">
-  🇪🇹 ETHIOPIA
- </button>
-
-</div>
-
-<select
- id="countryFilter"
- class="country-select"
- onchange="searchTVChannels()">
-
- <option value="all">🌍 All Countries</option>
-
-</select>
-
-
-<!-- TV PLAYER -->
-
-<div class="tv-player-box" id="tvPlayerBox">
-
- <div class="tv-player-title" id="tvPlayerTitle">
-  📺 TV
- </div>
-
- <video
-  id="tvPlayer"
-  controls
-  playsinline
-  preload="metadata">
- </video>
-
- <div class="quality" id="videoQuality">
-  <span>Quality: Auto</span>
- </div>
-
- <div class="tv-controls">
-
-  <button onclick="previousTV()">
-   ⏮ PREVIOUS
-  </button>
-
-  <button onclick="nextTV()">
-   NEXT ⏭
-  </button>
-
-  <button onclick="toggleTVMute()">
-   🔊 MUTE
-  </button>
-
-  <button class="fullscreen" onclick="fullscreenTV()">
-   ⛶ FULLSCREEN
-  </button>
-
-  <button class="stop" onclick="stopTV()">
-   ⏹ STOP
-  </button>
-
- </div>
-
- <div class="status" id="tvConnectionStatus">
-  ⚪ Ready
- </div>
-
-</div>
-
-
-<div class="channel-count" id="tvStatus">
- Loading TV playlist...
-</div>
-
-<div id="tvChannels"></div>
-
-</div>
 
 
 <!-- FOOTER -->
-
 <div class="footer">
 
-<img
- src="logo.png"
- class="footer-logo"
- alt="JON FM ETHIOPIA">
+  <img
+    src="logo.png"
+    class="footer-logo"
+    alt="JON Media Service">
 
-<br><br>
+  <br>
 
-🇪🇹 Ethiopian Radio & TV
+  🇪🇹 Ethiopian Radio Streaming
 
-<br><br>
+  <br><br>
 
-<strong>
-JON FM ETHIOPIA
-</strong>
+  <strong>
+    Powered by JON Media Service
+  </strong>
 
 </div>
 
@@ -715,1610 +296,282 @@ JON FM ETHIOPIA
 
 <script>
 
-/* =====================================================
-                    RADIO LINKS
-       🔒 DO NOT CHANGE / DELETE
-===================================================== */
+/* RADIO STATIONS */
 
-const stations=[
+const stations = [
 
-{
- name:"JON FM ETHIOPIA",
- url:"https://jonmediaservice.volticast.net/primary.aac"
-},
+  {
+    name:"JON FM ETHIOPIA",
+    url:"https://jonmediaservice.volticast.net/primary.aac"
+  },
 
-{
- name:"ETHIO FM 107.8",
- url:"https://stream.zeno.fm/b8skbyqeqeruv"
-},
+  {
+    name:"Arada FM",
+    url:"https://radio.garden/api/ara/content/listen/awONg9RE/channel.mp3?1786298026793"
+  },
 
-{
- name:"TIreta 97.6 FM",
- url:"https://stream.zeno.fm/x751reg18zhvv"
-},
+  {
+    name:"FM Addis 97.1",
+    url:"https://radio.garden/api/ara/content/listen/hmf5qN63/channel.mp3?1786298403142"
+  },
 
-{
- name:"SHGER FM 102.1",
- url:"https://stream.zenolive.com/cwkxynwagt5tv"
-},
+  {
+    name:"104.7 EBC FM",
+    url:"https://radio.garden/api/ara/content/listen/0UDpOLZU/channel.mp3?1786298675616"
+  },
 
-{
- name:"Arada fm 95.1",
- url:"https://radio.garden/api/ara/content/listen/awONg9RE/channel.mp3?1786298026793"
-},
+  {
+    name:"Ethio FM",
+    url:"https://stream.zeno.fm/x751reg18zhvv"
+  },
 
-{
- name:"Fm adiss 97.1",
- url:"https://radio.garden/api/ara/content/listen/hmf5qN63/channel.mp3?1786298403142"
-},
+  {
+    name:"Tireta",
+    url:"https://stream.zenolive.com/cwkxynwagt5tv"
+  },
 
-{
- name:"104.7 EBC FM",
- url:"https://radio.garden/api/ara/content/listen/0UDpOLZU/channel.mp3?1786298675616"
-},
+  {
+    name:"Shger FM",
+    url:"https://bisratfm-atunwadigital.streamguys1.com/bisratfm"
+  },
 
-{
- name:"Bisrat fm 101.1",
- url:"https://bisratfm-atunwadigital.streamguys1.com/bisratfm"
-},
+  {
+    name:"Bisrat FM",
+    url:"https://stream.zeno.fm/h9ygrpa2wc9uv"
+  },
 
-{
- name:"Awash fm 90.7",
- url:"https://stream.zeno.fm/h9ygrpa2wc9uv"
-},
+  {
+    name:"Awash FM",
+    url:"https://rpn.bozztv.com/ses/addis/addisradio/playlist.m3u8"
+  },
 
-{
- name:"Amn radio 96.3",
- url:"https://rpn.bozztv.com/ses/addis/addisradio/playlist.m3u8"
-},
+  {
+    name:"AMN Radio",
+    url:"https://stream-280.surfernetwork.com/1knzedf1wwzuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiIxa256ZWRmMXd3enV2IiwiaG9zdCI6InN0cmVhbS0yODAuc3VyZmVybmV0d29yay5jb20iLCJydHRsIjo1LCJqdGkiOiI4ZUduMk1NNFFnMmctVnFlTDRwbGt3IiwiaWF0IjoxNzg2Mjc4ODgxLCJleHAiOjE3ODYyNzg5NDF9.7kLJt3xt40DN5Og3V13NFDAaRryRPhYSrqOj1k09ZT8"
+  },
 
-{
- name:"Amhara radio 103.5",
- url:"https://stream.zeno.fm/cxf4zy74em0uv"
-},
+  {
+    name:"Ahadu Radio",
+    url:"https://stream-284.surfernetwork.com/ad402tap7yzuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJhZDQwMnRhcDd5enV2IiwiaG9zdCI6InN0cmVhbS0yODQuc3VyZmVybmV0d29yay5jb20iLCJydHRsIjo1LCJqdGkiOiJFYzhFMkRzZFJBcUozNFI4VmN2T0hRIiwiaWF0IjoxNzg2Mjc4OTkzLCJleHAiOjE3ODYyNzkwNTN9.lK8dJjXM2HMZUJi43-O6Q52kxqOpcsWhEe3pwZmqEo4"
+  },
 
-{
- name:"OBN radio 92.3",
- url:"https://stream.zeno.fm/0i2tzykrry9uv"
-},
+  {
+    name:"EBC National Radio",
+    url:"https://stream.zeno.fm/cxf4zy74em0uv"
+  },
 
-{
- name:"fana fm 98.1",
- url:"https://embed.novastream.et/-CQXfPWORVFvNvwEfKCSuOLo"
-},
+  {
+    name:"Amhara Radio 103.5",
+    url:"https://stream.zeno.fm/0i2tzykrry9uv"
+  },
 
-{
- name:"fana national 90.0",
- url:"https://embed.novastream.et/lNjeNultfsjVQhsYMxSdtXOb"
-},
+  {
+    name:"OBN Radio",
+    url:"https://stream.zeno.fm/0i2tzykrry9uv"
+  },
 
-{
- name:"Deutsche Welle Amharic",
- url:"https://stream.zeno.fm/0sfp5ucnfceuv?acu-uid=1485963383459&an-uid=6511064188082061080&eps-uid=AQAJha7PRmrAjQJjnW46AQEBAQEBAQCe7nnlnwEBAJ7ueeWf&amb-uid=7936042185125426536&dbm-uid=CAESEPZmMwoAovi245ifhMjHqWQ&cto-uid=7e2693d3-4c2c-4064-b5a3-2477306d6c35-6a7ab50d-4554&bsw-uid=0be78c2d-29a9-4047-9afc-c81884a96418&dyn-uid=2160598537686749688&ttd-uid=23b9c13e-e596-4f09-96ff-c5ff53f1c0e5"
-},
+  {
+    name:"Fana FM",
+    url:"https://embed.novastream.et/-CQXfPWORVFvNvwEfKCSuOLo"
+  },
 
-{
- name:"Ahadu radio 94.3",
- url:"https://stream-280.surfernetwork.com/1knzedf1wwzuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiIxa256ZWRmMXd3enV2IiwiaG9zdCI6InN0cmVhbS0yODAuc3VyZmVybmV0d29yay5jb20iLCJydHRsIjo1LCJqdGkiOiI4ZUduMk1NNFFnMmctVnFlTDRwbGt3IiwiaWF0IjoxNzg2Mjc4ODgxLCJleHAiOjE3ODYyNzg5NDF9.7kLJt3xt40DN5Og3V13NFDAaRryRPhYSrqOj1k09ZT8"
-},
-
-{
- name:"Ebc national radio 93.1",
- url:"https://stream-284.surfernetwork.com/ad402tap7yzuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJhZDQwMnRhcDd5enV2IiwiaG9zdCI6InN0cmVhbS0yODQuc3VyZmVybmV0d29yay5jb20iLCJydHRsIjo1LCJqdGkiOiJFYzhFMkRzZFJBcUozNFI4VmN2T0hRIiwiaWF0IjoxNzg2Mjc4OTkzLCJleHAiOjE3ODYyNzkwNTN9.lK8dJjXM2HMZUJi43-O6Q52kxqOpcsWhEe3pwZmqEo4"
-}
+  {
+    name:"Fana National",
+    url:"https://embed.novastream.et/lNjeNultfsjVQhsYMxSdtXOb"
+  }
 
 ];
+{
+  name: "Deutsche Welle Amharic",
+  url: "https://stream.zeno.fm/0sfp5ucnfceuv?acu-uid=1485963383459&an-uid=6511064188082061080&eps-uid=AQAJha7PRmrAjQJjnW46AQEBAQEBAQCe7nnlnwEBAJ7ueeWf&amb-uid=7936042185125426536&dbm-uid=CAESEPZmMwoAovi245ifhMjHqWQ&cto-uid=7e2693d3-4c2c-4064-b5a3-2477306d6c35&bsw-uid=0be78c2d-29a9-4047-9afc-c81884a96418&dyn-uid=2160598537686749688&ttd-uid=23b9c13e-e596-4f09-96ff-c5ff53f1c0e5"
+},
 
 
-/* =====================================================
-                         RADIO
-===================================================== */
+const player =
+  document.getElementById("radioPlayer");
 
-const radioPlayer=document.getElementById("radioPlayer");
-const nowPlaying=document.getElementById("nowPlaying");
-const radioStatus=document.getElementById("radioStatus");
-const volume=document.getElementById("volume");
+const nowPlaying =
+  document.getElementById("nowPlaying");
 
-let currentStation=null;
-let reconnectTimer=null;
-let reconnectAttempts=0;
-let previousVolume=.8;
+const stationContainer =
+  document.getElementById("stations");
 
-let favorites=JSON.parse(
- localStorage.getItem("jonRadioFavorites")||"[]"
-);
+let currentStation = null;
 
-function selectStation(index){
 
- currentStation=stations[index];
-
- clearTimeout(reconnectTimer);
-
- radioPlayer.src=currentStation.url;
-
- nowPlaying.innerHTML=
- "🔴 Now Playing: <b>"+
- escapeHTML(currentStation.name)+
- "</b>";
-
- radioStatus.innerHTML="🔄 Connecting...";
-
- reconnectAttempts=0;
-
- radioPlayer.play().then(()=>{
-  radioStatus.innerHTML="🟢 Connected";
- }).catch(()=>{
-  radioStatus.innerHTML="▶ Tap PLAY";
- });
-
-}
-
-function playCurrent(){
-
- if(!currentStation){
-  selectStation(0);
-  return;
- }
-
- radioPlayer.play().then(()=>{
-  radioStatus.innerHTML="🟢 Connected";
- }).catch(()=>{
-  radioStatus.innerHTML="▶ Tap PLAY";
- });
-
-}
-
-function pauseRadio(){
-
- radioPlayer.pause();
- radioStatus.innerHTML="⏸ Paused";
-
-}
-
-function stopRadio(){
-
- clearTimeout(reconnectTimer);
-
- radioPlayer.pause();
- radioPlayer.removeAttribute("src");
- radioPlayer.load();
-
- nowPlaying.innerHTML="Radio stopped";
- radioStatus.innerHTML="⚪ Stopped";
-
-}
-
-radioPlayer.addEventListener("playing",()=>{
- radioStatus.innerHTML="🟢 Connected";
- reconnectAttempts=0;
-});
-
-radioPlayer.addEventListener("waiting",()=>{
- radioStatus.innerHTML="⏳ Buffering...";
-});
-
-radioPlayer.addEventListener("error",()=>{
-
- if(!currentStation)return;
-
- radioStatus.innerHTML="🔄 Reconnecting...";
- reconnectRadio();
-
-});
-
-function reconnectRadio(){
-
- clearTimeout(reconnectTimer);
-
- if(!currentStation)return;
-
- reconnectAttempts++;
-
- const delay=Math.min(
- 30000,
- Math.max(3000,reconnectAttempts*3000)
- );
-
- reconnectTimer=setTimeout(()=>{
-
-  radioPlayer.src=currentStation.url;
-
-  radioPlayer.play().catch(()=>{
-   reconnectRadio();
-  });
-
- },delay);
-
-}
-
-
-/* VOLUME */
-
-const savedVolume=parseFloat(
- localStorage.getItem("jonVolume")||"1"
-);
-
-radioPlayer.volume=savedVolume;
-volume.value=savedVolume;
-
-function changeVolume(){
-
- const value=parseFloat(volume.value);
-
- radioPlayer.volume=value;
-
- localStorage.setItem(
-  "jonVolume",
-  value
- );
-
- document.getElementById("volumeIcon").innerHTML=
- value===0?"🔇":
- value<.5?"🔉":"🔊";
-
- document.getElementById("muteBtn").innerHTML=
- value===0?"🔇":"🔊";
-
-}
-
-volume.addEventListener("input",changeVolume);
-
-function toggleMute(){
-
- if(radioPlayer.volume>0){
-
-  previousVolume=radioPlayer.volume;
-
-  radioPlayer.volume=0;
-  volume.value=0;
-
- }else{
-
-  radioPlayer.volume=previousVolume||.8;
-  volume.value=radioPlayer.volume;
-
- }
-
- changeVolume();
-
-}
-
-
-/* RADIO FAVORITES */
-
-function toggleFavorite(index){
-
- if(favorites.includes(index)){
-
-  favorites=favorites.filter(x=>x!==index);
-
- }else{
-
-  favorites.push(index);
-
- }
-
- localStorage.setItem(
-  "jonRadioFavorites",
-  JSON.stringify(favorites)
- );
-
- renderStations(getRadioList());
- renderFavorites();
-
-}
-
-function renderFavorites(){
-
- const box=document.getElementById(
-  "favoriteStations"
- );
-
- box.innerHTML="";
-
- if(!favorites.length){
-
-  box.innerHTML=
-  '<div class="empty">No favorite radio stations yet.</div>';
-
-  return;
-
- }
-
- favorites.forEach(index=>{
-
-  const station=stations[index];
-
-  if(!station)return;
-
-  const div=document.createElement("div");
-
-  div.className="station";
-
-  div.innerHTML=`
-
-   <div class="live-dot"></div>
-
-   <div class="station-info">
-    <div class="station-name">
-     ${escapeHTML(station.name)}
-    </div>
-    <div class="station-status">
-     ⭐ Favorite
-    </div>
-   </div>
-
-   <button
-    class="station-play"
-    onclick="selectStation(${index})">
-    ▶
-   </button>
-
-   <button
-    class="favorite-btn active"
-    onclick="toggleFavorite(${index})">
-    ★
-   </button>
-  `;
-
-  box.appendChild(div);
-
- });
-
-}
-
-function getRadioList(){
-
- const q=document.getElementById(
-  "search"
- ).value.toLowerCase().trim();
-
- if(!q)return stations;
-
- return stations.filter(s=>
-  s.name.toLowerCase().includes(q)
- );
-
-}
+/* SHOW STATIONS */
 
 function renderStations(list){
 
- const box=document.getElementById(
-  "stations"
- );
+  stationContainer.innerHTML = "";
 
- box.innerHTML="";
+  if(list.length === 0){
 
- if(!list.length){
+    stationContainer.innerHTML =
+      '<div style="text-align:center;color:#8898aa;padding:25px;">No radio station found.</div>';
 
-  box.innerHTML=
-  '<div class="empty">No radio station found.</div>';
+    return;
+  }
 
-  return;
 
- }
+  list.forEach(function(station){
 
- list.forEach(station=>{
+    const index =
+      stations.indexOf(station);
 
-  const index=stations.indexOf(station);
+    const div =
+      document.createElement("div");
 
-  const fav=favorites.includes(index);
+    div.className =
+      "station";
 
-  const div=document.createElement("div");
+    div.innerHTML = `
 
-  div.className="station";
+      <div class="live-dot"></div>
 
-  div.innerHTML=`
+      <div class="station-info">
 
-   <div class="live-dot"></div>
+        <div class="station-name">
+          ${station.name}
+        </div>
 
-   <div class="station-info">
-    <div class="station-name">
-     ${escapeHTML(station.name)}
-    </div>
+        <div class="station-status">
+          🔴 Live Stream
+        </div>
 
-    <div class="station-status">
-     🔴 Live Stream
-    </div>
-   </div>
+      </div>
 
-   <button
-    class="station-play"
-    onclick="selectStation(${index})">
-    ▶
-   </button>
+      <button
+        onclick="selectStation(${index})">
+        ▶
+      </button>
 
-   <button
-    class="favorite-btn ${fav?"active":""}"
-    onclick="toggleFavorite(${index})">
-    ${fav?"★":"☆"}
-   </button>
-  `;
+    `;
 
-  box.appendChild(div);
+    stationContainer.appendChild(div);
 
- });
+  });
 
 }
+
+
+/* SELECT RADIO */
+
+function selectStation(index){
+
+  currentStation =
+    stations[index];
+
+  player.src =
+    currentStation.url;
+
+  nowPlaying.innerHTML =
+    "🔴 Now Playing: <b>" +
+    currentStation.name +
+    "</b>";
+
+  player.play().catch(function(){
+
+    nowPlaying.innerHTML =
+      "▶ Tap PLAY to start " +
+      currentStation.name;
+
+  });
+
+}
+
+
+/* PLAY */
+
+function playCurrent(){
+
+  if(!currentStation){
+
+    currentStation =
+      stations[0];
+
+    player.src =
+      currentStation.url;
+
+    nowPlaying.innerHTML =
+      "🔴 Now Playing: <b>" +
+      currentStation.name +
+      "</b>";
+
+  }
+
+  player.play().catch(function(){
+
+    nowPlaying.innerHTML =
+      "▶ Tap PLAY again to start the stream";
+
+  });
+
+}
+
+
+/* STOP */
+
+function stopRadio(){
+
+  player.pause();
+
+  player.removeAttribute("src");
+
+  player.load();
+
+  nowPlaying.innerHTML =
+    "Radio stopped";
+
+}
+
+
+/* SEARCH */
 
 function searchStations(){
- renderStations(getRadioList());
-}
 
+  const query =
+    document
+      .getElementById("search")
+      .value
+      .toLowerCase()
+      .trim();
 
-/* =====================================================
-                         TIMER
-===================================================== */
+  const filtered =
+    stations.filter(function(station){
 
-let timerInterval=null;
-let timerEnd=0;
+      return station.name
+        .toLowerCase()
+        .includes(query);
 
-function startTimer(minutes){
+    });
 
- clearInterval(timerInterval);
-
- timerEnd=Date.now()+minutes*60000;
-
- updateTimer();
-
- timerInterval=setInterval(
-  updateTimer,
-  1000
- );
-
-}
-
-function updateTimer(){
-
- const remaining=Math.max(
-  0,
-  timerEnd-Date.now()
- );
-
- if(!remaining){
-
-  clearInterval(timerInterval);
-
-  document.getElementById(
-   "timerDisplay"
-  ).innerHTML="Timer OFF";
-
-  stopRadio();
-
-  return;
-
- }
-
- const total=Math.ceil(remaining/1000);
-
- const h=Math.floor(total/3600);
- const m=Math.floor((total%3600)/60);
- const s=total%60;
-
- document.getElementById(
-  "timerDisplay"
- ).innerHTML=
- "⏱️ "+
- String(h).padStart(2,"0")+":"+
- String(m).padStart(2,"0")+":"+
- String(s).padStart(2,"0");
-
-}
-
-function cancelTimer(){
-
- clearInterval(timerInterval);
-
- timerEnd=0;
-
- document.getElementById(
-  "timerDisplay"
- ).innerHTML="Timer OFF";
+  renderStations(filtered);
 
 }
 
 
-/* =====================================================
-                          CLOCK
-===================================================== */
+/* PLAYER ERROR */
 
-function updateClock(){
+player.addEventListener(
+  "error",
+  function(){
 
- const now=new Date();
+    if(currentStation){
 
- const date=now.toLocaleDateString(
-  undefined,
-  {
-   weekday:"short",
-   year:"numeric",
-   month:"short",
-   day:"numeric"
-  }
- );
-
- const time=now.toLocaleTimeString(
-  undefined,
-  {
-   hour:"2-digit",
-   minute:"2-digit",
-   second:"2-digit"
-  }
- );
-
- document.getElementById(
-  "clock"
- ).innerHTML=
- "🕐 "+time+" • "+date;
-
-}
-
-setInterval(updateClock,1000);
-updateClock();
-
-
-/* =====================================================
-                         THEME
-===================================================== */
-
-let savedTheme=
- localStorage.getItem("jonTheme")||"dark";
-
-if(savedTheme==="light"){
-
- document.body.classList.add("light");
-
- document.getElementById(
-  "themeBtn"
- ).innerHTML="☀️";
-
-}
-
-function toggleTheme(){
-
- document.body.classList.toggle("light");
-
- const light=document.body.classList.contains("light");
-
- localStorage.setItem(
-  "jonTheme",
-  light?"light":"dark"
- );
-
- document.getElementById(
-  "themeBtn"
- ).innerHTML=
- light?"☀️":"🌙";
-
-}
-
-
-/* =====================================================
-                    TV PLAYLIST
-       🔒 RADIO HAS NO CONNECTION TO THIS
-===================================================== */
-
-/*
- IMPORTANT:
- This is the required IPTV-org master playlist.
- The original URL is kept here exactly.
-*/
-const IPTV_URL=
-"http://iptv-org.github.io/iptv/index.m3u";
-
-/*
- Browser security can block HTTP.
- HTTPS fallback is used only when HTTP cannot be read.
-*/
-const IPTV_HTTPS_URL=
-"https://iptv-org.github.io/iptv/index.m3u";
-
-
-let tvChannels=[];
-let filteredTV=[];
-let currentTVIndex=-1;
-let tvFilter="all";
-
-const tvPlayer=
-document.getElementById("tvPlayer");
-
-let hls=null;
-let currentTV=null;
-let tvReconnectTimer=null;
-
-
-/* TV PLAYLIST FETCH */
-
-async function fetchPlaylist(url){
-
- const response=await fetch(
-  url,
-  {
-   method:"GET",
-   cache:"no-store",
-   mode:"cors"
-  }
- );
-
- if(!response.ok){
-  throw new Error(
-   "HTTP "+response.status
-  );
- }
-
- return await response.text();
-
-}
-
-
-/* LOAD TV */
-
-async function loadTV(){
-
- const status=document.getElementById(
-  "tvStatus"
- );
-
- status.innerHTML=
- "🔄 Connecting to TV playlist...";
-
- let text=null;
-
- /*
-  First try the exact required playlist.
- */
- try{
-
-  text=await fetchPlaylist(IPTV_URL);
-
- }catch(error){
-
-  console.warn(
-   "HTTP playlist failed. Trying HTTPS...",
-   error
-  );
-
- }
-
- /*
-  HTTPS fallback for browsers that block HTTP.
- */
- if(!text){
-
-  try{
-
-   text=await fetchPlaylist(
-    IPTV_HTTPS_URL
-   );
-
-  }catch(error){
-
-   console.error(
-    "HTTPS playlist failed",
-    error
-   );
-
-  }
-
- }
-
- if(!text){
-
-  status.innerHTML=
-  "⚠️ TV playlist could not be loaded";
-
-  document.getElementById(
-   "tvChannels"
-  ).innerHTML=`
-   <div class="empty">
-    TV playlist could not be loaded.<br><br>
-    Check internet connection and try again.
-    <br><br>
-    <button onclick="loadTV()">
-     🔄 RETRY
-    </button>
-   </div>
-  `;
-
-  return;
-
- }
-
- try{
-
-  tvChannels=parseM3U(text);
-
-  /*
-   Remove duplicate stream URLs.
-  */
-  const seen=new Set();
-
-  tvChannels=tvChannels.filter(channel=>{
-
-   if(!channel.url)return false;
-
-   if(seen.has(channel.url))
-    return false;
-
-   seen.add(channel.url);
-
-   return true;
-
-  });
-
-  filteredTV=tvChannels;
-
-  buildCountryFilter();
-
-  status.innerHTML=
-  "📺 "+
-  tvChannels.length+
-  " TV channels available";
-
-  renderTV(filteredTV);
-
- }catch(error){
-
-  console.error(error);
-
-  status.innerHTML=
-  "⚠️ Playlist format error";
-
- }
-
-}
-
-
-/* =====================================================
-                      M3U PARSER
-===================================================== */
-
-function parseM3U(text){
-
- const lines=text.split(/\r?\n/);
-
- const result=[];
-
- let item=null;
-
- for(let i=0;i<lines.length;i++){
-
-  const line=lines[i].trim();
-
-  if(!line)continue;
-
-  if(line.startsWith("#EXTINF")){
-
-   const comma=line.indexOf(",");
-
-   let name=
-    comma>=0
-    ?line.substring(comma+1).trim()
-    :"TV Channel";
-
-   /*
-    Read common IPTV attributes.
-   */
-
-   const logo=
-    (line.match(
-     /tvg-logo="([^"]*)"/i
-    )||[])[1]||"";
-
-   const country=
-    (line.match(
-     /tvg-country="([^"]*)"/i
-    )||[])[1]||"";
-
-   const group=
-    (line.match(
-     /group-title="([^"]*)"/i
-    )||[])[1]||"";
-
-   const id=
-    (line.match(
-     /tvg-id="([^"]*)"/i
-    )||[])[1]||"";
-
-   item={
-    name,
-    logo,
-    country,
-    group,
-    id,
-    url:""
-   };
-
-  }else if(
-   item &&
-   !line.startsWith("#")
-  ){
-
-   item.url=line;
-
-   result.push(item);
-
-   item=null;
-
-  }
-
- }
-
- return result;
-
-}
-
-
-/* =====================================================
-                    COUNTRY FILTER
-===================================================== */
-
-function buildCountryFilter(){
-
- const select=document.getElementById(
-  "countryFilter"
- );
-
- const countries=new Set();
-
- tvChannels.forEach(channel=>{
-
-  if(channel.country){
-
-   channel.country
-   .split(/[;,|]/)
-   .map(x=>x.trim())
-   .filter(Boolean)
-   .forEach(x=>countries.add(x));
-
-  }
-
- });
-
- const sorted=[...countries].sort();
-
- select.innerHTML=
- '<option value="all">🌍 All Countries</option>';
-
- sorted.forEach(country=>{
-
-  const option=document.createElement("option");
-
-  option.value=country.toLowerCase();
-
-  option.textContent="🌍 "+country;
-
-  select.appendChild(option);
-
- });
-
-}
-
-
-/* =====================================================
-                       TV FILTER
-===================================================== */
-
-function setTVFilter(filter){
-
- tvFilter=filter;
-
- document.getElementById(
-  "allFilter"
- ).classList.toggle(
-  "selected",
-  filter==="all"
- );
-
- document.getElementById(
-  "ethFilter"
- ).classList.toggle(
-  "selected",
-  filter==="ethiopia"
- );
-
- searchTVChannels();
-
-}
-
-
-function searchTVChannels(){
-
- const q=document.getElementById(
-  "tvSearch"
- ).value.toLowerCase().trim();
-
- const selectedCountry=
- document.getElementById(
-  "countryFilter"
- ).value;
-
- let list=tvChannels.slice();
-
- if(tvFilter==="ethiopia"){
-
-  list=list.filter(channel=>{
-
-   const text=(
-    channel.name+" "+
-    channel.group+" "+
-    channel.country+" "+
-    channel.id
-   ).toLowerCase();
-
-   return(
-    text.includes("ethiopia")||
-    text.includes("ethiopian")||
-    text.includes("eth")
-   );
-
-  });
-
- }
-
- if(selectedCountry!=="all"){
-
-  list=list.filter(channel=>
-   channel.country
-   .toLowerCase()
-   .split(/[;,|]/)
-   .map(x=>x.trim())
-   .includes(selectedCountry)
-  );
-
- }
-
- if(q){
-
-  list=list.filter(channel=>{
-
-   const text=(
-    channel.name+" "+
-    channel.group+" "+
-    channel.country+" "+
-    channel.id
-   ).toLowerCase();
-
-   return text.includes(q);
-
-  });
-
- }
-
- filteredTV=list;
-
- renderTV(list);
-
-}
-
-
-/* =====================================================
-                         TV FAVORITES
-===================================================== */
-
-let tvFavorites=JSON.parse(
- localStorage.getItem("jonTVFavorites")||"[]"
-);
-
-function toggleTVFavorite(name,url){
-
- if(tvFavorites.includes(url)){
-
-  tvFavorites=
-   tvFavorites.filter(x=>x!==url);
-
- }else{
-
-  tvFavorites.push(url);
-
- }
-
- localStorage.setItem(
-  "jonTVFavorites",
-  JSON.stringify(tvFavorites)
- );
-
- renderTV(filteredTV);
-
-}
-
-
-/* =====================================================
-                         TV LIST
-===================================================== */
-
-function renderTV(list){
-
- const box=document.getElementById(
-  "tvChannels"
- );
-
- box.innerHTML="";
-
- if(!list.length){
-
-  box.innerHTML=
-  '<div class="empty">No TV channel found.</div>';
-
-  return;
-
- }
-
- /*
-  Show first 500 channels.
-  Radio is NOT included here.
- */
- const display=list.slice(0,500);
-
- display.forEach((channel,index)=>{
-
-  const card=document.createElement("div");
-
-  card.className="tv-card";
-
-  const fav=tvFavorites.includes(
-   channel.url
-  );
-
-  const logoHTML=
-   channel.logo
-   ?
-   `<img
-      class="tv-logo"
-      src="${escapeHTML(channel.logo)}"
-      alt=""
-      onerror="this.style.display='none'">`
-   :
-   `<div class="tv-logo"
-      style="display:flex;align-items:center;justify-content:center;font-size:24px">
-      📺
-    </div>`;
-
-  card.innerHTML=`
-
-   ${logoHTML}
-
-   <div class="tv-info">
-
-    <div class="tv-name">
-     ${escapeHTML(channel.name)}
-    </div>
-
-    <div class="tv-country">
-     ${escapeHTML(
-      channel.country||
-      channel.group||
-      "TV Channel"
-     )}
-    </div>
-
-   </div>
-
-   <button class="tv-play">
-    ▶
-   </button>
-
-   <button class="tv-favorite ${fav?"active":""}">
-    ${fav?"★":"☆"}
-   </button>
-
-  `;
-
-  card.querySelector(
-   ".tv-play"
-  ).onclick=()=>{
-
-   playTVStream(
-    channel.url,
-    channel.name,
-    index
-   );
-
-  };
-
-  card.querySelector(
-   ".tv-favorite"
-  ).onclick=()=>{
-
-   toggleTVFavorite(
-    channel.name,
-    channel.url
-   );
-
-  };
-
-  box.appendChild(card);
-
- });
-
-}
-
-
-/* =====================================================
-                         TV PLAYER
-===================================================== */
-
-function playTVStream(url,name,index){
-
- currentTV={
-  url,
-  name
- };
-
- currentTVIndex=index;
-
- document.getElementById(
-  "tvPlayerBox"
- ).style.display="block";
-
- document.getElementById(
-  "tvPlayerTitle"
- ).innerHTML=
- "📺 "+escapeHTML(name);
-
- document.getElementById(
-  "tvConnectionStatus"
- ).innerHTML=
- "🔄 Connecting...";
-
- if(hls){
-
-  hls.destroy();
-  hls=null;
-
- }
-
- clearTimeout(tvReconnectTimer);
-
- tvPlayer.pause();
-
- tvPlayer.removeAttribute("src");
-
- tvPlayer.load();
-
-
- /*
-  M3U8
- */
- if(
-  url.toLowerCase().includes(".m3u8")
- ){
-
-  /*
-   Native HLS
-  */
-  if(
-   tvPlayer.canPlayType(
-    "application/vnd.apple.mpegurl"
-   )
-  ){
-
-   tvPlayer.src=url;
-
-   tvPlayer.play().then(()=>{
-
-    setTVConnected();
-
-   }).catch(()=>{
-
-    document.getElementById(
-     "tvConnectionStatus"
-    ).innerHTML=
-    "▶ Tap PLAY";
-
-   });
-
-  }
-
-  /*
-   HLS.js for Android Chrome
-  */
-  else if(
-   window.Hls &&
-   Hls.isSupported()
-  ){
-
-   hls=new Hls({
-    enableWorker:true,
-    maxBufferLength:30,
-    manifestLoadingMaxRetry:5,
-    levelLoadingMaxRetry:5,
-    fragLoadingMaxRetry:5
-   });
-
-   hls.loadSource(url);
-
-   hls.attachMedia(tvPlayer);
-
-   hls.on(
-    Hls.Events.MANIFEST_PARSED,
-    ()=>{
-
-     updateQuality();
-
-     tvPlayer.play()
-     .then(()=>{
-      setTVConnected();
-     })
-     .catch(()=>{
-      document.getElementById(
-       "tvConnectionStatus"
-      ).innerHTML=
-      "▶ Tap PLAY";
-     });
+      nowPlaying.innerHTML =
+        "⚠️ Stream unavailable: " +
+        currentStation.name;
 
     }
-   );
-
-   hls.on(
-    Hls.Events.LEVEL_SWITCHED,
-    ()=>{
-     updateQuality();
-    }
-   );
-
-   hls.on(
-    Hls.Events.ERROR,
-    (event,data)=>{
-
-     if(data.fatal){
-
-      document.getElementById(
-       "tvConnectionStatus"
-      ).innerHTML=
-      "🔄 Reconnecting...";
-
-      reconnectTV();
-
-     }
-
-    }
-   );
 
   }
-
-  else{
-
-   document.getElementById(
-    "tvConnectionStatus"
-   ).innerHTML=
-   "⚠️ HLS not supported";
-
-  }
-
- }
-
- /*
-  Other video/audio formats
- */
- else{
-
-  tvPlayer.src=url;
-
-  tvPlayer.play().then(()=>{
-
-   setTVConnected();
-
-  }).catch(()=>{
-
-   document.getElementById(
-    "tvConnectionStatus"
-   ).innerHTML=
-   "▶ Tap PLAY";
-
-  });
-
- }
-
-}
-
-
-/* TV QUALITY */
-
-function updateQuality(){
-
- const box=document.getElementById(
-  "videoQuality"
- );
-
- if(
-  hls &&
-  hls.levels &&
-  hls.levels.length
- ){
-
-  const levels=hls.levels;
-
-  const qualities=levels
-   .map(level=>{
-
-    if(level.height)
-     return level.height+"p";
-
-    if(level.width)
-     return level.width+"px";
-
-    return "Auto";
-
-   })
-   .filter(
-    (value,index,array)=>
-     array.indexOf(value)===index
-   );
-
-  box.innerHTML=
-   qualities.map(q=>
-    `<span>📺 ${q}</span>`
-   ).join("");
-
- }else{
-
-  box.innerHTML=
-  "<span>📺 Quality: Auto</span>";
-
- }
-
-}
-
-
-/* TV CONNECTED */
-
-function setTVConnected(){
-
- document.getElementById(
-  "tvConnectionStatus"
- ).innerHTML=
- "🟢 Connected";
-
-}
-
-
-/* TV NEXT */
-
-function nextTV(){
-
- if(!filteredTV.length)return;
-
- let next;
-
- if(currentTVIndex<0){
-
-  next=0;
-
- }else{
-
-  next=currentTVIndex+1;
-
-  if(next>=filteredTV.length)
-   next=0;
-
- }
-
- const channel=filteredTV[next];
-
- playTVStream(
-  channel.url,
-  channel.name,
-  next
- );
-
-}
-
-
-/* TV PREVIOUS */
-
-function previousTV(){
-
- if(!filteredTV.length)return;
-
- let previous;
-
- if(currentTVIndex<=0){
-
-  previous=filteredTV.length-1;
-
- }else{
-
-  previous=currentTVIndex-1;
-
- }
-
- const channel=filteredTV[previous];
-
- playTVStream(
-  channel.url,
-  channel.name,
-  previous
- );
-
-}
-
-
-/* TV MUTE */
-
-function toggleTVMute(){
-
- tvPlayer.muted=
- !tvPlayer.muted;
-
-}
-
-
-/* TV STOP */
-
-function stopTV(){
-
- clearTimeout(tvReconnectTimer);
-
- if(hls){
-
-  hls.destroy();
-  hls=null;
-
- }
-
- tvPlayer.pause();
-
- tvPlayer.removeAttribute("src");
-
- tvPlayer.load();
-
- document.getElementById(
-  "tvPlayerTitle"
- ).innerHTML=
- "📺 TV stopped";
-
- document.getElementById(
-  "tvConnectionStatus"
- ).innerHTML=
- "⚪ Stopped";
-
-}
-
-
-/* TV AUTO RECONNECT */
-
-function reconnectTV(){
-
- clearTimeout(tvReconnectTimer);
-
- if(!currentTV)return;
-
- tvReconnectTimer=setTimeout(()=>{
-
-  playTVStream(
-   currentTV.url,
-   currentTV.name,
-   currentTVIndex
-  );
-
- },5000);
-
-}
-
-
-/* TV FULLSCREEN */
-
-function fullscreenTV(){
-
- if(tvPlayer.requestFullscreen){
-
-  tvPlayer.requestFullscreen();
-
- }else if(
-  tvPlayer.webkitRequestFullscreen
- ){
-
-  tvPlayer.webkitRequestFullscreen();
-
- }
-
-}
-
-
-/* TV EVENTS */
-
-tvPlayer.addEventListener(
- "playing",
- ()=>{
-  setTVConnected();
- }
-);
-
-tvPlayer.addEventListener(
- "waiting",
- ()=>{
-  document.getElementById(
-   "tvConnectionStatus"
-  ).innerHTML=
-  "⏳ Buffering...";
- }
-);
-
-tvPlayer.addEventListener(
- "error",
- ()=>{
-
-  if(currentTV){
-
-   document.getElementById(
-    "tvConnectionStatus"
-   ).innerHTML=
-   "🔄 Reconnecting...";
-
-   reconnectTV();
-
-  }
-
- }
 );
 
 
-/* =====================================================
-                  MEDIA SESSION - RADIO
-===================================================== */
-
-if("mediaSession" in navigator){
-
- radioPlayer.addEventListener(
-  "play",
-  ()=>{
-   navigator.mediaSession.playbackState="playing";
-  }
- );
-
- radioPlayer.addEventListener(
-  "pause",
-  ()=>{
-   navigator.mediaSession.playbackState="paused";
-  }
- );
-
- navigator.mediaSession.setActionHandler(
-  "play",
-  ()=>playCurrent()
- );
-
- navigator.mediaSession.setActionHandler(
-  "pause",
-  ()=>pauseRadio()
- );
-
- navigator.mediaSession.setActionHandler(
-  "stop",
-  ()=>stopRadio()
- );
-
-}
-
-
-/* =====================================================
-                         ESCAPE
-===================================================== */
-
-function escapeHTML(value){
-
- return String(value)
- .replace(/&/g,"&amp;")
- .replace(/</g,"&lt;")
- .replace(/>/g,"&gt;")
- .replace(/"/g,"&quot;")
- .replace(/'/g,"&#039;");
-
-}
-
-
-/* =====================================================
-                         START
-===================================================== */
+/* START */
 
 renderStations(stations);
-renderFavorites();
-
-/*
- TV loads independently.
- Radio is never touched by TV playlist loading.
-*/
-loadTV();
 
 </script>
 
