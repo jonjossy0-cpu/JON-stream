@@ -143,11 +143,11 @@ button:active{transform:scale(.98)}
  color:#111;
 }
 
-/* RADIO + TV SIDE BY SIDE */
+/* RADIO + TV CLEARLY SEPARATED */
 .sections-grid{
  display:grid;
- grid-template-columns:minmax(0,1fr) minmax(0,1fr);
- gap:18px;
+ grid-template-columns:1fr;
+ gap:22px;
  align-items:start;
 }
 
@@ -332,7 +332,11 @@ audio,video{
  margin-top:13px;
 }
 
-.tv-player-box{display:none}
+.tv-player-box{
+ display:none;
+ width:100%;
+ order:10;
+}
 
 .tv-player-title{
  text-align:center;
@@ -1159,6 +1163,16 @@ function searchTVChannels(){
  }
 
  filteredTV=list;
+
+ /* Keep the TV player and selected channel stable while searching/filtering. */
+ if(currentTV){
+  const activeIndex=filteredTV.findIndex(channel=>channel.url===currentTV.url);
+  if(activeIndex>=0){
+   currentTVIndex=activeIndex;
+  }else{
+   currentTVIndex=-1;
+  }
+ }
 
  renderTV(list);
 
