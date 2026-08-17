@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#07111f">
+<title>JON FM ETHIOPIA</title>
+
+<style>
+*{box-sizing:border-box}
+
+:root{
+  --bg:#07111f;
+  --card:#111d2e;
+  --card2:#0d1727;
+  --line:#263750;
+  --text:#fff;
+  --muted:#91a0b2;
+  --red:#e31b23;
+}
+
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  transition:.25s;
+}
+
+body.light{
+  --bg:#f2f5f9;
+  --card:#fff;
+  --card2:#edf1f6;
+  --line:#d5dce6;
+  --text:#111827;
+  --muted:#64748b;
+}
+
+.container{
+  max-width:760px;
+  margin:auto;
+  padding:16px;
+}
+
+/* BRAND */
+
+.brand{
+  text-align:center;
+  padding:8px 0 18px;
+}
+
+.logo{
+  width:120px;
+  height:120px;
+  object-fit:cover;
+  border-radius:25px;
+  display:block;
+  margin:auto;
+  box-shadow:0 8px 30px rgba(0,0,0,.5);
+}
+
+.brand h1{
+  margin:14px 0 5px;
+  font-size:27px;
+}
+
+.brand p{
+  margin:0;
+  color:var(--muted);
+}
+
+.clock{
+  margin-top:9px;
+  color:var(--muted);
+  font-size:14px;
+}
+
+/* TABS */
+
+.tabs{
+  display:flex;
+  gap:8px;
+  margin-bottom:15px;
+}
+
+.tab{
+  flex:1;
+  padding:13px;
+  border:1px solid var(--line);
+  border-radius:13px;
+  background:var(--card);
+  color:var(--text);
+  font-weight:800;
+}
+
+.tab.active{
+  background:var(--red);
+  border-color:var(--red);
+  color:#fff;
+}
+
+.panel{
+  display:none;
+}
+
+.panel.active{
+  display:block;
+}
+
+/* PLAYER */
+
+.player{
+  background:linear-gradient(145deg,var(--card),var(--card2));
+  border:1px solid var(--line);
+  border-radius:22px;
+  padding:18px;
+  margin-bottom:15px;
+}
+
+.live{
+  text-align:center;
+  color:#ff4b55;
+  font-size:18px;
+  font-weight:800;
+}
+
+.now{
+  text-align:center;
+  margin:8px 0;
+  color:var(--muted);
+  min-height:20px;
+}
+
+audio{
+  width:100%;
+  margin-top:8px;
+}
+
+.video-box{
+  background:#000;
+  border-radius:15px;
+  overflow:hidden;
+  margin-top:12px;
+}
+
+video{
+  display:block;
+  width:100%;
+  max-height:55vh;
+  background:#000;
+}
+
+.controls{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+
+button{
+  border:0;
+  border-radius:12px;
+  padding:12px 14px;
+  background:var(--red);
+  color:#fff;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.controls button{
+  flex:1;
+  min-width:85px;
+}
+
+.secondary{
+  background:#263750;
+}
+
+.ghost{
+  background:var(--card2);
+  border:1px solid var(--line);
+  color:var(--text);
+}
+
+.volume{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:11px;
+}
+
+.volume input{
+  flex:1;
+}
+
+.status{
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+  margin-top:9px;
+}
+
+/* SEARCH */
+
+.search{
+  margin-bottom:12px;
+}
+
+.search input{
+  width:100%;
+  padding:15px 17px;
+  border-radius:14px;
+  border:1px solid var(--line);
+  outline:none;
+  background:var(--card);
+  color:var(--text);
+  font-size:16px;
+}
+
+.search input::placeholder{
+  color:#78889c;
+}
+
+/* FILTER */
+
+.filters{
+  display:flex;
+  gap:7px;
+  overflow:auto;
+  margin-bottom:12px;
+}
+
+.filters button{
+  white-space:nowrap;
+  padding:9px 12px;
+}
+
+/* TITLE */
+
+.title{
+  font-size:20px;
+  margin:17px 3px 11px;
+}
+
+/* STATION */
+
+.station{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:17px;
+  padding:13px;
+  margin-bottom:9px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.station-info{
+  flex:1;
+  min-width:0;
+}
+
+.station-name{
+  font-size:15px;
+  font-weight:800;
+}
+
+.station-meta{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:11px;
+}
+
+.dot{
+  width:10px;
+  height:10px;
+  flex-shrink:0;
+  border-radius:50%;
+  background:var(--red);
+  box-shadow:0 0 10px var(--red);
+}
+
+.station-actions{
+  display:flex;
+  gap:6px;
+}
+
+.station-actions button{
+  padding:10px 12px;
+}
+
+.star{
+  background:transparent !important;
+  color:#ffd43b !important;
+  font-size:20px;
+  padding:5px !important;
+}
+
+/* FEATURED */
+
+.featured{
+  border-color:var(--red);
+  background:linear-gradient(145deg,#1a1420,var(--card));
+}
+
+/* TIMER */
+
+.timerbox{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:15px;
+  margin-top:15px;
+}
+
+.timer-row{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+
+.timer-row input{
+  flex:1;
+  min-width:0;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:var(--card2);
+  color:var(--text);
+}
+
+/* ABOUT */
+
+.about{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:15px;
+  margin-top:15px;
+}
+
+.about p{
+  color:var(--muted);
+  line-height:1.5;
+}
+
+/* FOOTER */
+
+.footer{
+  text-align:center;
+  padding:25px 8px 15px;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.footer img{
+  width:58px;
+  height:58px;
+  object-fit:cover;
+  border-radius:14px;
+}
+
+@media(max-width:480px){
+
+  .container{
+    padding:12px;
+  }
+
+  .brand h1{
+    font-size:23px;
+  }
+
+  .controls button{
+    min-width:75px;
+  }
+
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- BRAND -->
+
+<div class="brand">
+
+<img
+src="logo.png"
+class="logo"
+alt="JON Media Service">
+
+<h1>JON FM ETHIOPIA</h1>
+
+<p>🇪🇹 Ethiopian Digital Radio & TV</p>
+
+<div
+class="clock"
+id="clock">
+--:--:--
+</div>
+
+</div>
+
+
+<!-- RADIO / TV TABS -->
+
+<div class="tabs">
+
+<button
+class="tab active"
+onclick="openTab('radio',this)">
+📻 RADIO
+</button>
+
+<button
+class="tab"
+onclick="openTab('tv',this)">
+📺 TV
+</button>
+
+</div>
+
+
+<!-- ================= RADIO ================= -->
+
+<section
+id="radio"
+class="panel active">
+
+<div class="player">
+
+<div class="live">
+🔴 LIVE RADIO
+</div>
+
+<div
+class="now"
+id="radioNow">
+Select a radio station
+</div>
+
+<audio
+id="radioPlayer"
+controls
+preload="none">
+</audio>
+
+<div class="controls">
+
+<button onclick="playRadio()">
+▶ PLAY
+</button>
+
+<button
+class="secondary"
+onclick="pauseRadio()">
+⏸ PAUSE
+</button>
+
+<button
+class="secondary"
+onclick="stopRadio()">
+⏹ STOP
+</button>
+
+<button
+class="ghost"
+onclick="muteRadio()">
+🔇 MUTE
+</button>
+
+</div>
+
+<div class="volume">
+
+🔊
+
+<input
+id="radioVolume"
+type="range"
+min="0"
+max="1"
+step="0.01"
+value="1">
+
+</div>
+
+<div
+class="status"
+id="radioStatus">
+Ready
+</div>
+
+</div>
+
+
+<!-- RADIO SEARCH -->
+
+<div class="search">
+
+<input
+id="radioSearch"
+type="text"
+placeholder="🔎 Search radio station..."
+oninput="renderRadio()">
+
+</div>
+
+
+<!-- FEATURED -->
+
+<h2 class="title">
+⭐ JON FM Featured
+</h2>
+
+<div id="featured"></div>
+
+
+<!-- RADIO LIST -->
+
+<h2 class="title">
+📻 Ethiopian Radio Stations
+</h2>
+
+<div id="radioList"></div>
+
+
+<!-- TIMER -->
+
+<div class="timerbox">
+
+<b>⏱️ Sleep Timer</b>
+
+<div class="timer-row">
+
+<input
+id="timerMinutes"
+type="number"
+min="1"
+placeholder="Minutes">
+
+<button onclick="startTimer()">
+START
+</button>
+
+<button
+class="secondary"
+onclick="cancelTimer()">
+CANCEL
+</button>
+
+</div>
+
+<div
+class="status"
+id="timerStatus">
+Timer off
+</div>
+
+</div>
+
+</section>
+
+
+<!-- ================= TV ================= -->
+
+<section
+id="tv"
+class="panel">
+
+<div class="player">
+
+<div class="live">
+📺 LIVE TV
+</div>
+
+<div
+class="now"
+id="tvNow">
+Select a TV channel
+</div>
+
+
+<div class="video-box">
+
+<video
+id="tvPlayer"
+controls
+playsinline
+preload="metadata">
+</video>
+
+</div>
+
+
+<div class="controls">
+
+<button onclick="playTV()">
+▶ PLAY
+</button>
+
+<button
+class="secondary"
+onclick="stopTV()">
+⏹ STOP
+</button>
+
+<button
+class="secondary"
+onclick="previousTV()">
+⏮ PREV
+</button>
+
+<button
+class="secondary"
+onclick="nextTV()">
+⏭ NEXT
+</button>
+
+<button
+class="ghost"
+onclick="fullscreenTV()">
+⛶ FULLSCREEN
+</button>
+
+<button
+class="ghost"
+onclick="muteTV()">
+🔇 MUTE
+</button>
+
+</div>
+
+
+<div class="volume">
+
+🔊
+
+<input
+id="tvVolume"
+type="range"
+min="0"
+max="1"
+step="0.01"
+value="1">
+
+</div>
+
+
+<div
+class="status"
+id="tvStatus">
+Ready
+</div>
+
+</div>
+
+
+<!-- TV SEARCH -->
+
+<div class="search">
+
+<input
+id="tvSearch"
+type="text"
+placeholder="🔎 Search TV channel..."
+oninput="renderTV()">
+
+</div>
+
+
+<!-- TV FILTER -->
+
+<div class="filters">
+
+<button
+class="ghost"
+onclick="setTVFilter('all')">
+🌍 All
+</button>
+
+<button
+class="ghost"
+onclick="setTVFilter('Ethiopia')">
+🇪🇹 Ethiopia
+</button>
+
+<button
+class="ghost"
+onclick="setTVFilter('International')">
+🌎 International
+</button>
+
+</div>
+
+
+<h2 class="title">
+📺 TV Channels
+</h2>
+
+<div id="tvList"></div>
+
+</section>
+
+
+<!-- ABOUT -->
+
+<div class="about">
+
+<b>
+ℹ️ About JON FM ETHIOPIA
+</b>
+
+<p>
+Radio and TV streaming application powered by
+JON Media Service.
+</p>
+
+<div class="controls">
+
+<button
+class="ghost"
+onclick="toggleTheme()">
+🎨 Dark / Light
+</button>
+
+<button
+class="ghost"
+onclick="shareApp()">
+🔗 Share
+</button>
+
+</div>
+
+</div>
+
+
+<!-- FOOTER -->
+
+<div class="footer">
+
+<img
+src="logo.png"
+alt="JON Media Service">
+
+<br><br>
+
+🇪🇹 Ethiopian Radio & TV Streaming
+
+<br><br>
+
+<strong style="color:var(--text)">
+Powered by JON Media Service
+</strong>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   RADIO LINKS
+   KEPT AS SUPPLIED
+========================================================= */
+
+const stations = [
+
+{
+name:"JON FM ETHIOPIA",
+url:"https://jonmediaservice.volticast.net/primary.aac"
+},
+
+{
+name:"ETHIO FM 107.8",
+url:"https://stream.zeno.fm/b8skbyqeqeruv"
+},
+
+{
+name:"TIreta 97.6 FM",
+url:"https://stream.zeno.fm/x751reg18zhvv"
+},
+
+{
+name:"SHGER FM 102.1",
+url:"https://stream.zenolive.com/cwkxynwagt5tv"
+},
+
+{
+name:"Arada FM 95.1",
+url:"https://radio.garden/api/ara/content/listen/awONg9RE/channel.mp3?1786298026793"
+},
+
+{
+name:"FM Addis 97.1",
+url:"https://radio.garden/api/ara/content/listen/hmf5qN63/channel.mp3?1786298403142"
+},
+
+{
+name:"104.7 EBC FM",
+url:"https://radio.garden/api/ara/content/listen/0UDpOLZU/channel.mp3?1786298675616"
+},
+
+{
+name:"Bisrat FM 101.1",
+url:"https://bisratfm-atunwadigital.streamguys1.com/bisratfm"
+},
+
+{
+name:"Awash FM 90.7",
+url:"https://stream.zeno.fm/h9ygrpa2wc9uv"
+},
+
+{
+name:"AMN Radio 96.3",
+url:"https://rpn.bozztv.com/ses/addis/addisradio/playlist.m3u8"
+},
+
+{
+name:"Amhara Radio 103.5",
+url:"https://stream.zeno.fm/cxf4zy74em0uv"
+},
+
+{
+name:"OBN Radio 92.3",
+url:"https://stream.zeno.fm/0i2tzykrry9uv"
+},
+
+{
+name:"Fana FM 98.1",
+url:"https://embed.novastream.et/-CQXfPWORVFvNvwEfKCSuOLo"
+},
+
+{
+name:"Fana National 90.0",
+url:"https://embed.novastream.et/lNjeNultfsjVQhsYMxSdtXOb"
+},
+
+{
+name:"Deutsche Welle Amharic",
+url:"https://stream.zeno.fm/0sfp5ucnfceuv?acu-uid=1485963383459&an-uid=6511064188082061080&eps-uid=AQAJha7PRmrAjQJjnW46AQEBAQEBAQCe7nnlnwEBAJ7ueeWf&amb-uid=7936042185125426536&dbm-uid=CAESEPZmMwoAovi245ifhMjHqWQ&cto-uid=7e2693d3-4c2c-4064-b5a3-2477306d6c35-6a7ab50d-4554&bsw-uid=0be78c2d-29a9-4047-9afc-c81884a96418&dyn-uid=2160598537686749688&ttd-uid=23b9c13e-e596-4f09-96ff-c5ff53f1c0e5"
+},
+
+{
+name:"Ahadu Radio 94.3",
+url:"https://stream-280.surfernetwork.com/1knzedf1wwzuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiIxa256ZWRmMXd3enV2IiwiaG9zdCI6InN0cmVhbS0yODAuc3VyZmVybmV0d29yay5jb20iLCJydHRsIjo1LCJqdGkiOiI4ZUduMk1NNFFnMmctVnFlTDRwbGt3IiwiaWF0IjoxNzg2Mjc4ODgxLCJleHAiOjE3ODYyNzg5NDF9.7kLJt3xt40DN5Og3V13NFDAaRryRPhYSrqOj1k09ZT8"
+},
+
+{
+name:"EBC National Radio 93.1",
+url:"https://stream-284.surfernetwork.com/ad402tap7yzuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJhZDQwMnRhcDd5enV2IiwiaG9zdCI6InN0cmVhbS0yODQuc3VyZmVybmV0d29yay5jb20iLCJydHRsIjo1LCJqdGkiOiJFYzhFMkRzZFJBcUozNFI4VmN2T0hRIiwiaWF0IjoxNzg2Mjc4OTkzLCJleHAiOjE3ODYyNzkwNTN9.lK8dJjXM2HMZUJi43-O6Q52kxqOpcsWhEe3pwZmqEo4"
+}
+
+];
+
+
+/* =========================================================
+   TV CHANNELS
+========================================================= */
+
+const tvChannels = [
+
+{
+name:"MBC 2",
+url:"http://154.58.202.18:8080/mbc2/index.m3u8",
+country:"International"
+},
+
+{
+name:"Ethiopia TV",
+url:"https://iptv-org.github.io/iptv/countries/et.m3u",
+country:"Ethiopia"
+}
+
+];
+
+
+/* =========================================================
+   VARIABLES
+========================================================= */
+
+const radioPlayer =
+document.getElementById("radioPlayer");
+
+const tvPlayer =
+document.getElementById("tvPlayer");
+
+const radioNow =
+document.getElementById("radioNow");
+
+const tvNow =
+document.getElementById("tvNow");
+
+let currentRadio = 0;
+let currentTV = 0;
+
+let timer = null;
+
+let tvFilter = "all";
+
+let tvHls = null;
+
+
+/* =========================================================
+   TAB
+========================================================= */
+
+function openTab(tab,button){
+
+document
+.querySelectorAll(".tab")
+.forEach(x=>x.classList.remove("active"));
+
+button.classList.add("active");
+
+document
+.querySelectorAll(".panel")
+.forEach(x=>x.classList.remove("active"));
+
+document
+.getElementById(tab)
+.classList.add("active");
+
+}
+
+
+/* =========================================================
+   FAVORITES
+========================================================= */
+
+function favoriteKey(type,name){
+
+return "jon_favorite_"
++type+"_"
++name;
+
+}
+
+
+function isFavorite(type,item){
+
+return localStorage.getItem(
+favoriteKey(type,item.name)
+)==="1";
+
+}
+
+
+function toggleFavorite(type,index){
+
+const list =
+type==="radio"
+?stations
+:tvChannels;
+
+const item =
+list[index];
+
+const key =
+favoriteKey(type,item.name);
+
+if(isFavorite(type,item)){
+
+localStorage.removeItem(key);
+
+}else{
+
+localStorage.setItem(key,"1");
+
+}
+
+if(type==="radio"){
+
+renderRadio();
+
+}else{
+
+renderTV();
+
+}
+
+}
+
+
+/* =========================================================
+   RADIO RENDER
+========================================================= */
+
+function renderRadio(){
+
+const query =
+document
+.getElementById("radioSearch")
+.value
+.toLowerCase()
+.trim();
+
+const filtered =
+stations.filter(function(station){
+
+return station.name
+.toLowerCase()
+.includes(query);
+
+});
+
+
+const radioList =
+document.getElementById("radioList");
+
+if(filtered.length===0){
+
+radioList.innerHTML =
+'<div class="status">No radio station found.</div>';
+
+}else{
+
+radioList.innerHTML =
+filtered
+.map(function(station){
+
+const index =
+stations.indexOf(station);
+
+return stationHTML(
+"radio",
+station,
+index
+);
+
+})
+.join("");
+
+}
+
+
+/* FEATURED */
+
+const featured =
+document.getElementById("featured");
+
+const favorites =
+stations.filter(function(station){
+
+return isFavorite("radio",station);
+
+}).slice(0,3);
+
+
+const featureList =
+favorites.length
+?favorites
+:stations.slice(0,1);
+
+
+featured.innerHTML =
+featureList
+.map(function(station){
+
+const index =
+stations.indexOf(station);
+
+return `
+
+<div class="station featured">
+
+<div class="station-info">
+
+<div class="station-name">
+⭐ ${escapeHTML(station.name)}
+</div>
+
+<div class="station-meta">
+JON FM Featured
+</div>
+
+</div>
+
+<button
+onclick="selectRadio(${index})">
+▶
+</button>
+
+</div>
+
+`;
+
+})
+.join("");
+
+}
+
+
+/* =========================================================
+   STATION HTML
+========================================================= */
+
+function stationHTML(type,station,index){
+
+const favorite =
+isFavorite(type,station)
+?"★"
+:"☆";
+
+return `
+
+<div class="station">
+
+<span class="dot"></span>
+
+<div class="station-info">
+
+<div class="station-name">
+${escapeHTML(station.name)}
+</div>
+
+<div class="station-meta">
+🔴 Live Stream
+${station.country
+?" • "+station.country
+:""}
+</div>
+
+</div>
+
+<div class="station-actions">
+
+<button
+class="star"
+onclick="toggleFavorite(
+'${type}',
+${index}
+)">
+${favorite}
+</button>
+
+<button
+onclick="${
+type==="radio"
+?"selectRadio"
+:"selectTV"
+}(${index})">
+
+▶
+
+</button>
+
+</div>
+
+</div>
+
+`;
+
+}
+
+
+/* =========================================================
+   RADIO SELECT
+========================================================= */
+
+function selectRadio(index){
+
+currentRadio =
+index;
+
+const station =
+stations[index];
+
+radioPlayer.src =
+station.url;
+
+radioNow.innerHTML =
+"🔴 Now Playing: <b>"
++escapeHTML(station.name)
++"</b>";
+
+setRadioStatus(
+"Connecting..."
+);
+
+radioPlayer
+.play()
+.catch(function(){
+
+setRadioStatus(
+"▶ Tap PLAY to start"
+);
+
+});
+
+}
+
+
+/* =========================================================
+   RADIO PLAY
+========================================================= */
+
+function playRadio(){
+
+if(!radioPlayer.src){
+
+selectRadio(currentRadio);
+
+}else{
+
+radioPlayer
+.play()
+.catch(function(){});
+
+}
+
+setRadioStatus("🟢 Playing");
+
+}
+
+
+/* =========================================================
+   RADIO PAUSE
+========================================================= */
+
+function pauseRadio(){
+
+radioPlayer.pause();
+
+setRadioStatus(
+"Paused"
+);
+
+}
+
+
+/* =========================================================
+   RADIO STOP
+========================================================= */
+
+function stopRadio(){
+
+radioPlayer.pause();
+
+radioPlayer.removeAttribute(
+"src"
+);
+
+radioPlayer.load();
+
+radioNow.textContent =
+"Radio stopped";
+
+setRadioStatus(
+"Stopped"
+);
+
+}
+
+
+/* =========================================================
+   RADIO MUTE
+========================================================= */
+
+function muteRadio(){
+
+radioPlayer.muted =
+!radioPlayer.muted;
+
+}
+
+
+/* =========================================================
+   RADIO VOLUME
+========================================================= */
+
+document
+.getElementById("radioVolume")
+.addEventListener(
+"input",
+function(){
+
+radioPlayer.volume =
+this.value;
+
+}
+);
+
+
+/* =========================================================
+   RADIO STATUS
+========================================================= */
+
+function setRadioStatus(text){
+
+document
+.getElementById("radioStatus")
+.textContent =
+text;
+
+}
+
+
+/* =========================================================
+   RADIO AUTO RECONNECT
+========================================================= */
+
+radioPlayer.addEventListener(
+"error",
+function(){
+
+setRadioStatus(
+"⚠️ Connection lost — reconnecting..."
+);
+
+setTimeout(function(){
+
+if(radioPlayer.src){
+
+radioPlayer.load();
+
+radioPlayer
+.play()
+.catch(function(){});
+
+}
+
+},3000);
+
+});
+
+
+/* =========================================================
+   TV FILTER
+========================================================= */
+
+function setTVFilter(filter){
+
+tvFilter =
+filter;
+
+renderTV();
+
+}
+
+
+/* =========================================================
+   TV RENDER
+========================================================= */
+
+function renderTV(){
+
+const query =
+document
+.getElementById("tvSearch")
+.value
+.toLowerCase()
+.trim();
+
+const filtered =
+tvChannels.filter(function(channel){
+
+const matchSearch =
+channel.name
+.toLowerCase()
+.includes(query);
+
+const matchCountry =
+tvFilter==="all"
+||
+channel.country===tvFilter;
+
+return matchSearch
+&&
+matchCountry;
+
+});
+
+
+const list =
+document.getElementById("tvList");
+
+
+if(filtered.length===0){
+
+list.innerHTML =
+'<div class="status">No TV channel found.</div>';
+
+return;
+
+}
+
+
+list.innerHTML =
+filtered
+.map(function(channel){
+
+const index =
+tvChannels.indexOf(channel);
+
+return stationHTML(
+"tv",
+channel,
+index
+);
+
+})
+.join("");
+
+}
+
+
+/* =========================================================
+   TV LOAD
+========================================================= */
+
+function loadTV(url){
+
+if(tvHls){
+
+tvHls.destroy();
+
+tvHls =
+null;
+
+}
+
+tvPlayer.removeAttribute(
+"src"
+);
+
+tvPlayer.load();
+
+
+if(
+url.includes(".m3u8")
+&&
+window.Hls
+&&
+Hls.isSupported()
+){
+
+tvHls =
+new Hls();
+
+tvHls.loadSource(
+url
+);
+
+tvHls.attachMedia(
+tvPlayer
+);
+
+}else{
+
+tvPlayer.src =
+url;
+
+}
+
+}
+
+
+/* =========================================================
+   TV SELECT
+========================================================= */
+
+function selectTV(index){
+
+currentTV =
+index;
+
+const channel =
+tvChannels[index];
+
+tvNow.innerHTML =
+"📺 Now Playing: <b>"
++escapeHTML(channel.name)
++"</b>";
+
+setTVStatus(
+"Connecting..."
+);
+
+loadTV(
+channel.url
+);
+
+tvPlayer
+.play()
+.catch(function(){
+
+setTVStatus(
+"▶ Tap PLAY to start"
+);
+
+});
+
+}
+
+
+/* =========================================================
+   TV PLAY
+========================================================= */
+
+function playTV(){
+
+if(
+!tvPlayer.src
+&&
+!tvHls
+){
+
+selectTV(
+currentTV
+);
+
+}else{
+
+tvPlayer
+.play()
+.catch(function(){});
+
+}
+
+}
+
+
+/* =========================================================
+   TV STOP
+========================================================= */
+
+function stopTV(){
+
+tvPlayer.pause();
+
+if(tvHls){
+
+tvHls.destroy();
+
+tvHls =
+null;
+
+}
+
+tvPlayer.removeAttribute(
+"src"
+);
+
+tvPlayer.load();
+
+tvNow.textContent =
+"TV stopped";
+
+setTVStatus(
+"Stopped"
+);
+
+}
+
+
+/* =========================================================
+   TV NEXT
+========================================================= */
+
+function nextTV(){
+
+if(tvChannels.length===0)
+return;
+
+currentTV =
+(currentTV+1)
+%
+tvChannels.length;
+
+selectTV(
+currentTV
+);
+
+}
+
+
+/* =========================================================
+   TV PREVIOUS
+========================================================= */
+
+function previousTV(){
+
+if(tvChannels.length===0)
+return;
+
+currentTV =
+(currentTV-1+tvChannels.length)
+%
+tvChannels.length;
+
+selectTV(
+currentTV
+);
+
+}
+
+
+/* =========================================================
+   TV FULLSCREEN
+========================================================= */
+
+function fullscreenTV(){
+
+const box =
+document.querySelector(
+".video-box"
+);
+
+if(
+box.requestFullscreen
+){
+
+box.requestFullscreen();
+
+}else if(
+box.webkitRequestFullscreen
+){
+
+box.webkitRequestFullscreen();
+
+}
+
+}
+
+
+/* =========================================================
+   TV MUTE
+========================================================= */
+
+function muteTV(){
+
+tvPlayer.muted =
+!tvPlayer.muted;
+
+}
+
+
+/* =========================================================
+   TV VOLUME
+========================================================= */
+
+document
+.getElementById("tvVolume")
+.addEventListener(
+"input",
+function(){
+
+tvPlayer.volume =
+this.value;
+
+}
+);
+
+
+/* =========================================================
+   TV STATUS
+========================================================= */
+
+function setTVStatus(text){
+
+document
+.getElementById("tvStatus")
+.textContent =
+text;
+
+}
+
+
+/* =========================================================
+   TV AUTO RECONNECT
+========================================================= */
+
+tvPlayer.addEventListener(
+"error",
+function(){
+
+setTVStatus(
+"⚠️ Connection lost — reconnecting..."
+);
+
+setTimeout(function(){
+
+if(
+tvChannels.length
+){
+
+selectTV(
+currentTV
+);
+
+}
+
+},3000);
+
+});
+
+
+/* =========================================================
+   TIMER
+========================================================= */
+
+function startTimer(){
+
+const minutes =
+parseInt(
+document
+.getElementById("timerMinutes")
+.value
+);
+
+if(
+!minutes
+||
+minutes<1
+){
+
+return;
+
+}
+
+cancelTimer();
+
+timer =
+setTimeout(
+function(){
+
+radioPlayer.pause();
+
+tvPlayer.pause();
+
+document
+.getElementById(
+"timerStatus"
+)
+.textContent =
+"⏱️ Timer finished";
+
+},
+minutes*60000
+);
+
+document
+.getElementById(
+"timerStatus"
+)
+.textContent =
+"⏱️ "
++minutes
++" minute timer running";
+
+}
+
+
+function cancelTimer(){
+
+if(timer){
+
+clearTimeout(
+timer
+);
+
+timer =
+null;
+
+}
+
+document
+.getElementById(
+"timerStatus"
+)
+.textContent =
+"Timer off";
+
+}
+
+
+/* =========================================================
+   CLOCK
+========================================================= */
+
+function updateClock(){
+
+const now =
+new Date();
+
+document
+.getElementById(
+"clock"
+)
+.textContent =
+now.toLocaleDateString()
++
+" • "
++
+now.toLocaleTimeString();
+
+}
+
+setInterval(
+updateClock,
+1000
+);
+
+updateClock();
+
+
+/* =========================================================
+   THEME
+========================================================= */
+
+function toggleTheme(){
+
+document
+.body
+.classList
+.toggle("light");
+
+localStorage.setItem(
+"jonTheme",
+document.body.classList.contains(
+"light"
+)
+?"light"
+:"dark"
+);
+
+}
+
+
+if(
+localStorage.getItem(
+"jonTheme"
+)==="light"
+){
+
+document
+.body
+.classList
+.add("light");
+
+}
+
+
+/* =========================================================
+   SHARE
+========================================================= */
+
+function shareApp(){
+
+if(
+navigator.share
+){
+
+navigator.share({
+
+title:
+"JON FM ETHIOPIA",
+
+text:
+"JON FM ETHIOPIA Radio & TV",
+
+url:
+location.href
+
+});
+
+}else{
+
+if(
+navigator.clipboard
+){
+
+navigator.clipboard
+.writeText(
+location.href
+)
+.then(function(){
+
+alert(
+"App link copied"
+);
+
+});
+
+}
+
+}
+
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeHTML(text){
+
+return String(text)
+.replace(
+/[&<>"']/g,
+function(char){
+
+return {
+
+"&":"&amp;",
+"<":"&lt;",
+">":"&gt;",
+'"':"&quot;",
+"'":"&#039;"
+
+}[char];
+
+}
+);
+
+}
+
+
+/* =========================================================
+   SEARCH EVENTS
+========================================================= */
+
+document
+.getElementById(
+"radioSearch"
+)
+.addEventListener(
+"input",
+renderRadio
+);
+
+document
+.getElementById(
+"tvSearch"
+)
+.addEventListener(
+"input",
+renderTV
+);
+
+
+/* =========================================================
+   START
+========================================================= */
+
+renderRadio();
+
+renderTV();
+
+</script>
+
+</body>
+</html>
