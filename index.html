@@ -143,12 +143,20 @@ button:active{transform:scale(.98)}
  color:#111;
 }
 
-/* RADIO + TV SIDE BY SIDE */
+/* RADIO + TV STACKED */
 .sections-grid{
  display:grid;
- grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+ grid-template-columns:1fr;
  gap:18px;
  align-items:start;
+}
+
+/* TV BELOW RADIO — COMPACT WIDTH */
+.sections-grid > .section:last-child{
+ width:100%;
+ max-width:900px;
+ margin-left:auto;
+ margin-right:auto;
 }
 
 .section{
@@ -955,8 +963,8 @@ function toggleTheme(){
 }
 
 /* =====================================================
-                     TV PLAYLIST
-        🔒 RADIO HAS NO CONNECTION TO THIS
+                    TV PLAYLIST
+       🔒 RADIO HAS NO CONNECTION TO THIS
 ===================================================== */
 const IPTV_URL="https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8";
 const IPTV_HTTPS_URL="https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8";
@@ -971,27 +979,76 @@ let hls=null;
 let currentTV=null;
 let tvReconnectTimer=null;
 
-/* LOAD THE SUPPLIED TV HLS PLAYLIST */
+/* TV PLAYLIST FETCH */
+async function fetchPlaylist(url){
+ const response=await fetch(url,{
+  method:"GET",
+  cache:"no-store",
+  mode:"cors"
+ });
+
+ if(!response.ok)throw new Error("HTTP "+response.status);
+
+ return await response.text();
+}
+
+/* LOAD TV */
 async function loadTV(){
  const status=document.getElementById("tvStatus");
  status.innerHTML="🔄 Connecting to TV playlist...";
 
- // The supplied URL is an HLS .m3u8 stream. Keep it as a single
- // selectable TV channel so the existing player/filter UI continues to work.
- tvChannels=[{
-  name:"JON FM TV",
-  logo:"",
-  country:"TV",
-  group:"TV",
-  id:"jon-fm-tv",
-  url:IPTV_URL
- }];
+ let text=null;
 
- filteredTV=tvChannels;
- buildCountryFilter();
+ try{
+  text=await fetchPlaylist(IPTV_URL);
+ }catch(error){
+  console.warn("HTTP playlist failed. Trying HTTPS...",error);
+ }
 
- status.innerHTML="📺 TV channel available";
- renderTV(filteredTV);
+ if(!text){
+  try{
+   text=await fetchPlaylist(IPTV_HTTPS_URL);
+  }catch(error){
+   console.error("HTTPS playlist failed",error);
+  }
+ }
+
+ if(!text){
+  status.innerHTML="⚠️ TV playlist could not be loaded";
+
+  document.getElementById("tvChannels").innerHTML=`
+   <div class="empty">
+    TV playlist could not be loaded.<br><br>
+    Check internet connection and try again.<br><br>
+    <button onclick="loadTV()">🔄 RETRY</button>
+   </div>
+  `;
+  return;
+ }
+
+ try{
+  tvChannels=parseM3U(text);
+
+  const seen=new Set();
+
+  tvChannels=tvChannels.filter(channel=>{
+   if(!channel.url)return false;
+   if(seen.has(channel.url))return false;
+   seen.add(channel.url);
+   return true;
+  });
+
+  filteredTV=tvChannels;
+
+  buildCountryFilter();
+
+  status.innerHTML="📺 "+tvChannels.length+" TV channels available";
+
+  renderTV(filteredTV);
+ }catch(error){
+  console.error(error);
+  status.innerHTML="⚠️ Playlist format error";
+ }
 }
 
 /* M3U PARSER */
