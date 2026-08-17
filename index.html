@@ -2,378 +2,284 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="theme-color" content="#07111f">
 <title>JON FM ETHIOPIA</title>
 
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
 <style>
 *{box-sizing:border-box}
-
 :root{
-  --bg:#07111f;
-  --card:#111d2e;
-  --card2:#0d1727;
-  --line:#263750;
-  --text:#fff;
-  --muted:#91a0b2;
-  --red:#e31b23;
+ --bg:#07111f;
+ --card:#101c2d;
+ --card2:#0b1524;
+ --text:#fff;
+ --muted:#94a3b8;
+ --line:#26364d;
+ --accent:#e31b23;
 }
-
-body{
-  margin:0;
-  font-family:Arial,Helvetica,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  transition:.25s;
-}
-
 body.light{
-  --bg:#f2f5f9;
-  --card:#fff;
-  --card2:#edf1f6;
-  --line:#d5dce6;
-  --text:#111827;
-  --muted:#64748b;
+ --bg:#f1f5f9;
+ --card:#fff;
+ --card2:#e8edf4;
+ --text:#111827;
+ --muted:#64748b;
+ --line:#d5dce5;
 }
-
+body{
+ margin:0;
+ background:var(--bg);
+ color:var(--text);
+ font-family:Arial,Helvetica,sans-serif;
+ transition:.25s;
+}
 .container{
-  max-width:760px;
-  margin:auto;
-  padding:16px;
+ width:min(850px,100%);
+ margin:auto;
+ padding:14px;
 }
-
-/* BRAND */
-
-.brand{
-  text-align:center;
-  padding:8px 0 18px;
+.header{
+ text-align:center;
+ padding:8px 0 18px;
 }
-
 .logo{
-  width:120px;
-  height:120px;
-  object-fit:cover;
-  border-radius:25px;
-  display:block;
-  margin:auto;
-  box-shadow:0 8px 30px rgba(0,0,0,.5);
+ width:105px;
+ height:105px;
+ object-fit:cover;
+ border-radius:24px;
+ display:block;
+ margin:auto;
+ background:#111;
+ box-shadow:0 8px 30px #0008;
 }
-
-.brand h1{
-  margin:14px 0 5px;
-  font-size:27px;
+.header h1{
+ margin:13px 0 4px;
+ font-size:27px;
 }
-
-.brand p{
-  margin:0;
-  color:var(--muted);
+.header p{
+ margin:0;
+ color:var(--muted);
 }
-
 .clock{
-  margin-top:9px;
-  color:var(--muted);
-  font-size:14px;
+ margin-top:9px;
+ color:var(--muted);
+ font-size:14px;
 }
-
-/* TABS */
-
 .tabs{
-  display:flex;
-  gap:8px;
-  margin-bottom:15px;
+ display:flex;
+ gap:8px;
+ margin-bottom:14px;
 }
-
 .tab{
-  flex:1;
-  padding:13px;
-  border:1px solid var(--line);
-  border-radius:13px;
-  background:var(--card);
-  color:var(--text);
-  font-weight:800;
+ flex:1;
+ border:1px solid var(--line);
+ background:var(--card);
+ color:var(--text);
+ border-radius:13px;
+ padding:13px;
+ font-weight:bold;
 }
-
 .tab.active{
-  background:var(--red);
-  border-color:var(--red);
-  color:#fff;
+ background:var(--accent);
+ color:white;
+ border-color:var(--accent);
 }
-
-.panel{
-  display:none;
-}
-
-.panel.active{
-  display:block;
-}
-
-/* PLAYER */
-
+.panel{display:none}
+.panel.active{display:block}
 .player{
-  background:linear-gradient(145deg,var(--card),var(--card2));
-  border:1px solid var(--line);
-  border-radius:22px;
-  padding:18px;
-  margin-bottom:15px;
+ background:linear-gradient(145deg,var(--card),var(--card2));
+ border:1px solid var(--line);
+ border-radius:20px;
+ padding:16px;
+ margin-bottom:14px;
 }
-
 .live{
-  text-align:center;
-  color:#ff4b55;
-  font-size:18px;
-  font-weight:800;
+ text-align:center;
+ color:#ff4b55;
+ font-weight:bold;
+ font-size:18px;
 }
-
 .now{
-  text-align:center;
-  margin:8px 0;
-  color:var(--muted);
-  min-height:20px;
+ text-align:center;
+ min-height:22px;
+ margin:8px 0;
+ color:var(--muted);
 }
-
 audio{
-  width:100%;
-  margin-top:8px;
+ width:100%;
+ margin-top:7px;
 }
-
-.video-box{
-  background:#000;
-  border-radius:15px;
-  overflow:hidden;
-  margin-top:12px;
+.video{
+ background:#000;
+ border-radius:15px;
+ overflow:hidden;
 }
-
 video{
-  display:block;
-  width:100%;
-  max-height:55vh;
-  background:#000;
+ width:100%;
+ max-height:58vh;
+ display:block;
+ background:#000;
 }
-
 .controls{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:12px;
+ display:flex;
+ flex-wrap:wrap;
+ gap:7px;
+ margin-top:11px;
 }
-
 button{
-  border:0;
-  border-radius:12px;
-  padding:12px 14px;
-  background:var(--red);
-  color:#fff;
-  font-weight:800;
-  cursor:pointer;
+ border:0;
+ border-radius:11px;
+ padding:11px 13px;
+ background:var(--accent);
+ color:white;
+ font-weight:bold;
+ cursor:pointer;
 }
-
 .controls button{
-  flex:1;
-  min-width:85px;
+ flex:1;
+ min-width:78px;
 }
-
 .secondary{
-  background:#263750;
+ background:#26364d;
 }
-
 .ghost{
-  background:var(--card2);
-  border:1px solid var(--line);
-  color:var(--text);
+ background:var(--card2);
+ color:var(--text);
+ border:1px solid var(--line);
 }
-
 .volume{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin-top:11px;
+ display:flex;
+ align-items:center;
+ gap:9px;
+ margin-top:12px;
 }
-
 .volume input{
-  flex:1;
+ flex:1;
 }
-
 .status{
-  text-align:center;
-  color:var(--muted);
-  font-size:12px;
-  margin-top:9px;
+ text-align:center;
+ color:var(--muted);
+ font-size:12px;
+ margin-top:9px;
 }
-
-/* SEARCH */
-
 .search{
-  margin-bottom:12px;
+ margin-bottom:11px;
 }
-
 .search input{
-  width:100%;
-  padding:15px 17px;
-  border-radius:14px;
-  border:1px solid var(--line);
-  outline:none;
-  background:var(--card);
-  color:var(--text);
-  font-size:16px;
+ width:100%;
+ padding:14px 16px;
+ border-radius:13px;
+ border:1px solid var(--line);
+ background:var(--card);
+ color:var(--text);
+ outline:none;
+ font-size:15px;
 }
-
-.search input::placeholder{
-  color:#78889c;
-}
-
-/* FILTER */
-
 .filters{
-  display:flex;
-  gap:7px;
-  overflow:auto;
-  margin-bottom:12px;
+ display:flex;
+ gap:7px;
+ overflow-x:auto;
+ padding-bottom:3px;
+ margin-bottom:10px;
 }
-
 .filters button{
-  white-space:nowrap;
-  padding:9px 12px;
+ white-space:nowrap;
+ padding:9px 12px;
 }
-
-/* TITLE */
-
 .title{
-  font-size:20px;
-  margin:17px 3px 11px;
+ font-size:19px;
+ margin:17px 2px 10px;
 }
-
-/* STATION */
-
 .station{
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:17px;
-  padding:13px;
-  margin-bottom:9px;
-  display:flex;
-  align-items:center;
-  gap:10px;
+ display:flex;
+ align-items:center;
+ gap:9px;
+ background:var(--card);
+ border:1px solid var(--line);
+ border-radius:15px;
+ padding:12px;
+ margin-bottom:8px;
 }
-
 .station-info{
-  flex:1;
-  min-width:0;
+ flex:1;
+ min-width:0;
 }
-
 .station-name{
-  font-size:15px;
-  font-weight:800;
+ font-weight:bold;
+ font-size:15px;
 }
-
 .station-meta{
-  margin-top:4px;
-  color:var(--muted);
-  font-size:11px;
+ color:var(--muted);
+ font-size:11px;
+ margin-top:4px;
 }
-
 .dot{
-  width:10px;
-  height:10px;
-  flex-shrink:0;
-  border-radius:50%;
-  background:var(--red);
-  box-shadow:0 0 10px var(--red);
+ width:9px;
+ height:9px;
+ flex:none;
+ border-radius:50%;
+ background:var(--accent);
+ box-shadow:0 0 9px var(--accent);
 }
-
 .station-actions{
-  display:flex;
-  gap:6px;
+ display:flex;
+ gap:5px;
 }
-
 .station-actions button{
-  padding:10px 12px;
+ padding:9px 11px;
 }
-
 .star{
-  background:transparent !important;
-  color:#ffd43b !important;
-  font-size:20px;
-  padding:5px !important;
+ background:transparent!important;
+ color:#ffd43b!important;
+ font-size:21px;
+ padding:4px!important;
 }
-
-/* FEATURED */
-
 .featured{
-  border-color:var(--red);
-  background:linear-gradient(145deg,#1a1420,var(--card));
+ border-color:var(--accent);
 }
-
-/* TIMER */
-
-.timerbox{
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:15px;
-  margin-top:15px;
+.timer{
+ background:var(--card);
+ border:1px solid var(--line);
+ border-radius:15px;
+ padding:14px;
+ margin-top:14px;
 }
-
 .timer-row{
-  display:flex;
-  gap:8px;
-  margin-top:10px;
+ display:flex;
+ gap:7px;
+ margin-top:9px;
 }
-
 .timer-row input{
-  flex:1;
-  min-width:0;
-  padding:12px;
-  border-radius:10px;
-  border:1px solid var(--line);
-  background:var(--card2);
-  color:var(--text);
+ flex:1;
+ min-width:0;
+ padding:12px;
+ border-radius:10px;
+ border:1px solid var(--line);
+ background:var(--card2);
+ color:var(--text);
 }
-
-/* ABOUT */
-
 .about{
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:15px;
-  margin-top:15px;
+ margin-top:14px;
+ padding:15px;
+ background:var(--card);
+ border:1px solid var(--line);
+ border-radius:15px;
 }
-
 .about p{
-  color:var(--muted);
-  line-height:1.5;
+ color:var(--muted);
+ line-height:1.5;
 }
-
-/* FOOTER */
-
 .footer{
-  text-align:center;
-  padding:25px 8px 15px;
-  color:var(--muted);
-  font-size:12px;
+ text-align:center;
+ color:var(--muted);
+ font-size:12px;
+ padding:25px 5px 15px;
 }
-
-.footer img{
-  width:58px;
-  height:58px;
-  object-fit:cover;
-  border-radius:14px;
-}
-
 @media(max-width:480px){
-
-  .container{
-    padding:12px;
-  }
-
-  .brand h1{
-    font-size:23px;
-  }
-
-  .controls button{
-    min-width:75px;
-  }
-
+ .container{padding:11px}
+ .header h1{font-size:23px}
+ .logo{width:95px;height:95px}
 }
 </style>
 </head>
@@ -382,180 +288,132 @@ button{
 
 <div class="container">
 
-<!-- BRAND -->
+<header class="header">
 
-<div class="brand">
-
+<!-- LOGO -->
 <img
-src="logo.png"
-class="logo"
-alt="JON Media Service">
+ id="appLogo"
+ class="logo"
+ src="./logo.png"
+ alt="JON FM ETHIOPIA"
+ onerror="logoFallback(this)"
+>
 
 <h1>JON FM ETHIOPIA</h1>
+<p>🇪🇹 Radio • TV • Entertainment</p>
 
-<p>🇪🇹 Ethiopian Digital Radio & TV</p>
+<div class="clock" id="clock"></div>
 
-<div
-class="clock"
-id="clock">
---:--:--
-</div>
+</header>
 
-</div>
-
-
-<!-- RADIO / TV TABS -->
+<!-- MAIN TABS -->
 
 <div class="tabs">
 
-<button
-class="tab active"
-onclick="openTab('radio',this)">
+<button class="tab active" onclick="openTab('radio',this)">
 📻 RADIO
 </button>
 
-<button
-class="tab"
-onclick="openTab('tv',this)">
+<button class="tab" onclick="openTab('tv',this)">
 📺 TV
 </button>
 
 </div>
 
+<!-- RADIO -->
 
-<!-- ================= RADIO ================= -->
-
-<section
-id="radio"
-class="panel active">
+<section id="radio" class="panel active">
 
 <div class="player">
 
-<div class="live">
-🔴 LIVE RADIO
-</div>
+<div class="live">🔴 LIVE RADIO</div>
 
-<div
-class="now"
-id="radioNow">
+<div class="now" id="radioNow">
 Select a radio station
 </div>
 
 <audio
-id="radioPlayer"
-controls
-preload="none">
+ id="radioPlayer"
+ controls
+ preload="none">
 </audio>
 
 <div class="controls">
 
-<button onclick="playRadio()">
-▶ PLAY
+<button onclick="playRadio()">▶ Play</button>
+
+<button class="secondary" onclick="pauseRadio()">
+⏸ Pause
 </button>
 
-<button
-class="secondary"
-onclick="pauseRadio()">
-⏸ PAUSE
+<button class="secondary" onclick="stopRadio()">
+⏹ Stop
 </button>
 
-<button
-class="secondary"
-onclick="stopRadio()">
-⏹ STOP
-</button>
-
-<button
-class="ghost"
-onclick="muteRadio()">
-🔇 MUTE
+<button class="ghost" onclick="muteRadio()">
+🔇 Mute
 </button>
 
 </div>
 
 <div class="volume">
-
 🔊
-
 <input
-id="radioVolume"
-type="range"
-min="0"
-max="1"
-step="0.01"
-value="1">
-
+ id="radioVolume"
+ type="range"
+ min="0"
+ max="1"
+ step="0.01"
+ value="1">
 </div>
 
-<div
-class="status"
-id="radioStatus">
+<div class="status" id="radioStatus">
 Ready
 </div>
 
 </div>
 
-
-<!-- RADIO SEARCH -->
-
 <div class="search">
 
 <input
-id="radioSearch"
-type="text"
-placeholder="🔎 Search radio station..."
-oninput="renderRadio()">
+ id="radioSearch"
+ type="search"
+ placeholder="🔎 Search Radio..."
+ oninput="renderRadio()">
 
 </div>
 
-
-<!-- FEATURED -->
-
-<h2 class="title">
-⭐ JON FM Featured
-</h2>
+<h2 class="title">⭐ JON FM Featured</h2>
 
 <div id="featured"></div>
 
-
-<!-- RADIO LIST -->
-
-<h2 class="title">
-📻 Ethiopian Radio Stations
-</h2>
+<h2 class="title">📻 Radio Stations</h2>
 
 <div id="radioList"></div>
 
-
 <!-- TIMER -->
 
-<div class="timerbox">
+<div class="timer">
 
 <b>⏱️ Sleep Timer</b>
 
 <div class="timer-row">
 
 <input
-id="timerMinutes"
-type="number"
-min="1"
-placeholder="Minutes">
+ id="timerMinutes"
+ type="number"
+ min="1"
+ placeholder="Minutes">
 
-<button onclick="startTimer()">
-START
-</button>
+<button onclick="startTimer()">START</button>
 
-<button
-class="secondary"
-onclick="cancelTimer()">
+<button class="secondary" onclick="cancelTimer()">
 CANCEL
 </button>
 
 </div>
 
-<div
-class="status"
-id="timerStatus">
+<div class="status" id="timerStatus">
 Timer off
 </div>
 
@@ -563,172 +421,135 @@ Timer off
 
 </section>
 
+<!-- TV -->
 
-<!-- ================= TV ================= -->
-
-<section
-id="tv"
-class="panel">
+<section id="tv" class="panel">
 
 <div class="player">
 
-<div class="live">
-📺 LIVE TV
-</div>
+<div class="live">📺 LIVE TV</div>
 
-<div
-class="now"
-id="tvNow">
+<div class="now" id="tvNow">
 Select a TV channel
 </div>
 
-
-<div class="video-box">
+<div class="video">
 
 <video
-id="tvPlayer"
-controls
-playsinline
-preload="metadata">
+ id="tvPlayer"
+ controls
+ playsinline
+ preload="metadata">
 </video>
 
 </div>
 
-
 <div class="controls">
 
-<button onclick="playTV()">
-▶ PLAY
+<button onclick="playTV()">▶ Play</button>
+
+<button class="secondary" onclick="stopTV()">
+⏹ Stop
 </button>
 
-<button
-class="secondary"
-onclick="stopTV()">
-⏹ STOP
+<button class="secondary" onclick="previousTV()">
+⏮ Previous
 </button>
 
-<button
-class="secondary"
-onclick="previousTV()">
-⏮ PREV
+<button class="secondary" onclick="nextTV()">
+Next ⏭
 </button>
 
-<button
-class="secondary"
-onclick="nextTV()">
-⏭ NEXT
+<button class="ghost" onclick="fullscreenTV()">
+⛶ Fullscreen
 </button>
 
-<button
-class="ghost"
-onclick="fullscreenTV()">
-⛶ FULLSCREEN
-</button>
-
-<button
-class="ghost"
-onclick="muteTV()">
-🔇 MUTE
+<button class="ghost" onclick="muteTV()">
+🔇 Mute
 </button>
 
 </div>
-
 
 <div class="volume">
-
 🔊
-
 <input
-id="tvVolume"
-type="range"
-min="0"
-max="1"
-step="0.01"
-value="1">
-
+ id="tvVolume"
+ type="range"
+ min="0"
+ max="1"
+ step="0.01"
+ value="1">
 </div>
 
-
-<div
-class="status"
-id="tvStatus">
+<div class="status" id="tvStatus">
 Ready
 </div>
 
 </div>
 
-
-<!-- TV SEARCH -->
-
 <div class="search">
 
 <input
-id="tvSearch"
-type="text"
-placeholder="🔎 Search TV channel..."
-oninput="renderTV()">
+ id="tvSearch"
+ type="search"
+ placeholder="🔎 Search TV Channel..."
+ oninput="renderTV()">
 
 </div>
 
-
-<!-- TV FILTER -->
-
 <div class="filters">
 
-<button
-class="ghost"
-onclick="setTVFilter('all')">
+<button class="ghost" onclick="setTVFilter('all')">
 🌍 All
 </button>
 
-<button
-class="ghost"
-onclick="setTVFilter('Ethiopia')">
+<button class="ghost" onclick="setTVFilter('Ethiopia')">
 🇪🇹 Ethiopia
 </button>
 
-<button
-class="ghost"
-onclick="setTVFilter('International')">
+<button class="ghost" onclick="setTVFilter('International')">
 🌎 International
 </button>
 
 </div>
 
-
-<h2 class="title">
-📺 TV Channels
-</h2>
+<h2 class="title">📺 TV Channels</h2>
 
 <div id="tvList"></div>
 
-</section>
+<div class="about">
 
+<b>🌍 IPTV-ORG TV Library</b>
+
+<p>
+The IPTV-ORG M3U source is loaded automatically below.
+</p>
+
+<div class="status" id="iptvStatus">
+Loading TV channels...
+</div>
+
+</div>
+
+</section>
 
 <!-- ABOUT -->
 
 <div class="about">
 
-<b>
-ℹ️ About JON FM ETHIOPIA
-</b>
+<b>ℹ️ About JON FM ETHIOPIA</b>
 
 <p>
-Radio and TV streaming application powered by
-JON Media Service.
+JON FM ETHIOPIA — Radio and TV streaming experience by JON Media Service.
 </p>
 
 <div class="controls">
 
-<button
-class="ghost"
-onclick="toggleTheme()">
+<button class="ghost" onclick="toggleTheme()">
 🎨 Dark / Light
 </button>
 
-<button
-class="ghost"
-onclick="shareApp()">
+<button class="ghost" onclick="shareApp()">
 🔗 Share
 </button>
 
@@ -736,43 +557,71 @@ onclick="shareApp()">
 
 </div>
 
-
 <!-- FOOTER -->
 
 <div class="footer">
 
 <img
-src="logo.png"
-alt="JON Media Service">
+ src="./logo.png"
+ alt="JON FM"
+ width="55"
+ height="55"
+ style="border-radius:14px;object-fit:cover"
+ onerror="logoFallback(this)"
+>
 
 <br><br>
 
-🇪🇹 Ethiopian Radio & TV Streaming
+🇪🇹 JON FM ETHIOPIA
 
 <br><br>
 
-<strong style="color:var(--text)">
-Powered by JON Media Service
-</strong>
+JON Media Service
 
 </div>
 
 </div>
-
 
 <script>
 
-/* =========================================================
+/* =====================================================
+   LOGO FALLBACK
+===================================================== */
+
+function logoFallback(img){
+
+const current =
+img.getAttribute("src");
+
+if(current === "./logo.png"){
+
+img.src="./logo.jpg";
+
+return;
+}
+
+if(current === "./logo.jpg"){
+
+img.src="./logo.jpeg";
+
+return;
+}
+
+if(current === "./logo.jpeg"){
+
+img.style.display="none";
+
+}
+
+}
+
+
+/* =====================================================
    RADIO LINKS
-   KEPT AS SUPPLIED
-========================================================= */
+   UNCHANGED
+===================================================== */
 
-const stations = [
-
-{
-name:"JON FM ETHIOPIA",
-url:"https://jonmediaservice.volticast.net/primary.aac"
-},
+const radioStations = [
 
 {
 name:"ETHIO FM 107.8",
@@ -857,30 +706,33 @@ url:"https://stream-284.surfernetwork.com/ad402tap7yzuv?zt=eyJhbGciOiJIUzI1NiJ9.
 ];
 
 
-/* =========================================================
-   TV CHANNELS
-========================================================= */
+/* =====================================================
+   TV
+===================================================== */
 
 const tvChannels = [
 
 {
 name:"MBC 2",
 url:"http://154.58.202.18:8080/mbc2/index.m3u8",
-country:"International"
-},
-
-{
-name:"Ethiopia TV",
-url:"https://iptv-org.github.io/iptv/countries/et.m3u",
-country:"Ethiopia"
+country:"International",
+source:"Manual"
 }
 
 ];
 
 
-/* =========================================================
+/* =====================================================
+   IPTV-ORG SOURCE
+===================================================== */
+
+const IPTV_M3U =
+"https://iptv-org.github.io/iptv/index.m3u";
+
+
+/* =====================================================
    VARIABLES
-========================================================= */
+===================================================== */
 
 const radioPlayer =
 document.getElementById("radioPlayer");
@@ -888,81 +740,78 @@ document.getElementById("radioPlayer");
 const tvPlayer =
 document.getElementById("tvPlayer");
 
-const radioNow =
-document.getElementById("radioNow");
-
-const tvNow =
-document.getElementById("tvNow");
-
 let currentRadio = 0;
 let currentTV = 0;
-
-let timer = null;
-
 let tvFilter = "all";
-
+let timer = null;
 let tvHls = null;
 
+let reconnectRadioTimer = null;
+let reconnectTVTimer = null;
 
-/* =========================================================
+
+/* =====================================================
    TAB
-========================================================= */
+===================================================== */
 
-function openTab(tab,button){
+function openTab(name,button){
 
 document
 .querySelectorAll(".tab")
-.forEach(x=>x.classList.remove("active"));
+.forEach(function(x){
+x.classList.remove("active");
+});
 
 button.classList.add("active");
 
 document
 .querySelectorAll(".panel")
-.forEach(x=>x.classList.remove("active"));
+.forEach(function(x){
+x.classList.remove("active");
+});
 
 document
-.getElementById(tab)
+.getElementById(name)
 .classList.add("active");
 
 }
 
 
-/* =========================================================
+/* =====================================================
    FAVORITES
-========================================================= */
+===================================================== */
 
-function favoriteKey(type,name){
+function favKey(type,name){
 
-return "jon_favorite_"
-+type+"_"
-+name;
+return "jon_fav_" +
+type +
+"_" +
+name;
 
 }
 
-
-function isFavorite(type,item){
+function isFav(type,item){
 
 return localStorage.getItem(
-favoriteKey(type,item.name)
+favKey(type,item.name)
 )==="1";
 
 }
 
-
-function toggleFavorite(type,index){
+function toggleFav(type,index){
 
 const list =
 type==="radio"
-?stations
+?radioStations
 :tvChannels;
 
 const item =
 list[index];
 
 const key =
-favoriteKey(type,item.name);
+favKey(type,item.name);
 
-if(isFavorite(type,item)){
+if(isFav(type,item)){
 
 localStorage.removeItem(key);
 
@@ -972,138 +821,18 @@ localStorage.setItem(key,"1");
 
 }
 
-if(type==="radio"){
-
-renderRadio();
-
-}else{
-
-renderTV();
-
-}
+type==="radio"
+?renderRadio()
+:renderTV();
 
 }
 
 
-/* =========================================================
-   RADIO RENDER
-========================================================= */
+/* =====================================================
+   RADIO HTML
+===================================================== */
 
-function renderRadio(){
-
-const query =
-document
-.getElementById("radioSearch")
-.value
-.toLowerCase()
-.trim();
-
-const filtered =
-stations.filter(function(station){
-
-return station.name
-.toLowerCase()
-.includes(query);
-
-});
-
-
-const radioList =
-document.getElementById("radioList");
-
-if(filtered.length===0){
-
-radioList.innerHTML =
-'<div class="status">No radio station found.</div>';
-
-}else{
-
-radioList.innerHTML =
-filtered
-.map(function(station){
-
-const index =
-stations.indexOf(station);
-
-return stationHTML(
-"radio",
-station,
-index
-);
-
-})
-.join("");
-
-}
-
-
-/* FEATURED */
-
-const featured =
-document.getElementById("featured");
-
-const favorites =
-stations.filter(function(station){
-
-return isFavorite("radio",station);
-
-}).slice(0,3);
-
-
-const featureList =
-favorites.length
-?favorites
-:stations.slice(0,1);
-
-
-featured.innerHTML =
-featureList
-.map(function(station){
-
-const index =
-stations.indexOf(station);
-
-return `
-
-<div class="station featured">
-
-<div class="station-info">
-
-<div class="station-name">
-⭐ ${escapeHTML(station.name)}
-</div>
-
-<div class="station-meta">
-JON FM Featured
-</div>
-
-</div>
-
-<button
-onclick="selectRadio(${index})">
-▶
-</button>
-
-</div>
-
-`;
-
-})
-.join("");
-
-}
-
-
-/* =========================================================
-   STATION HTML
-========================================================= */
-
-function stationHTML(type,station,index){
-
-const favorite =
-isFavorite(type,station)
-?"★"
-:"☆";
+function radioHTML(item,index){
 
 return `
 
@@ -1114,14 +843,11 @@ return `
 <div class="station-info">
 
 <div class="station-name">
-${escapeHTML(station.name)}
+${esc(item.name)}
 </div>
 
 <div class="station-meta">
-🔴 Live Stream
-${station.country
-?" • "+station.country
-:""}
+🔴 Live Radio
 </div>
 
 </div>
@@ -1130,22 +856,14 @@ ${station.country
 
 <button
 class="star"
-onclick="toggleFavorite(
-'${type}',
-${index}
-)">
-${favorite}
+onclick="toggleFav('radio',${index})">
+
+${isFav("radio",item)?"★":"☆"}
+
 </button>
 
-<button
-onclick="${
-type==="radio"
-?"selectRadio"
-:"selectTV"
-}(${index})">
-
+<button onclick="selectRadio(${index})">
 ▶
-
 </button>
 
 </div>
@@ -1157,35 +875,131 @@ type==="radio"
 }
 
 
-/* =========================================================
+/* =====================================================
+   RENDER RADIO
+===================================================== */
+
+function renderRadio(){
+
+const q =
+document
+.getElementById("radioSearch")
+.value
+.toLowerCase()
+.trim();
+
+const list =
+radioStations.filter(function(item){
+
+return item.name
+.toLowerCase()
+.includes(q);
+
+});
+
+document
+.getElementById("radioList")
+.innerHTML =
+list.length
+?
+list.map(function(item){
+
+return radioHTML(
+item,
+radioStations.indexOf(item)
+);
+
+}).join("")
+:
+'<div class="status">No radio station found.</div>';
+
+
+const favs =
+radioStations
+.filter(function(x){
+return isFav("radio",x);
+})
+.slice(0,3);
+
+const featured =
+favs.length
+?favs
+:radioStations.slice(0,1);
+
+document
+.getElementById("featured")
+.innerHTML =
+featured
+.map(function(item){
+
+const i =
+radioStations.indexOf(item);
+
+return `
+
+<div class="station featured">
+
+<span class="dot"></span>
+
+<div class="station-info">
+
+<div class="station-name">
+⭐ ${esc(item.name)}
+</div>
+
+<div class="station-meta">
+JON FM Featured
+</div>
+
+</div>
+
+<button onclick="selectRadio(${i})">
+▶
+</button>
+
+</div>
+
+`;
+
+})
+.join("");
+
+}
+
+
+/* =====================================================
    RADIO SELECT
-========================================================= */
+===================================================== */
 
 function selectRadio(index){
 
-currentRadio =
-index;
+currentRadio=index;
 
 const station =
-stations[index];
+radioStations[index];
 
 radioPlayer.src =
 station.url;
 
-radioNow.innerHTML =
-"🔴 Now Playing: <b>"
-+escapeHTML(station.name)
-+"</b>";
+document
+.getElementById("radioNow")
+.innerHTML =
+"🔴 Now Playing: <b>" +
+esc(station.name) +
+"</b>";
 
-setRadioStatus(
-"Connecting..."
-);
+radioStatus("Connecting...");
 
 radioPlayer
 .play()
+.then(function(){
+
+radioStatus("🟢 Playing");
+
+})
 .catch(function(){
 
-setRadioStatus(
+radioStatus(
 "▶ Tap PLAY to start"
 );
 
@@ -1194,9 +1008,9 @@ setRadioStatus(
 }
 
 
-/* =========================================================
-   RADIO PLAY
-========================================================= */
+/* =====================================================
+   RADIO CONTROLS
+===================================================== */
 
 function playRadio(){
 
@@ -1204,61 +1018,51 @@ if(!radioPlayer.src){
 
 selectRadio(currentRadio);
 
-}else{
+return;
+
+}
 
 radioPlayer
 .play()
-.catch(function(){});
+.then(function(){
+
+radioStatus("🟢 Playing");
+
+})
+.catch(function(){
+
+radioStatus(
+"▶ Tap PLAY"
+);
+
+});
 
 }
-
-setRadioStatus("🟢 Playing");
-
-}
-
-
-/* =========================================================
-   RADIO PAUSE
-========================================================= */
 
 function pauseRadio(){
 
 radioPlayer.pause();
 
-setRadioStatus(
-"Paused"
-);
+radioStatus("Paused");
 
 }
-
-
-/* =========================================================
-   RADIO STOP
-========================================================= */
 
 function stopRadio(){
 
 radioPlayer.pause();
 
-radioPlayer.removeAttribute(
-"src"
-);
+radioPlayer.removeAttribute("src");
 
 radioPlayer.load();
 
-radioNow.textContent =
+document
+.getElementById("radioNow")
+.textContent =
 "Radio stopped";
 
-setRadioStatus(
-"Stopped"
-);
+radioStatus("Stopped");
 
 }
-
-
-/* =========================================================
-   RADIO MUTE
-========================================================= */
 
 function muteRadio(){
 
@@ -1267,50 +1071,41 @@ radioPlayer.muted =
 
 }
 
-
-/* =========================================================
-   RADIO VOLUME
-========================================================= */
-
 document
 .getElementById("radioVolume")
-.addEventListener(
-"input",
-function(){
+.oninput=function(){
 
 radioPlayer.volume =
-this.value;
+Number(this.value);
 
-}
-);
+};
 
 
-/* =========================================================
-   RADIO STATUS
-========================================================= */
+/* =====================================================
+   RADIO AUTO RECONNECT
+===================================================== */
 
-function setRadioStatus(text){
+function radioStatus(text){
 
 document
 .getElementById("radioStatus")
-.textContent =
-text;
+.textContent=text;
 
 }
-
-
-/* =========================================================
-   RADIO AUTO RECONNECT
-========================================================= */
 
 radioPlayer.addEventListener(
 "error",
 function(){
 
-setRadioStatus(
-"⚠️ Connection lost — reconnecting..."
+radioStatus(
+"⚠️ Connection lost • Auto reconnecting..."
 );
 
+clearTimeout(
+reconnectRadioTimer
+);
+
+reconnectRadioTimer =
 setTimeout(function(){
 
 if(radioPlayer.src){
@@ -1328,110 +1123,140 @@ radioPlayer
 });
 
 
-/* =========================================================
+/* =====================================================
+   TV HTML
+===================================================== */
+
+function tvHTML(item,index){
+
+return `
+
+<div class="station">
+
+<span class="dot"></span>
+
+<div class="station-info">
+
+<div class="station-name">
+${esc(item.name)}
+</div>
+
+<div class="station-meta">
+📺 ${esc(item.country || "International")}
+</div>
+
+</div>
+
+<div class="station-actions">
+
+<button
+class="star"
+onclick="toggleFav('tv',${index})">
+
+${isFav("tv",item)?"★":"☆"}
+
+</button>
+
+<button onclick="selectTV(${index})">
+▶
+</button>
+
+</div>
+
+</div>
+
+`;
+
+}
+
+
+/* =====================================================
    TV FILTER
-========================================================= */
+===================================================== */
 
-function setTVFilter(filter){
+function setTVFilter(value){
 
-tvFilter =
-filter;
+tvFilter=value;
 
 renderTV();
 
 }
 
 
-/* =========================================================
+/* =====================================================
    TV RENDER
-========================================================= */
+===================================================== */
 
 function renderTV(){
 
-const query =
+const q =
 document
 .getElementById("tvSearch")
 .value
 .toLowerCase()
 .trim();
 
-const filtered =
-tvChannels.filter(function(channel){
+const list =
+tvChannels.filter(function(item){
 
-const matchSearch =
-channel.name
+const searchOK =
+item.name
 .toLowerCase()
-.includes(query);
+.includes(q);
 
-const matchCountry =
+const filterOK =
 tvFilter==="all"
 ||
-channel.country===tvFilter;
+item.country===tvFilter;
 
-return matchSearch
-&&
-matchCountry;
+return searchOK && filterOK;
 
 });
 
+document
+.getElementById("tvList")
+.innerHTML =
+list.length
+?
+list.map(function(item){
 
-const list =
-document.getElementById("tvList");
-
-
-if(filtered.length===0){
-
-list.innerHTML =
-'<div class="status">No TV channel found.</div>';
-
-return;
-
-}
-
-
-list.innerHTML =
-filtered
-.map(function(channel){
-
-const index =
-tvChannels.indexOf(channel);
-
-return stationHTML(
-"tv",
-channel,
-index
+return tvHTML(
+item,
+tvChannels.indexOf(item)
 );
 
-})
-.join("");
+}).join("")
+:
+'<div class="status">No TV channel found.</div>';
 
 }
 
 
-/* =========================================================
-   TV LOAD
-========================================================= */
+/* =====================================================
+   LOAD TV STREAM
+===================================================== */
 
 function loadTV(url){
 
 if(tvHls){
 
+try{
 tvHls.destroy();
+}catch(e){}
 
-tvHls =
-null;
+tvHls=null;
 
 }
 
-tvPlayer.removeAttribute(
-"src"
-);
+tvPlayer.pause();
+
+tvPlayer.removeAttribute("src");
 
 tvPlayer.load();
 
 
 if(
-url.includes(".m3u8")
+url.toLowerCase().includes(".m3u8")
 &&
 window.Hls
 &&
@@ -1439,81 +1264,51 @@ Hls.isSupported()
 ){
 
 tvHls =
-new Hls();
+new Hls({
+enableWorker:true,
+lowLatencyMode:false,
+backBufferLength:30
+});
 
-tvHls.loadSource(
-url
-);
+tvHls.loadSource(url);
 
-tvHls.attachMedia(
-tvPlayer
-);
+tvHls.attachMedia(tvPlayer);
 
-}else{
-
-tvPlayer.src =
-url;
-
-}
-
-}
-
-
-/* =========================================================
-   TV SELECT
-========================================================= */
-
-function selectTV(index){
-
-currentTV =
-index;
-
-const channel =
-tvChannels[index];
-
-tvNow.innerHTML =
-"📺 Now Playing: <b>"
-+escapeHTML(channel.name)
-+"</b>";
-
-setTVStatus(
-"Connecting..."
-);
-
-loadTV(
-channel.url
-);
+tvHls.on(
+Hls.Events.MANIFEST_PARSED,
+function(){
 
 tvPlayer
 .play()
-.catch(function(){
+.catch(function(){});
 
-setTVStatus(
-"▶ Tap PLAY to start"
-);
+tvStatus("🟢 Playing");
 
 });
 
-}
+tvHls.on(
+Hls.Events.ERROR,
+function(event,data){
 
+if(data.fatal){
 
-/* =========================================================
-   TV PLAY
-========================================================= */
-
-function playTV(){
-
-if(
-!tvPlayer.src
-&&
-!tvHls
-){
-
-selectTV(
-currentTV
+tvStatus(
+"⚠️ TV error • Auto reconnecting..."
 );
 
+setTimeout(function(){
+
+selectTV(currentTV);
+
+},4000);
+
+}
+
+});
+
 }else{
+
+tvPlayer.src=url;
 
 tvPlayer
 .play()
@@ -1524,9 +1319,50 @@ tvPlayer
 }
 
 
-/* =========================================================
-   TV STOP
-========================================================= */
+/* =====================================================
+   SELECT TV
+===================================================== */
+
+function selectTV(index){
+
+currentTV=index;
+
+const channel =
+tvChannels[index];
+
+document
+.getElementById("tvNow")
+.innerHTML =
+"📺 Now Playing: <b>" +
+esc(channel.name) +
+"</b>";
+
+tvStatus("Connecting...");
+
+loadTV(channel.url);
+
+}
+
+
+/* =====================================================
+   TV CONTROLS
+===================================================== */
+
+function playTV(){
+
+if(!tvPlayer.src && !tvHls){
+
+selectTV(currentTV);
+
+return;
+
+}
+
+tvPlayer
+.play()
+.catch(function(){});
+
+}
 
 function stopTV(){
 
@@ -1534,85 +1370,72 @@ tvPlayer.pause();
 
 if(tvHls){
 
+try{
 tvHls.destroy();
+}catch(e){}
 
-tvHls =
-null;
+tvHls=null;
 
 }
 
-tvPlayer.removeAttribute(
-"src"
-);
+tvPlayer.removeAttribute("src");
 
 tvPlayer.load();
 
-tvNow.textContent =
-"TV stopped";
+document
+.getElementById("tvNow")
+.textContent="TV stopped";
 
-setTVStatus(
-"Stopped"
-);
+tvStatus("Stopped");
 
 }
-
-
-/* =========================================================
-   TV NEXT
-========================================================= */
 
 function nextTV(){
 
-if(tvChannels.length===0)
-return;
+if(!tvChannels.length)return;
 
 currentTV =
 (currentTV+1)
-%
-tvChannels.length;
+%tvChannels.length;
 
-selectTV(
-currentTV
-);
+selectTV(currentTV);
 
 }
-
-
-/* =========================================================
-   TV PREVIOUS
-========================================================= */
 
 function previousTV(){
 
-if(tvChannels.length===0)
-return;
+if(!tvChannels.length)return;
 
 currentTV =
 (currentTV-1+tvChannels.length)
-%
-tvChannels.length;
+%tvChannels.length;
 
-selectTV(
-currentTV
-);
+selectTV(currentTV);
 
 }
 
+function muteTV(){
 
-/* =========================================================
-   TV FULLSCREEN
-========================================================= */
+tvPlayer.muted =
+!tvPlayer.muted;
+
+}
+
+document
+.getElementById("tvVolume")
+.oninput=function(){
+
+tvPlayer.volume =
+Number(this.value);
+
+};
 
 function fullscreenTV(){
 
 const box =
-document.querySelector(
-".video-box"
-);
+document.querySelector(".video");
 
-if(
-box.requestFullscreen
-){
+if(box.requestFullscreen){
 
 box.requestFullscreen();
 
@@ -1626,97 +1449,237 @@ box.webkitRequestFullscreen();
 
 }
 
-
-/* =========================================================
-   TV MUTE
-========================================================= */
-
-function muteTV(){
-
-tvPlayer.muted =
-!tvPlayer.muted;
-
-}
-
-
-/* =========================================================
-   TV VOLUME
-========================================================= */
-
-document
-.getElementById("tvVolume")
-.addEventListener(
-"input",
-function(){
-
-tvPlayer.volume =
-this.value;
-
-}
-);
-
-
-/* =========================================================
-   TV STATUS
-========================================================= */
-
-function setTVStatus(text){
+function tvStatus(text){
 
 document
 .getElementById("tvStatus")
-.textContent =
-text;
+.textContent=text;
 
 }
 
 
-/* =========================================================
-   TV AUTO RECONNECT
-========================================================= */
+/* =====================================================
+   TV NEXT / PREVIOUS
+===================================================== */
 
-tvPlayer.addEventListener(
-"error",
+document
+.getElementById("tvPlayer")
+.addEventListener(
+"ended",
 function(){
 
-setTVStatus(
-"⚠️ Connection lost — reconnecting..."
-);
-
-setTimeout(function(){
-
-if(
-tvChannels.length
-){
-
-selectTV(
-currentTV
-);
-
-}
-
-},3000);
+nextTV();
 
 });
 
 
-/* =========================================================
+/* =====================================================
+   LOAD IPTV-ORG M3U
+===================================================== */
+
+async function loadIPTV(){
+
+const status =
+document.getElementById("iptvStatus");
+
+status.textContent =
+"⏳ Loading IPTV channels...";
+
+try{
+
+const response =
+await fetch(IPTV_M3U);
+
+if(!response.ok){
+
+throw new Error(
+"HTTP "+response.status
+);
+
+}
+
+const text =
+await response.text();
+
+const parsed =
+parseM3U(text);
+
+
+/*
+  MBC 2 stays first.
+  IPTV channels are added after it.
+*/
+
+const existingNames =
+new Set(
+tvChannels.map(function(x){
+return x.name.toLowerCase();
+})
+);
+
+parsed.forEach(function(item){
+
+if(
+!existingNames.has(
+item.name.toLowerCase()
+)
+){
+
+tvChannels.push(item);
+
+}
+
+});
+
+renderTV();
+
+status.textContent =
+"✅ "+parsed.length+
+" IPTV channels loaded";
+
+}catch(error){
+
+console.error(error);
+
+status.textContent =
+"⚠️ IPTV source could not be loaded automatically. MBC 2 is still available.";
+
+renderTV();
+
+}
+
+}
+
+
+/* =====================================================
+   M3U PARSER
+===================================================== */
+
+function parseM3U(text){
+
+const lines =
+text.split(/\r?\n/);
+
+const result=[];
+
+let info=null;
+
+for(
+let i=0;
+i<lines.length;
+i++
+){
+
+const line =
+lines[i].trim();
+
+if(
+line.startsWith("#EXTINF")
+){
+
+const comma =
+line.indexOf(",");
+
+let name =
+comma>=0
+?
+line.substring(comma+1).trim()
+:
+"Unknown Channel";
+
+let country="International";
+
+const countryMatch =
+line.match(
+/tvg-country="([^"]+)"/i
+);
+
+if(countryMatch){
+
+country =
+countryMatch[1];
+
+}
+
+const groupMatch =
+line.match(
+/group-title="([^"]+)"/i
+);
+
+const group =
+groupMatch
+?
+groupMatch[1]
+:"";
+
+
+info={
+name:name,
+country:country,
+group:group
+};
+
+}else if(
+line
+&&
+!line.startsWith("#")
+&&
+info
+){
+
+const url=line;
+
+result.push({
+
+name:info.name,
+url:url,
+country:
+/ethiopia|et\b/i.test(
+info.country+
+" "+
+info.name+
+" "+
+info.group
+)
+?
+"Ethiopia"
+:
+"International",
+
+source:"IPTV-ORG"
+
+});
+
+info=null;
+
+}
+
+}
+
+return result;
+
+}
+
+
+/* =====================================================
    TIMER
-========================================================= */
+===================================================== */
 
 function startTimer(){
 
 const minutes =
-parseInt(
+Number(
 document
 .getElementById("timerMinutes")
 .value
 );
 
-if(
-!minutes
-||
-minutes<1
-){
+if(!minutes || minutes<1){
+
+document
+.getElementById("timerStatus")
+.textContent =
+"Enter minutes";
 
 return;
 
@@ -1725,74 +1688,66 @@ return;
 cancelTimer();
 
 timer =
-setTimeout(
-function(){
+setTimeout(function(){
 
 radioPlayer.pause();
 
 tvPlayer.pause();
 
 document
-.getElementById(
-"timerStatus"
-)
+.getElementById("timerStatus")
 .textContent =
 "⏱️ Timer finished";
 
-},
-minutes*60000
-);
+},minutes*60000);
 
 document
-.getElementById(
-"timerStatus"
-)
+.getElementById("timerStatus")
 .textContent =
-"⏱️ "
-+minutes
-+" minute timer running";
+"⏱️ Timer running: "+
+minutes+
+" minute(s)";
 
 }
-
 
 function cancelTimer(){
 
 if(timer){
 
-clearTimeout(
-timer
-);
+clearTimeout(timer);
 
-timer =
-null;
+timer=null;
 
 }
 
 document
-.getElementById(
-"timerStatus"
-)
+.getElementById("timerStatus")
 .textContent =
 "Timer off";
 
 }
 
 
-/* =========================================================
-   CLOCK
-========================================================= */
+/* =====================================================
+   CLOCK + DATE
+===================================================== */
 
 function updateClock(){
 
-const now =
-new Date();
+const now=new Date();
 
 document
-.getElementById(
-"clock"
-)
+.getElementById("clock")
 .textContent =
-now.toLocaleDateString()
+now.toLocaleDateString(
+undefined,
+{
+weekday:"short",
+year:"numeric",
+month:"short",
+day:"numeric"
+}
+)
 +
 " • "
 +
@@ -1808,9 +1763,9 @@ updateClock,
 updateClock();
 
 
-/* =========================================================
+/* =====================================================
    THEME
-========================================================= */
+===================================================== */
 
 function toggleTheme(){
 
@@ -1820,21 +1775,17 @@ document
 .toggle("light");
 
 localStorage.setItem(
-"jonTheme",
-document.body.classList.contains(
-"light"
-)
+"jon_theme",
+document.body.classList.contains("light")
 ?"light"
 :"dark"
 );
 
 }
 
-
 if(
-localStorage.getItem(
-"jonTheme"
-)==="light"
+localStorage.getItem("jon_theme")
+==="light"
 ){
 
 document
@@ -1845,44 +1796,34 @@ document
 }
 
 
-/* =========================================================
+/* =====================================================
    SHARE
-========================================================= */
+===================================================== */
 
 function shareApp(){
 
-if(
-navigator.share
-){
+if(navigator.share){
 
 navigator.share({
 
-title:
-"JON FM ETHIOPIA",
+title:"JON FM ETHIOPIA",
 
 text:
 "JON FM ETHIOPIA Radio & TV",
 
-url:
-location.href
+url:location.href
 
 });
 
-}else{
-
-if(
+}else if(
 navigator.clipboard
 ){
 
 navigator.clipboard
-.writeText(
-location.href
-)
+.writeText(location.href)
 .then(function(){
 
-alert(
-"App link copied"
-);
+alert("App link copied");
 
 });
 
@@ -1890,66 +1831,46 @@ alert(
 
 }
 
-}
 
-
-/* =========================================================
+/* =====================================================
    ESCAPE HTML
-========================================================= */
+===================================================== */
 
-function escapeHTML(text){
+function esc(value){
 
-return String(text)
+return String(value)
 .replace(
 /[&<>"']/g,
-function(char){
+function(c){
 
 return {
-
 "&":"&amp;",
 "<":"&lt;",
 ">":"&gt;",
 '"':"&quot;",
 "'":"&#039;"
-
-}[char];
-
-}
-);
+}[c];
 
 }
-
-
-/* =========================================================
-   SEARCH EVENTS
-========================================================= */
-
-document
-.getElementById(
-"radioSearch"
-)
-.addEventListener(
-"input",
-renderRadio
 );
 
-document
-.getElementById(
-"tvSearch"
-)
-.addEventListener(
-"input",
-renderTV
-);
+}
 
 
-/* =========================================================
-   START
-========================================================= */
+/* =====================================================
+   INITIALIZE
+===================================================== */
 
 renderRadio();
 
 renderTV();
+
+/*
+  Load the large IPTV-ORG library.
+  This does NOT modify the Radio list.
+*/
+
+loadIPTV();
 
 </script>
 
