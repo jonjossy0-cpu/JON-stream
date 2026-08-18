@@ -143,21 +143,21 @@ button:active{transform:scale(.98)}
  color:#111;
 }
 
-/* RADIO + TV STACKED */
-.sections-grid{
- display:grid;
- grid-template-columns:1fr;
- gap:18px;
- align-items:start;
-}
-
-/* TV BELOW RADIO — COMPACT WIDTH */
-.sections-grid > .section:last-child{
- width:100%;
- max-width:900px;
- margin-left:auto;
- margin-right:auto;
-}
+/* RADIO / TV MODE SELECTOR */
+.mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 18px}
+.mode-switch button{min-height:54px;font-size:16px;border:1px solid var(--border);background:var(--card);color:var(--text);box-shadow:none}
+.mode-switch button.active{background:var(--red);color:#fff;border-color:var(--red);box-shadow:0 8px 22px rgba(227,27,35,.25)}
+.sections-grid{display:block}
+.radio-section,.tv-section{display:none}
+.radio-section.active,.tv-section.active{display:block}
+.time-panel{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 18px}
+.time-card{background:var(--card);border:1px solid var(--border);border-radius:17px;padding:13px;text-align:center}
+.time-card .label{font-size:12px;color:var(--muted);font-weight:800;margin-bottom:5px}
+.time-card .time{font-size:20px;font-weight:900}
+.time-card .date{font-size:11px;color:var(--muted);margin-top:4px}
+.social-box{background:var(--card);border:1px solid var(--border);border-radius:17px;padding:15px;margin:16px 0}
+.social-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.social-link{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;text-decoration:none;background:var(--card2);color:var(--text);font-weight:800;font-size:12px;border:1px solid var(--border)}
 
 .section{
  margin-top:0;
@@ -435,6 +435,9 @@ audio,video{
  .container{padding:8px}
  .sections-grid{gap:8px}
  .section-head h2{font-size:18px}
+ .mode-switch button{min-height:48px;font-size:14px}
+ .time-card .time{font-size:16px}
+ .social-grid{grid-template-columns:1fr 1fr}
  .player,.tv-player-box{padding:10px}
  .search input,.tv-search input{padding:11px;font-size:13px}
  .station,.tv-card{padding:8px;gap:5px}
@@ -458,13 +461,23 @@ audio,video{
  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
 </div>
 
+<div class="time-panel">
+ <div class="time-card"><div class="label">🇪🇹 ETHIOPIA • AFRICA/ADDIS_ABABA</div><div class="time" id="ethiopiaTime">--:--:-- --</div><div class="date" id="ethiopiaDate">--</div></div>
+ <div class="time-card"><div class="label">🌍 INTERNATIONAL • UTC</div><div class="time" id="utcTime">--:--:-- --</div><div class="date" id="utcDate">--</div></div>
+</div>
+
+<div class="mode-switch" role="tablist" aria-label="Choose Radio or TV">
+ <button id="radioModeBtn" class="active" onclick="setMode('radio')">📻 RADIO</button>
+ <button id="tvModeBtn" onclick="setMode('tv')">📺 TV</button>
+</div>
+
 <div class="brand">
  <img data-logo class="logo" alt="JON FM ETHIOPIA">
  <h1>JON FM ETHIOPIA</h1>
  <p>🇪🇹 Ethiopian Digital Radio & TV</p>
 </div>
 
-<div class="featured">
+<div class="featured radio-only">
  <div class="featured-top">
   <img data-logo class="featured-logo" alt="JON FM">
   <div>
@@ -481,7 +494,7 @@ audio,video{
 <!-- =====================================================
                      RADIO ONLY
 ===================================================== -->
-<div class="section">
+<div class="section radio-section active">
  <div class="section-head">
   <h2>📻 RADIO</h2>
  </div>
@@ -536,7 +549,7 @@ audio,video{
 <!-- =====================================================
                        TV ONLY
 ===================================================== -->
-<div class="section">
+<div class="section tv-section">
  <div class="section-head">
   <h2>📺 TV</h2>
  </div>
@@ -578,6 +591,16 @@ audio,video{
  <div id="tvChannels"></div>
 </div>
 
+</div>
+
+<div class="social-box">
+ <div class="box-title">📱 JON SOCIAL MEDIA</div>
+ <div class="social-grid">
+  <a class="social-link" href="https://www.instagram.com/jon_social_media_management?igsh=aHB0bmRpNGJlNGx1" target="_blank" rel="noopener">📸 Instagram</a>
+  <a class="social-link" href="https://www.facebook.com/share/1BprEbcqjP/" target="_blank" rel="noopener">📘 Facebook</a>
+  <a class="social-link" href="https://www.linkedin.com/in/jon-social-media-service-0865073b8?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" rel="noopener">💼 LinkedIn</a>
+  <a class="social-link" href="https://t.me/jon_social_media_management" target="_blank" rel="noopener">✈️ Telegram</a>
+ </div>
 </div>
 
 <div class="footer">
@@ -920,27 +943,49 @@ function cancelTimer(){
 /* =====================================================
                           CLOCK
 ===================================================== */
+function gregorianToEthiopian(date){
+ const y=date.getUTCFullYear();
+ const startThisYear=Date.UTC(y,8,11);
+ const startYear=date.getTime()>=startThisYear?y:y-1;
+ const start=Date.UTC(startYear,8,11);
+ const diff=Math.floor((Date.UTC(y,date.getUTCMonth(),date.getUTCDate())-start)/86400000);
+ const ethYear=startYear-7;
+ const ethMonth=Math.floor(diff/30)+1;
+ const ethDay=(diff%30)+1;
+ const months=["መስከረም","ጥቅምት","ኅዳር","ታኅሣሥ","ጥር","የካቲት","መጋቢት","ሚያዝያ","ግንቦት","ሰኔ","ሐምሌ","ነሐሴ","ጳጉሜን"];
+ return `${ethYear} ${months[ethMonth-1]} ${ethDay}`;
+}
+
 function updateClock(){
  const now=new Date();
-
- const date=now.toLocaleDateString(undefined,{
-  weekday:"short",
-  year:"numeric",
-  month:"short",
-  day:"numeric"
- });
-
- const time=now.toLocaleTimeString(undefined,{
-  hour:"2-digit",
-  minute:"2-digit",
-  second:"2-digit"
- });
-
- document.getElementById("clock").innerHTML="🕐 "+time+" • "+date;
+ const ethTime=now.toLocaleTimeString("en-US",{timeZone:"Africa/Addis_Ababa",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true});
+ const ethUTCDate=new Date(now.toLocaleString("en-US",{timeZone:"Africa/Addis_Ababa"}));
+ const ethDate="🇪🇹 "+gregorianToEthiopian(new Date(Date.UTC(ethUTCDate.getFullYear(),ethUTCDate.getMonth(),ethUTCDate.getDate())));
+ const utcTime=now.toLocaleTimeString("en-US",{timeZone:"UTC",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true});
+ const utcDate=now.toLocaleDateString("en-US",{timeZone:"UTC",weekday:"short",year:"numeric",month:"short",day:"numeric"});
+ document.getElementById("ethiopiaTime").textContent=ethTime;
+ document.getElementById("ethiopiaDate").textContent=ethDate;
+ document.getElementById("utcTime").textContent=utcTime;
+ document.getElementById("utcDate").textContent=utcDate;
+ document.getElementById("clock").innerHTML=ethTime;
 }
 
 setInterval(updateClock,1000);
 updateClock();
+
+/* =====================================================
+                     RADIO / TV MODE
+       🔒 RADIO FUNCTIONALITY IS NOT REMOVED
+===================================================== */
+let currentMode=localStorage.getItem("jonMode")||"radio";
+function setMode(mode){
+ currentMode=mode; localStorage.setItem("jonMode",mode);
+ document.querySelector(".radio-section").classList.toggle("active",mode==="radio");
+ document.querySelector(".tv-section").classList.toggle("active",mode==="tv");
+ const featured=document.querySelector(".featured.radio-only"); if(featured)featured.style.display=mode==="radio"?"block":"none";
+ document.getElementById("radioModeBtn").classList.toggle("active",mode==="radio");
+ document.getElementById("tvModeBtn").classList.toggle("active",mode==="tv");
+}
 
 /* =====================================================
                          THEME
@@ -966,8 +1011,10 @@ function toggleTheme(){
                     TV PLAYLIST
        🔒 RADIO HAS NO CONNECTION TO THIS
 ===================================================== */
-const IPTV_URL="https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8";
-const IPTV_HTTPS_URL="https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8";
+const IPTV_URLS=[
+ "https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8",
+ "https://iptv-org.github.io/iptv/index.m3u"
+];
 
 let tvChannels=[];
 let filteredTV=[];
@@ -994,61 +1041,15 @@ async function fetchPlaylist(url){
 
 /* LOAD TV */
 async function loadTV(){
- const status=document.getElementById("tvStatus");
- status.innerHTML="🔄 Connecting to TV playlist...";
-
- let text=null;
-
+ const status=document.getElementById("tvStatus"); status.innerHTML="🔄 Connecting to TV playlists...";
+ const texts=[];
+ for(const url of IPTV_URLS){try{const text=await fetchPlaylist(url);if(text)texts.push(text)}catch(error){console.warn("TV playlist failed:",url,error)}}
+ if(!texts.length){status.innerHTML="⚠️ TV playlists could not be loaded";document.getElementById("tvChannels").innerHTML=`<div class="empty">TV playlist could not be loaded.<br><br>Check internet connection and try again.<br><br><button onclick="loadTV()">🔄 RETRY</button></div>`;return}
  try{
-  text=await fetchPlaylist(IPTV_URL);
- }catch(error){
-  console.warn("HTTP playlist failed. Trying HTTPS...",error);
- }
-
- if(!text){
-  try{
-   text=await fetchPlaylist(IPTV_HTTPS_URL);
-  }catch(error){
-   console.error("HTTPS playlist failed",error);
-  }
- }
-
- if(!text){
-  status.innerHTML="⚠️ TV playlist could not be loaded";
-
-  document.getElementById("tvChannels").innerHTML=`
-   <div class="empty">
-    TV playlist could not be loaded.<br><br>
-    Check internet connection and try again.<br><br>
-    <button onclick="loadTV()">🔄 RETRY</button>
-   </div>
-  `;
-  return;
- }
-
- try{
-  tvChannels=parseM3U(text);
-
-  const seen=new Set();
-
-  tvChannels=tvChannels.filter(channel=>{
-   if(!channel.url)return false;
-   if(seen.has(channel.url))return false;
-   seen.add(channel.url);
-   return true;
-  });
-
-  filteredTV=tvChannels;
-
-  buildCountryFilter();
-
-  status.innerHTML="📺 "+tvChannels.length+" TV channels available";
-
-  renderTV(filteredTV);
- }catch(error){
-  console.error(error);
-  status.innerHTML="⚠️ Playlist format error";
- }
+  const merged=[]; texts.forEach(text=>merged.push(...parseM3U(text)));
+  const seen=new Set(); tvChannels=merged.filter(channel=>{if(!channel.url)return false;const key=channel.url.trim();if(seen.has(key))return false;seen.add(key);return true});
+  filteredTV=tvChannels.slice(); buildCountryFilter(); status.innerHTML="📺 "+tvChannels.length+" TV channels loaded"; renderTV(filteredTV);
+ }catch(error){console.error(error);status.innerHTML="⚠️ Playlist format error"}
 }
 
 /* M3U PARSER */
@@ -1178,6 +1179,13 @@ function searchTVChannels(){
 
 /* TV FAVORITES */
 let tvFavorites=JSON.parse(localStorage.getItem("jonTVFavorites")||"[]");
+
+function removeFailedTVChannel(url){
+ const before=tvChannels.length;
+ tvChannels=tvChannels.filter(ch=>ch.url!==url); filteredTV=filteredTV.filter(ch=>ch.url!==url);
+ tvFavorites=tvFavorites.filter(x=>x!==url); localStorage.setItem("jonTVFavorites",JSON.stringify(tvFavorites));
+ if(tvChannels.length!==before){renderTV(filteredTV);document.getElementById("tvStatus").innerHTML="📺 "+tvChannels.length+" working/available TV channels"}
+}
 
 function toggleTVFavorite(name,url){
  if(tvFavorites.includes(url)){
@@ -1427,8 +1435,8 @@ tvPlayer.addEventListener("waiting",()=>{
 
 tvPlayer.addEventListener("error",()=>{
  if(currentTV){
-  document.getElementById("tvConnectionStatus").innerHTML="🔄 Reconnecting...";
-  reconnectTV();
+  document.getElementById("tvConnectionStatus").innerHTML="⚠️ Stream unavailable — removing channel";
+  const failedUrl=currentTV.url; removeFailedTVChannel(failedUrl); clearTimeout(tvReconnectTimer);
  }
 });
 
@@ -1460,6 +1468,7 @@ function escapeHTML(value){
 /* START */
 renderStations(stations);
 renderFavorites();
+setMode(currentMode);
 
 /* TV loads independently.
    Radio is never touched by TV playlist loading. */
