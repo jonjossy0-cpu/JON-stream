@@ -357,6 +357,10 @@ audio,video{
 
 .tv-controls button{width:100%}
 
+.advanced-media-player{margin-top:12px;padding:10px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.03)}.advanced-title{text-align:center;font-weight:800;font-size:13px;margin-bottom:9px}.advanced-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:7px}.advanced-controls button,.advanced-controls select{min-height:36px}.advanced-controls label{display:flex;align-items:center;gap:5px;font-size:12px}.advanced-controls input[type=range]{width:85px}
+
+
+
 .fullscreen{background:#263750}
 
 .tv-filter-row{
@@ -582,6 +586,19 @@ audio,video{
    <button onclick="toggleTVMute()">🔊 MUTE</button>
    <button class="fullscreen" onclick="fullscreenTV()">⛶ FULLSCREEN</button>
    <button class="stop" onclick="stopTV()">⏹ STOP</button>
+  </div>
+
+  <div class="advanced-media-player" id="advancedMediaPlayer">
+   <div class="advanced-title">🎛️ Advanced Media Player</div>
+   <div class="advanced-controls">
+    <button onclick="toggleTVPlay()" id="tvPlayPauseBtn">▶ PLAY</button>
+    <button onclick="reloadTVStream()">🔄 RELOAD</button>
+    <button onclick="pictureInPictureTV()">🖼️ PiP</button>
+    <label>🔊 <input id="tvVolume" type="range" min="0" max="1" step="0.05" value="1" oninput="setTVVolume(this.value)"></label>
+    <label>⚡ <select id="tvSpeed" onchange="setTVSpeed(this.value)">
+     <option value="1">1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option><option value="2">2x</option>
+    </select></label>
+   </div>
   </div>
 
   <div class="status" id="tvConnectionStatus">⚪ Ready</div>
@@ -1318,9 +1335,12 @@ function playTVStream(url,name,index){
    hls=new Hls({
     enableWorker:true,
     maxBufferLength:30,
+    maxMaxBufferLength:60,
     manifestLoadingMaxRetry:5,
     levelLoadingMaxRetry:5,
-    fragLoadingMaxRetry:5
+    fragLoadingMaxRetry:5,
+    enableManifestDiff: true,
+    backBufferLength:30
    });
 
    hls.loadSource(url);
@@ -1460,6 +1480,50 @@ function fullscreenTV(){
   tvPlayer.webkitRequestFullscreen();
  }
 }
+
+
+/* ADVANCED MEDIA PLAYER - TV */
+function toggleTVPlay(){
+ if(!tvPlayer.src && !hls){
+  if(currentTV) playTVStream(currentTV.url,currentTV.name,currentTVIndex);
+  return;
+ }
+ if(tvPlayer.paused){
+  tvPlayer.play().then(()=>setTVConnected()).catch(()=>{});
+ }else{
+  tvPlayer.pause();
+ }
+}
+
+function reloadTVStream(){
+ if(currentTV) playTVStream(currentTV.url,currentTV.name,currentTVIndex);
+}
+
+function setTVVolume(value){
+ tvPlayer.volume=Number(value);
+ tvPlayer.muted=Number(value)===0;
+}
+
+function setTVSpeed(value){
+ tvPlayer.playbackRate=Number(value);
+}
+
+async function pictureInPictureTV(){
+ try{
+  if(document.pictureInPictureElement){
+   await document.exitPictureInPicture();
+  }else if(document.pictureInPictureEnabled && tvPlayer.readyState>0){
+   await tvPlayer.requestPictureInPicture();
+  }
+ }catch(e){}
+}
+
+tvPlayer.addEventListener("play",()=>{
+ const b=document.getElementById("tvPlayPauseBtn"); if(b)b.textContent="⏸ PAUSE";
+});
+tvPlayer.addEventListener("pause",()=>{
+ const b=document.getElementById("tvPlayPauseBtn"); if(b)b.textContent="▶ PLAY";
+});
 
 /* TV EVENTS */
 tvPlayer.addEventListener("playing",()=>{
