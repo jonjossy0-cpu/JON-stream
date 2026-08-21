@@ -1316,7 +1316,9 @@ function playTVStream(url,name,index){
 
  document.getElementById("tvPlayerTitle").innerHTML="📺 "+escapeHTML(name);
 
- document.getElementById("tvConnectionStatus").innerHTML="🔄 Connecting...";
+ document.getElementById("tvConnectionStatus").innerHTML=/^http:\/\/154\.58\.202\.18:8080\/mbc[24]\//i.test(url)
+  ?"🔄 Connecting MBC through Chrome proxy..."
+  :"🔄 Connecting...";
 
  // All TV channels use the Chrome-compatible TV player.
  // NovaStream embed channels use the embedded Chrome web player; HLS/M3U8 channels use HLS.js/HTML5 video.
@@ -1359,6 +1361,9 @@ function playTVStream(url,name,index){
     document.getElementById("tvConnectionStatus").innerHTML="▶ Tap PLAY";
    });
   }else if(window.Hls && Hls.isSupported()){
+   const isMBCStream=/^http:\/\/154\.58\.202\.18:8080\/mbc[24]\//i.test(url);
+   const proxyURL=(target)=>"https://corsproxy.io/?url="+encodeURIComponent(target);
+
    hls=new Hls({
     enableWorker:true,
     maxBufferLength:30,
@@ -1367,10 +1372,14 @@ function playTVStream(url,name,index){
     levelLoadingMaxRetry:5,
     fragLoadingMaxRetry:5,
     enableManifestDiff: true,
-    backBufferLength:30
+    backBufferLength:30,
+    xhrSetup:isMBCStream?function(xhr,requestURL){
+     xhr.open("GET",proxyURL(requestURL),true);
+    }:undefined
    });
 
-   hls.loadSource(url);
+   // MBC 2/4: load the HTTP manifest through HTTPS proxy on GitHub Pages.
+   hls.loadSource(isMBCStream ? proxyURL(url) : url);
    hls.attachMedia(tvPlayer);
 
    hls.on(Hls.Events.MANIFEST_PARSED,()=>{
