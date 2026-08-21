@@ -574,6 +574,9 @@ audio,video{
  <div class="tv-player-box" id="tvPlayerBox">
   <div class="tv-player-title" id="tvPlayerTitle">📺 TV</div>
 
+  <div id="tvPlayerFrame" style="display:none;width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;">
+   <iframe id="tvEmbedPlayer" title="TV Player" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen style="width:100%;height:100%;border:0;"></iframe>
+  </div>
   <video id="tvPlayer" controls playsinline preload="metadata"></video>
 
   <div class="quality" id="videoQuality">
@@ -1029,6 +1032,10 @@ function toggleTheme(){
        🔒 RADIO HAS NO CONNECTION TO THIS
 ===================================================== */
 const USER_TV_CHANNELS=[
+  {name:"ETV News",logo:"",country:"Ethiopia",group:"News",id:"",url:"https://embed.novastream.et/tHlUSfHIpUTkWNT_MgBwRvSy"},
+  {name:"ETV Kids",logo:"",country:"Ethiopia",group:"Kids",id:"",url:"https://embed.novastream.et/MuddbsIVQPsCfAI-ferHWueA"},
+  {name:"ETV Language",logo:"",country:"Ethiopia",group:"General",id:"",url:"https://embed.novastream.et/wPoLdAUXdMNLuunhOqcDzBjE"},
+  {name:"Fana TV",logo:"",country:"Ethiopia",group:"General",id:"",url:"https://embed.novastream.et/HbWSlLJTmbeal-FeBOYjRKac"},
  {name:"BBC News",logo:"",country:"International",group:"News",id:"",url:"https://vs-hls-push-ww-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_news_channel_hd/pc_hd_abr_v2.m3u8"},
  {name:"DW News",logo:"",country:"International",group:"News",id:"",url:"https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8"},
  {name:"France 24 News",logo:"",country:"France / International",group:"News",id:"",url:"https://live.france24.com/hls/live/2037218/F24_EN_HI_HLS/master_5000.m3u8"},
@@ -1311,6 +1318,26 @@ function playTVStream(url,name,index){
 
  document.getElementById("tvConnectionStatus").innerHTML="🔄 Connecting...";
 
+ // All TV channels use the Chrome-compatible TV player.
+ // NovaStream embed channels use the embedded Chrome web player; HLS/M3U8 channels use HLS.js/HTML5 video.
+ const frameBox=document.getElementById("tvPlayerFrame");
+ const embedPlayer=document.getElementById("tvEmbedPlayer");
+ if(url.toLowerCase().includes("embed.novastream.et/")){
+  if(hls){ hls.destroy(); hls=null; }
+  tvPlayer.pause();
+  tvPlayer.removeAttribute("src");
+  tvPlayer.style.display="none";
+  document.getElementById("videoQuality").innerHTML="<span>📺 Quality: Auto</span>";
+  frameBox.style.display="block";
+  embedPlayer.src=url;
+  document.getElementById("tvConnectionStatus").innerHTML="🟢 Player loaded — tap PLAY if needed";
+  return;
+ }else{
+  frameBox.style.display="none";
+  embedPlayer.src="about:blank";
+  tvPlayer.style.display="block";
+ }
+
  if(hls){
   hls.destroy();
   hls=null;
@@ -1446,6 +1473,11 @@ function toggleTVMute(){
 
 /* TV STOP */
 function stopTV(){
+ const frameBox=document.getElementById("tvPlayerFrame");
+ const embedPlayer=document.getElementById("tvEmbedPlayer");
+ if(frameBox){ frameBox.style.display="none"; }
+ if(embedPlayer){ embedPlayer.src="about:blank"; }
+ tvPlayer.style.display="block";
  clearTimeout(tvReconnectTimer);
 
  if(hls){
