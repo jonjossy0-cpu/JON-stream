@@ -8,6 +8,39 @@
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC5uNWNp9KbcepO36VQCx8gfbyPmZW4fxM",
+    authDomain: "jon-stream.firebaseapp.com",
+    projectId: "jon-stream",
+    storageBucket: "jon-stream.firebasestorage.app",
+    messagingSenderId: "189801194527",
+    appId: "1:189801194527:web:c7d99f83a2c4c604fa212a",
+    measurementId: "G-CEEKQDJXFS"
+  };
+
+  try {
+    const app = initializeApp(firebaseConfig);
+    try { getAnalytics(app); } catch (_) {}
+
+    const db = getFirestore(app);
+    const ref = doc(db, "jonStream", "appData");
+    const snap = await getDoc(ref);
+
+    window.dispatchEvent(new CustomEvent("jon-firebase-data", {
+      detail: snap.exists() ? snap.data() : null
+    }));
+  } catch (error) {
+    console.error("JON Stream Firebase connection failed:", error);
+    window.dispatchEvent(new CustomEvent("jon-firebase-error", {detail: error}));
+  }
+</script>
+
+
 <style>
 *{box-sizing:border-box}
 
@@ -1574,6 +1607,56 @@ setMode(currentMode);
 /* TV loads independently.
    Radio is never touched by TV playlist loading. */
 loadTV();
+
+/* =====================================================
+   FIREBASE DATA — ADMIN → FIREBASE → MAIN JON STREAM
+   Existing TV/Radio data remains the fallback.
+   Remote data is applied only when Firebase contains
+   valid TV/Radio arrays.
+===================================================== */
+window.addEventListener("jon-firebase-data",(event)=>{
+  const remote=event.detail;
+  if(!remote || !Array.isArray(remote.tv) || !Array.isArray(remote.radio)) return;
+
+  const remoteTV=remote.tv
+    .filter(x=>x && x.enabled!==false && x.name && x.url)
+    .map(x=>({
+      name:x.name,
+      url:x.url,
+      logo:x.logo||"",
+      country:x.country||"",
+      group:x.category||x.group||"TV Channel",
+      id:x.id
+    }));
+
+  const remoteRadio=remote.radio
+    .filter(x=>x && x.enabled!==false && x.name && x.url)
+    .map(x=>({
+      name:x.name,
+      url:x.url,
+      logo:x.logo||""
+    }));
+
+  if(remoteTV.length){
+    tvChannels=remoteTV;
+    filteredTV=tvChannels.slice();
+    renderTV(filteredTV);
+    const st=document.getElementById("tvStatus");
+    if(st) st.innerHTML="📺 "+tvChannels.length+" TV channels available";
+  }
+
+  if(remoteRadio.length){
+    stations=remoteRadio;
+    renderStations(getRadioList());
+    renderFavorites();
+  }
+
+  /* Optional Admin settings */
+  if(remote.settings && remote.settings.maintenance===true){
+    console.warn("JON Stream maintenance mode is enabled from Firebase.");
+  }
+});
+
 </script>
 </body>
 </html>
