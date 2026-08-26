@@ -1032,6 +1032,12 @@ function toggleTheme(){
        🔒 RADIO HAS NO CONNECTION TO THIS
 ===================================================== */
 const USER_TV_CHANNELS=[
+  {name:"T sport hd",logo:"",country:"",group:"",id:"",url:"https://tvsen5.aynaott.com/TnMn5kZz8aLm/tracks-v1a1/mono.ts.m3u8"},
+  {name:"B4u movies",logo:"",country:"",group:"",id:"",url:"https://cdn-2.pishow.tv/live/419/419_2.m3u8"},
+  {name:"Bloom burg tv",logo:"",country:"",group:"",id:"",url:"https://86fdc85a.wurl.com/manifest/f36d25e7e52f1ba8d7e56eb859c636563214f541/TEctZ2JfQmxvb21iZXJnT3JpZ2luYWxzX0hMUw/019f581c-40a4-4c83-97c9-3e18f0e680bd/0.m3u8"},
+  {name:"news max tv",logo:"",country:"",group:"",id:"",url:"https://nmx1ota.akamaized.net/hls/live/2107010/Live_1/1.m3u8"},
+  {name:"Afro land tv",logo:"",country:"",group:"",id:"",url:"https://alt-al.otteravision.com/alt/al/al_1080p.m3u8"},
+  {name:"Zee One",logo:"",country:"",group:"",id:"",url:"https://amg17931-zee-amg17931c6-samsung-au-8872.playouts.now.amagi.tv/ts-eu-w1-n2/playlist/amg17931-asiatvusaltdfast-zeeworld-samsungau/cb553d177d6c648692d43d64d9ef41a2d8243dfc087a8d6933fb4b926bc10f41e2e5af97b20cac7822fb0fdf61146d5a4d009247d8780ad7967cac48240d5734c6cdd52e8be24b4daddd0c2d34b07c0e49857671ad594f32d5e011dc51ab07a0e1ca1494d5e2082b00cb27757c49e0a957f378bbdbe306f2c180680585ee2be5da5edf55c40d139a6e4154d887e44e2855fc8d54aba9d86539c169b72f714c9c4f48dda45858f9601cc6d905ca5e85607fba54dd1a178a2d293662995705a377437c785e334caa1e43d257dfeedc2bc64857384e977c90865ca19a087d19d11148a70ec99bb14c4dbfc620b4b85c2496824a1aa818eff3c208247f9a3ebdc49b1f89c1b5548d364d42e2a77c5b39b54ccf41c98b22c92a729330c80c015d5cde9c3d8b9831cc87e8adfa2cc74026f73140e836aa79846d23d922dfb995d720a0d0c86b261e9aa951e3c6b4483c079d11010b692cba0d71c34c765540bbd31970b4b3c82642c4fe42bf8883523dc755dcb666b892d5fea75f5b628fab0c8a5576bc7b9e976bf3ebffb5aa8b568cf4a335605bff7562f66446fdfe3634d7d39f44cead7c5f6644b67c8f2def5d45c280d5a4600546b837df4403aa6b62c072b307048cdf8fc8f144798ff8/128/1920x1080_4362312/index.m3u8"},
   {name:"ETV News",logo:"",country:"Ethiopia",group:"News",id:"",url:"https://embed.novastream.et/tHlUSfHIpUTkWNT_MgBwRvSy"},
   {name:"ETV Kids",logo:"",country:"Ethiopia",group:"Kids",id:"",url:"https://embed.novastream.et/MuddbsIVQPsCfAI-ferHWueA"},
   {name:"ETV Language",logo:"",country:"Ethiopia",group:"General",id:"",url:"https://embed.novastream.et/wPoLdAUXdMNLuunhOqcDzBjE"},
@@ -1085,7 +1091,104 @@ const USER_TV_CHANNELS=[
  {name:"TV5MONDE FBS",logo:"",country:"International",group:"General",id:"",url:"https://ott.tv5monde.com/Content/HLS/Live/channel(fbs)/index.m3u8"},
  {name:"TV5MONDE Info",logo:"",country:"International",group:"News",id:"",url:"https://ott.tv5monde.com/Content/HLS/Live/channel(info)/index.m3u8"},
  {name:"TV5MONDE Africa",logo:"",country:"Africa",group:"General",id:"",url:"http://5.9.121.178/tv5monde/index.m3u8"},
- {name:"TV5MONDE Chefs",logo:"",country:"International",group:"Food",id:"",url:"https://tvf-tv5ch.otteravision.com/tvf/tv5ch/tv5ch.m3u8"}
+ {name:"TV5MONDE Chefs",logo:"",country:"International",group:"Food",id:"",url:"https://tvf-tv5ch.otteravision.com/tvf/tv5ch/tv5ch.m3u8"},
+
+  {name:"sport hd",logo:"",country:"",group:"",id:"",url:"https://tvsen5.aynaott.com/TnMn5kZz8aLm/tracks-v1a1/mono.ts.m3u8T"},
+  {name:"movies",logo:"",country:"",group:"",id:"",url:"https://cdn-2.pishow.tv/live/419/419_2.m3u8B4u"},
+  {name:"kids",logo:"",country:"",group:"",id:"",url:"https://livestream.pbskids.org/out/v1/14507d931bbe48a69287e4850e53443c/est_2.m3u8PBS"},
+  {name:"burg tv",logo:"",country:"",group:"",id:"",url:"https://86fdc85a.wurl.com/manifest/f36d25e7e52f1ba8d7e56eb859c636563214f541/TEctZ2JfQmxvb21iZXJnT3JpZ2luYWxzX0hMUw/019f581c-40a4-4c83-97c9-3e18f0e680bd/0.m3u8Bloom"},
+  {name:"max tv",logo:"",country:"",group:"",id:"",url:"https://nmx1ota.akamaized.net/hls/live/2107010/Live_1/1.m3u8news"},
+  {name:"land tv",logo:"",country:"",group:"",id:"",url:"https://alt-al.otteravision.com/alt/al/al_1080p.m3u8Afro"},
+  {name:"ebs kids",logo:"",country:"",group:"",id:"",url:"https://ebsonair.ebs.co.kr/ebsufamilypc/familypc1m/chunklist.m3u8"},
+  {name:"baby shark tv kids",logo:"",country:"",group:"",id:"",url:"https://newidco-babysharktv-1-us.roku.wurl.tv/4300.m3u8"},
+  {name:"baby first kids",logo:"",country:"",group:"",id:"",url:"https://cdn.fast.jwp.services/v1/channel/1_jB6940Ei_TvhvIHDL/manifest/4.m3u8"},
+  {name:"baywach tv",logo:"",country:"",group:"",id:"",url:"https://amg00145-fremantlemedian-baywatch-samsungau-gtsd6.amagi.tv/ts-eu-w1-n2/playlist/amg00145-fremantlemedian-baywatch-samsungau/cb553d177d6c648692d43d64d4ef41a2dc243dfc087a8d6933fb4b926bc10f41e2e5af97b20cac7822fb0fdf61146d5a4d009247d8780ad7967cac48240d5734c6cdd52e8be24b4daddd0c2d34b07c0e49857671ad594f32d5e0110dc51ab07a0e1ca1494d5e2082b00cb27757c49e0a957f378bbdbe306f2c180680585ee2be5da5edf55f16dc6ca9e34f1d887e44e5d45fc8d54aba9ddc5f9f469b22f3479995f6dfd014878f9501cc6d905ca5e85607fba54dd1a178a2d293662995705a377437c785e334caa1e43d257dfeedc2bc64857384e977c90865ca19a087d19d11148a70ec99bb14c4dbfc620b4b85c2496824a1aa818eff3c208247f9a3ebdc49b1f89c1b5548d364d42e2a77c5b39b54ccf41c98b22c92a729330c80c015d5cde9c3d8b9831cc87e8adfa2cc74026f73140e836aa79846d23d922dfb995d720a0d0c86b261e9aa951e3c6b4483c079d11010b692cba0d71c34c765540bbd31970b4b3c82642c4fe42bf8883523dc755dcb666b892d5fea75f5b628fab0c8a5576bc7b9e976bf3ebffb5aa8b568cf4a335605bff7562f66446fdfe3634d7d39f44cead7c5f6644b67c8f2def5d45c280d5a46065a6b8303cf413aa621bd49af0c8447febc004468bdbf215f/146/1920x1080_6046040/index.m3u8"},
+  {name:"bbc earth tv",logo:"",country:"",group:"",id:"",url:"https://amg00793-amg00793c6-xumo-us-2669.playouts.now.amagi.tv/BBCStudios-BBCEarthA-hls/playlist1080p.m3u8"},
+  {name:"bek tv news",logo:"",country:"",group:"",id:"",url:"https://cdn3.wowza.com/5/ZWQ1K2NYTmpFbGsr/BEK-WOWZA-1/smil:BEKPRIMEeast.smil/chunklist_b3596000_slENG.m3u8"},
+  {name:"bek tv sport",logo:"",country:"",group:"",id:"",url:"https://cdn3.wowza.com/5/ZWQ1K2NYTmpFbGsr/BEK-WOWZA-1/smil:BEKPRIMEW.smil/chunklist_b3596000_slENG.m3u8"},
+  {name:"nature life tv",logo:"",country:"",group:"",id:"",url:"https://tgn.bozztv.com/betterlife/betternature/betternature/tracks-v1a1/mono.m3u8?nimblesessionid=1784791877"},
+  {name:"black tv news",logo:"",country:"",group:"",id:"",url:"https://blacknewschannel-xumo-us.amagi.tv/1080p-cc/index.m3u8"},
+  {name:"bloom burg tv",logo:"",country:"",group:"",id:"",url:"https://86fdc85a.wurl.com/manifest/f36d25e7e52f1ba8d7e56eb859c636563214f541/TEctZ2JfQmxvb21iZXJnT3JpZ2luYWxzX0hMUw/ee28c60b-00a1-4939-bc1d-d49ee1d65406/0.m3u8"},
+  {name:"bon cooking",logo:"",country:"",group:"",id:"",url:"https://bonappetit-samsung.amagi.tv/1080p-vtt/index.m3u8"},
+  {name:"brat tv kids",logo:"",country:"",group:"",id:"",url:"https://streams2.sofast.tv/v1/manifest/611d79b11b77e2f571934fd80ca1413453772ac7/04072b68-dc6a-4d5e-98af-f356ba8d5063/a875e324-e8bf-4b80-b93c-657e1b73453e/4.m3u8"},
+  {name:"cafe trade tv",logo:"",country:"",group:"",id:"",url:"https://cafetradehls.wns.live/hls/stream.m3u8"},
+  {name:"california music tv",logo:"",country:"",group:"",id:"",url:"https://cmc-cmctv-cineverse.amagi.tv/playlist1080_p.m3u8"},
+  {name:"camera smile",logo:"",country:"",group:"",id:"",url:"https://rpn.bozztv.com/gusa/gusa-camerasmile/tracks-v1a1/mono.m3u8?nimblesessionid=1784812906"},
+  {name:"camp spoopy tv",logo:"",country:"",group:"",id:"",url:"https://stream.ads.ottera.tv/cl/260826da7bghun6qms73ddpspg/1280x720_2300000_0_f.m3u8?i=475_269"},
+  {name:"cbs 4 tv",logo:"",country:"",group:"",id:"",url:"https://linear-706.frequency.stream/dist/stirr/706/hls/master/playlist_1920x1080.m3u8"},
+  {name:"cbs 8",logo:"",country:"",group:"",id:"",url:"https://aegis-cloudfront-1.tubi.video/8d1f164d-34ef-4f70-b948-ae33826a0aaa/playlist_webvtt.m3u8"},
+  {name:"celebrity scene tv",logo:"",country:"",group:"",id:"",url:"https://rpn.bozztv.com/gusa/gusa-celebrityscene/tracks-v1a1/mono.m3u8?nimblesessionid=1784826226"},
+  {name:"chef chamopion tv",logo:"",country:"",group:"",id:"",url:"https://rpn.bozztv.com/gusa/gusa-chefchampion/tracks-v1a1/mono.m3u8?nimblesessionid=1784830745"},
+  {name:"chef rock show",logo:"",country:"",group:"",id:"",url:"https://rpn.bozztv.com/gusa/gusa-chefrock/tracks-v1a1/mono.m3u8?nimblesessionid=1784832304"},
+  {name:"CMC-USA Country Music Channel",logo:"",country:"",group:"",id:"",url:"https://hwlive.streamingmediahosting.com/14215-live/0_obd393sh/chunklist.m3u8"},
+  {name:"TVS Music Network",logo:"",country:"",group:"",id:"",url:"https://rpn.bozztv.com/gusa/gusa-tvsmusic/tracks-v1a1/mono.m3u8?nimblesessionid=1784851074"},
+  {name:"PBS Kids",logo:"",country:"",group:"",id:"",url:"https://livestream.pbskids.org/out/v1/14507d931bbe48a69287e4850e53443c/est_2.m3u8"},
+  {name:"PBS Kids Alask",logo:"",country:"",group:"",id:"",url:"https://livestream.pbskids.org/out/v1/94b88ad58fc14f84a9382341f1c00b82/akst_2.m3u8"},
+  {name:"PBS Kids Eastern/Centra",logo:"",country:"",group:"",id:"",url:"https://2-fss-2.streamhoster.com/pl_140/amlst:200914-1298290/chunklist_b2000000.m3u8"},
+  {name:"PBS Kids Hawai",logo:"",country:"",group:"",id:"",url:"https://livestream.pbskids.org/out/v1/aa31792fee094b24b09045483f04d150/hast_2.m3u8"},
+  {name:"PBS Kids Mountain",logo:"",country:"",group:"",id:"",url:"https://livestream.pbskids.org/out/v1/3fe3030a2c8045a3932f4289d9eba3e6/mst_2.m3u8"},
+  {name:"PBS Kids Pacific",logo:"",country:"",group:"",id:"",url:"https://livestream.pbskids.org/out/v1/11f2e6b73eaa4887b3746cb863960e79/pst_2.m3u8"},
+  {name:"24 Hour Free Movies",logo:"",country:"",group:"",id:"",url:"https://d1j2u714xk898n.cloudfront.net/scheduler/scheduleMaster/145/variant/22099472.m3u8"},
+  {name:"Gravitas Movies",logo:"",country:"",group:"",id:"",url:"https://d6dg3ebeih71x.cloudfront.net/Gravitas_Movies1080p.m3u8"},
+  {name:"Hallmark Movies & More",logo:"",country:"",group:"",id:"",url:"https://dbrb49pjoymg4.cloudfront.net/v1/manifest/3fec3e5cac39a52b2132f9c66c83dae043dc17d4/prod_default_xumo-ams-aws/ff9e788f-a68b-4faa-be04-8b921333d920/5.m3u8"},
+  {name:"KPVM Movies",logo:"",country:"",group:"",id:"",url:"https://2-fss-2.streamhoster.com/pl_120/206858-4412962-1/chunklist.m3u8"},
+  {name:"MovieSphere",logo:"",country:"",group:"",id:"",url:"https://amg00353-lionsgatestudio-moviesphere-xumo-zh5u0.amagi.tv/480p-en-cc/index.m3u8"},
+  {name:"NEW KMOVIES",logo:"",country:"",group:"",id:"",url:"https://dm5q5evajzvnz.cloudfront.net/v1/manifest/3722c60a815c199d9c0ef36c5b73da68a62b09d1/pb-svz5xbnmxjdsz/ed8adb64-169d-4732-878e-af17c07ecd92/0.m3u8"},
+  {name:"fox sport",logo:"",country:"",group:"",id:"",url:"https://tvsen7.aynascope.net/foxsports2/tracks-v1a1/mono.ts.m3u8"},
+  {name:"FTF Sports",logo:"",country:"",group:"",id:"",url:"https://1593604785.rsc.cdn77.org/FTF/FTF_SCTE_Max.m3u8"},
+  {name:"NBC Sports NOW",logo:"",country:"",group:"",id:"",url:"https://d4whmvwm0rdvi.cloudfront.net/manifest/3fec3e5cac39a52b2132f9c66c83dae043dc17d4/prod_default_xumo-nbcu-linear/170e7182-f8ea-4672-a389-08972ef0eff1/4.m3u8"},
+  {name:"Women's Sports Network",logo:"",country:"",group:"",id:"",url:"https://d39accvx65hq9o.cloudfront.net/Womens_Sports_Network1080.m3u8"},
+  {name:"TVOKids",logo:"",country:"",group:"",id:"",url:"https://fastly.live.brightcove.com/6369851620112/us-east-1/15364602001/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJob3N0IjoicGZncmlmLmVncmVzcy50N2M3emwiLCJhY2NvdW50X2lkIjoiMTUzNjQ2MDIwMDEiLCJlaG4iOiJmYXN0bHkubGl2ZS5icmlnaHRjb3ZlLmNvbSIsImlzcyI6ImJsaXZlLXBsYXliYWNrLXNvdXJjZS1hcGkiLCJzdWIiOiJwYXRobWFwdG9rZW4iLCJhdWQiOlsiMTUzNjQ2MDIwMDEiXSwianRpIjoiNjM2OTg1MTYyMDExMiJ9.zRE6fD9JwdbNLUIK5zgvlTAvXCQ3HeeE5p0yH0Pd3-Q/chunklist_hls720p.m3u8"},
+  {name:"Home Plus movies",logo:"",country:"",group:"",id:"",url:"https://homeplushls.wns.live/hls/stream.m3u8"},
+  {name:"MovieSphere AU",logo:"",country:"",group:"",id:"",url:"https://amg00353-lionsgatefilmsi-moviesphereaus-samsungau-7qzhf.amagi.tv/ts-eu-w1-n2/playlist/amg00353-lionsgatefilmsi-moviesphereaus-samsungau/cb553d177d6c648692d43d64d4ef41a2dc243dfc087a8d6933fb4b926bc10f41e2e5af97b20cac7822fb0fdf61146d5a4d009247d8780ad7967cac48240d5734c6cdd52e8be24b4daddd0c2d34b07c0e49857671ad594f32d5e0110dc51ab07a0e1ca1494d5e2082b00cb27757c49e0a957f378bbdbe306f2c180680585ee2be5da5edf55a46d86ea7b24949887e44e4d75fc8d54aba9d850ecb469b20f746c990a18f8512d3819301cc6d905ca5e85607fba54dd1a178a2d293662995705a377437c785e334caa1e43d257dfeedc2bc64857384e977c90865ca19a087d19d11148a70ec99bb14c4dbfc620b4b85c2496824a1aa818eff3c208247f9a3ebdc49b1f89c1b5548d364d42e2a77c5b39b54ccf41c98b22c92a729330c80c015d5cde9c3d8b9831cc87e8adfa2cc74026f73140e836aa79846d23d922dfb995d720a0d0c86b261e9aa951e3c6b4483c079d11010b692cba0d71c34c765540bbd31970b4b3c82642c4fe42bf8883523dc755dcb666b892d5fea75f5b628fab0c8a5576bc7b9e976bf3ebffb5aa8b568cf4a335605bff7562f66446fdfe3634d7d39f44cead7c5f6644b67c8f2def5d45c280d5b4406ecea2715ab2fe84e41b8c54cde1c9af33c61e7ac6d46f4/34/1920x1080_6046040/index.m3u8"},
+  {name:"🇪🇷 Eritrea",logo:"",country:"",group:"",id:"",url:"https://jmc-live.ercdn.net/eritreatv/eritreatv_1080p.m3u8"},
+  {name:"Minika Cocuk kids",logo:"",country:"",group:"",id:"",url:"https://rnttwmjcin.turknet.ercdn.net/lcpmvefbyo/minikago_cocuk/minikago_cocuk_720p.m3u8"},
+  {name:"Minika Go kids",logo:"",country:"",group:"",id:"",url:"https://rnttwmjcin.turknet.ercdn.net/lcpmvefbyo/minikago/minikago_720p.m3u8"},
+  {name:"TRT Diyanet Çocuk kids",logo:"",country:"",group:"",id:"",url:"https://tv-trtdiyanetcocuk.medya.trt.com.tr/master_1080.m3u8"},
+  {name:"TRT Spor",logo:"",country:"",group:"",id:"",url:"https://corestream.siteyaptim.live/trt-spor/tracks-v1a1/mono.m3u8"},
+  {name:"KN Music TV",logo:"",country:"",group:"",id:"",url:"https://cdn4.yayin.com.tr/kntv/tracks-v1a1/mono.m3u8"},
+  {name:"akili kids",logo:"",country:"",group:"",id:"",url:"https://m6.livecdn.io/akilikids.co.ke/akilikids.smil/chunklist_w1171979616_b2528000_slke.m3u8"},
+  {name:"Ebony TV by Lionsgate",logo:"",country:"",group:"",id:"",url:"https://aegis-cloudfront-1.tubi.video/a0ad4b53-ab3a-48dd-be12-bc7f533c372c/1080p-cc/index.m3u8"},
+  {name:"FilmRise Anim",logo:"",country:"",group:"",id:"",url:"https://dvu7aia8rjlfm.cloudfront.net/5.m3u8"},
+  {name:"NEW KPOP",logo:"",country:"",group:"",id:"",url:"https://d3fo5l6kdk2w79.cloudfront.net/v1/manifest/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-to32qiaqd9f4c/85b0104d-5966-47af-bdb0-b16a72f7384a/0.m3u8"},
+  {name:"Ninja Kidz",logo:"",country:"",group:"",id:"",url:"https://d3868b4ny0rgdf.cloudfront.net/3000.m3u8"},
+  {name:"NOST",logo:"",country:"",group:"",id:"",url:"https://a-cdn.klowdtv.com/live2/nost_720p/chunks.m3u8"},
+  {name:"Outdoor America",logo:"",country:"",group:"",id:"",url:"https://d1e354daam8g5r.cloudfront.net/playlist_1920x1080.m3u8"},
+  {name:"Real America's Voice",logo:"",country:"",group:"",id:"",url:"https://stream.weathernationtv.com/RAVStirr_poekxujeisurekugzezyg/O1/playlistSCTE35.m3u8"},
+  {name:"Red Bull TV US",logo:"",country:"",group:"",id:"",url:"https://0b73ace69ebb45eaa249bb87837cb958.mediatailor.us-west-2.amazonaws.com/v1/manifest/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-644-WORBUSENFAST-LG_US/59fbdf23-acae-4129-b78f-8a596c8f8ad7/1.m3u8"},
+  {name:"Rev and Roll",logo:"",country:"",group:"",id:"",url:"https://d39nqr4d4h6cv6.cloudfront.net/5.m3u8"},
+  {name:"Roar",logo:"",country:"",group:"",id:"",url:"https://fast-channels.sinclairstoryline.com/TBD/index_1.m3u8"},
+  {name:"Runtime",logo:"",country:"",group:"",id:"",url:"https://run-rt-uh-roku.otteravision.com/run/rt_uh/rt_uh_720.m3u8"},
+  {name:"Sonic TV",logo:"",country:"",group:"",id:"",url:"https://stream-us-east-1.getpublica.com/cl/260826da7ea3mlb8oc738fhi4g/654x480_2680101_1_f.m3u8?i=513_2260"},
+  {name:"Super Simple Songs kids",logo:"",country:"",group:"",id:"",url:"https://janson-supersimplesongs-1-us.roku.wurl.tv/4300.m3u8"},
+  {name:"Tom And Jerry kids",logo:"",country:"",group:"",id:"",url:"https://live20.bozztv.com/giatvplayout7/giatv-208314/tracks-v1a1/mono.ts.m3u8"},
+  {name:"ToonGoggles",logo:"",country:"",group:"",id:"",url:"https://amg01329-otterainc-toongoggles-samsungau-ad-4c.amagi.tv/ts-eu-w1-n2/playlist/amg01329-otterainc-toongoggles-samsungau/cb553d177d6c648692d43d64d9ef41a2d8243dfc087a8d6933fb4b926bc10f41e2e5af97b20cac7822fb0fdf61146d5a4d009247d8780ad7967cac48240d5734c6cdd52e8be24b4daddd0c2d34b07c0e49857671ad594f32d5e0110dc51ab07a0e1ca1494d5e2082b00cb27757c49e0a957f378bbdbe306f2c180680585ee2be5da5edf55f16de38a0b8154f887e44e2825fc8d54aba9ddd5d97419b27f3479cc1a188861982d59801cc6d905ca5e85607fba54dd1a178a2d293662995705a377437c785e334caa1e43d257dfeedc2bc64857384e977c90865ca19a087d19d11148a70ec99bb14c4dbfc620b4b85c2496824a1aa818eff3c208247f9a3ebdc49b1f89c1b5548d364d42e2a77c5b39b54ccf41c98b22c92a729330c80c015d5cde9c3d8b9831cc87e8adfa2cc74026f73140e836aa79846d23d922dfb995d720a0d0c86b261e9aa951e3c6b4483c079d11010b692cba0d71c34c765540bbd31970b4b3c82642c4fe42bf8883523dc755dcb666b892d5fea75f5b628fab0c8a5576bc7b9e976bf3ebffb5aa8b568cf4a335605bff7562f66446fdfe3634d7d39f44cead7c5f6644b67c8f2def5d45c280d5a4607586b8365dd403aa6e7f0cc8119b2c95f7c4edd8005a7396d/154/1280x720_3071200/index.m3u8"},
+  {name:"Vevo Latino",logo:"",country:"",group:"",id:"",url:"https://amg00056-amg00056c13-rakuten-es-3246.playouts.now.amagi.tv/1080p/index.m3u8"},
+  {name:"VOA TV Africa",logo:"",country:"",group:"",id:"",url:"https://voa-ingest.akamaized.net/hls/live/2033874/tvmc06/playlist_1080.m3u8"},
+  {name:"Watch it KID",logo:"",country:"",group:"",id:"",url:"https://stream-us-east-1.getpublica.com/cl/260826da7egf1u8oes738ao69g/654x486_2885726_1_f.m3u8?i=513_2245"},
+  {name:"XITE 90's Throwback",logo:"",country:"",group:"",id:"",url:"https://d284aawtm5vi48.cloudfront.net/v1/manifest/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-fjdfi2br1jtq7/2d4e171d-03a8-4acb-9d80-e7c76f2a1ee0/3.m3u8"},
+  {name:"World Channel",logo:"",country:"",group:"",id:"",url:"https://world.lls.pbs.org/index_1080p.m3u8"},
+  {name:"Clubbing TV UK",logo:"",country:"",group:"",id:"",url:"https://a-cdn.klowdtv.com/live3/clubbingtv_720p/chunks.m3u8"},
+  {name:"FailArmy",logo:"",country:"",group:"",id:"",url:"https://failarmy-international-gb.samsung.wurl.tv/3000.m3u8"},
+  {name:"FIFA+ Women",logo:"",country:"",group:"",id:"",url:"https://cffda8ff.wurl.com/manifest/f36d25e7e52f1ba8d7e56eb859c636563214f541/U2Ftc3VuZy1nYl9GSUZBUGx1c3dvbWVuX0hMUw/7d789c14-22ee-4650-8f3c-88dfa8bae225/2.m3u8"},
+  {name:"Moonbug Kids",logo:"",country:"",group:"",id:"",url:"https://moonbug-rokuus.amagi.tv/720p-cc/index.m3u8"},
+  {name:"Rakuten Top Movies UK",logo:"",country:"",group:"",id:"",url:"https://0145451975a64b35866170fd2e8fa486.mediatailor.eu-west-1.amazonaws.com/v1/manifest/0547f18649bd788bec7b67b746e47670f558b6b2/production-LiveChannel-5987/4a9c7be4-c669-4237-86e9-7d42bc554c23/2.m3u8"},
+  {name:"Rakuten TV Drama Movies UK",logo:"",country:"",group:"",id:"",url:"https://fee09fd665814f51b939b6d106cf5f66.mediatailor.eu-west-1.amazonaws.com/v1/manifest/0547f18649bd788bec7b67b746e47670f558b6b2/production-LiveChannel-6093/fa41d19e-69dd-4e85-b4b5-794d49407495/4.m3u8"},
+  {name:"Rakuten TV Family Movies UK",logo:"",country:"",group:"",id:"",url:"https://e3207568b726401995c25670faaf32e4.mediatailor.eu-west-1.amazonaws.com/v1/manifest/0547f18649bd788bec7b67b746e47670f558b6b2/production-LiveChannel-6203/8503158c-1f7e-439b-9cd8-d8663b04b1d1/4.m3u8"},
+  {name:"Spark TV",logo:"",country:"",group:"",id:"",url:"https://candlelightmedia-sparklightlove-4-us.roku.wurl.tv/4300.m3u8"},
+  {name:"Star Vija",logo:"",country:"",group:"",id:"",url:"https://da86m1sqpm3o0.cloudfront.net/28072023/smil:starvijayuk.smil/chunklist_b2628000.m3u8"},
+  {name:"Strongman",logo:"",country:"",group:"",id:"",url:"https://rightsboosterltd-scl-1-eu.rakuten.wurl.tv/3000.m3u8"},
+  {name:"talkSPORT",logo:"",country:"",group:"",id:"",url:"https://af7a8b4e.wurl.com/manifest/f36d25e7e52f1ba8d7e56eb859c636563214f541/TEctZ2JfdGFsa1NQT1JUX0hMUw/7c05065c-ccd6-4725-b212-a9dce00ab033/3.m3u8"},
+  {name:"Teletubbies",logo:"",country:"",group:"",id:"",url:"https://dv8lsrd8fecw9.cloudfront.net/5.m3u8"},
+  {name:"Terra Mater WILD English",logo:"",country:"",group:"",id:"",url:"https://amg01775-amg01775c1-amgplt0343.playout.now3.amagi.tv/ts-eu-w1-n2/playlist/amg01775-amg01775c1-amgplt0343/275b9b30-a155-11f1-a4dd-3622b7537b52/37/1280x720_2500000/index.m3u8"},
+  {name:"The Chat Show Channel",logo:"",country:"",group:"",id:"",url:"https://amg00426-littledotstudio-thechatshow-samsungnz-uqmtt.amagi.tv/ts-eu-w1-n2/playlist/amg00426-littledotstudio-thechatshow-samsungnz/cb553d177d6c648692d43d64d9ef41a2d8243dfc087a8d6933fb4b926bc10f41e2e5af97b20cac7822fb0fdf61146d5a4d009247d8780ad7967cac48240d5734c6cdd52e8be24b4daddd0c2d34b07c0e49857671ad594f32d5e0110dc51ab07a0e1ca1494d5e2082b00cb27757c49e0a957f378bbdbe306f2c180680585ee2be5da5edf5594d8e65a5e2181e887e44e2875fc8d54aba9d855bca4a9b27a047cf97f288da10d480c501cc6d905ca5e85607fba54dd1a178a2d293662995705a377437c785e334caa1e43d257dfeedc2bc64857384e977c90865ca19a087d19d11148a70ec99bb14c4dbfc620b4b85c2496824a1aa818eff3c208247f9a3ebdc49b1f89c1b5548d364d42e2a77c5b39b54ccf41c98b22c92a729330c80c015d5cde9c3d8b9831cc87e8adfa2cc74026f73140e836aa79846d23d922dfb995d720a0d0c86b261e9aa951e3c6b4483c079d11010b692cba0d71c34c765540bbd31970b4b3c82642c4fe42bf8883523dc755dcb666b892d5fea75f5b628fab0c8a5576bc7b9e976bf3ebffb5aa8b568cf4a335605bff7562f66446fdfe3634d7d39f44cead7c5f6644b67c8f2def5d45c280d5a4604546b8372ce403aa6b70944df6b930a5f252871d154e441a1/168/1280x720_3329040/index.m3u8"},
+  {name:"The Graham Norton Show",logo:"",country:"",group:"",id:"",url:"https://amg00654-itv-amg00654c35-rakuten-gb-7598.playouts.now.amagi.tv/playlist720_p.m3u8"},
+  {name:"Totalmusic",logo:"",country:"",group:"",id:"",url:"https://cdn.40mediagroup.com/live/c7eds/Totalmusic/SA_LIVE_hls_enc/tracks-v1a1/mono.ts.m3u8"},
+  {name:"Totalmusic 2000s",logo:"",country:"",group:"",id:"",url:"https://cdn.40mediagroup.com/live/c7eds/Totalmusic_00s/SA_LIVE_hls_enc/tracks-v1a1/mono.ts.m3u8"},
+  {name:"Totalmusic Concerts",logo:"",country:"",group:"",id:"",url:"https://cdn.40mediagroup.com/live/c7eds/Totalmusic_Concerts/SA_LIVE_hls_enc/tracks-v1a1/mono.ts.m3u8"},
+  {name:"Totalmusic Dance",logo:"",country:"",group:"",id:"",url:"https://cdn.40mediagroup.com/live/c7eds/Totalmusic_Dance/SA_LIVE_hls_enc/tracks-v1a1/mono.ts.m3u8"},
+  {name:"Trace UK",logo:"",country:"",group:"",id:"",url:"https://channels.trace.plus/Traceprod/UK_FAST_hd/index.m3u8"},
+  {name:"XITE Hits UK",logo:"",country:"",group:"",id:"",url:"https://amg01243-xitenetworksint-hitsuk-samsunguk-mvovq.amagi.tv/ts-eu-w1-n2/playlist/amg01243-xitenetworksint-hitsuk-samsunguk/cb553d177d6c648692d43d64d9ef41a2d8243dfc087a8d6933fb4b926bc10f41e2e5af97b20cac7822fb0fdf61146d5a4d009247d8780ad7967cac48240d5734c6cdd52e8be24b4daddd0c2d34b07c0e49857671ad594f32d5e0110dc51ab07a0e1ca1494d5e2082b00cb27757c49e0a957f378bbdbe306f2c180680585ee2be5da5edf50847de39f7b71e4c887e44e2845fc8d54aba9ddd52cb469b77a0129b97a489db448a8f9401cc6d905ca5e85607fba54dd1a178a2d293662995705a377437c785e334caa1e43d257dfeedc2bc64857384e977c90865ca19a087d19d11148a70ec99bb14c4dbfc620b4b85c2496824a1aa818eff3c208247f9a3ebdc49b1f89c1b5548d364d42e2a77c5b39b54ccf41c98b22c92a729330c80c015d5cde9c3d8b9831cc87e8adfa2cc74026f73140e836aa79846d23d922dfb995d720a0d0c86b261e9aa951e3c6b4483c079d11010b692cba0d71c34c765540bbd31970b4b3c82642c4fe42bf8883523dc755dcb666b892d5fea75f5b628fab0c8a5576bc7b9e976bf3ebffb5aa8b568cf4a335605bff7562f66446fdfe3634d7d39f44cead7c5f6644b67c8f2def5d45c280d5a46015a6b8323f4403aa67e842eea2b9669f2979724e7b69cea5d/136/1280x720_3329040/index.m3u8"},
 ];
 
 let tvChannels=USER_TV_CHANNELS.slice();
@@ -1309,104 +1412,87 @@ function renderTV(list){
 
 /* TV PLAYER */
 function playTVStream(url,name,index){
- currentTV={url,name};
- currentTVIndex=index;
+  currentTV={url,name};
+  currentTVIndex=index;
 
- document.getElementById("tvPlayerBox").style.display="block";
+  document.getElementById("tvPlayerBox").style.display="block";
+  document.getElementById("tvPlayerTitle").innerHTML="📺 "+escapeHTML(name);
+  document.getElementById("tvConnectionStatus").innerHTML="🔄 Opening in Chrome-compatible player...";
 
- document.getElementById("tvPlayerTitle").innerHTML="📺 "+escapeHTML(name);
+  const frameBox=document.getElementById("tvPlayerFrame");
+  const embedPlayer=document.getElementById("tvEmbedPlayer");
 
- document.getElementById("tvConnectionStatus").innerHTML="🔄 Connecting...";
+  if(hls){
+    hls.destroy();
+    hls=null;
+  }
 
- // All TV channels use the Chrome-compatible TV player.
- // NovaStream embed channels use the embedded Chrome web player; HLS/M3U8 channels use HLS.js/HTML5 video.
- const frameBox=document.getElementById("tvPlayerFrame");
- const embedPlayer=document.getElementById("tvEmbedPlayer");
- if(url.toLowerCase().includes("embed.novastream.et/")){
-  if(hls){ hls.destroy(); hls=null; }
+  clearTimeout(tvReconnectTimer);
   tvPlayer.pause();
   tvPlayer.removeAttribute("src");
-  tvPlayer.style.display="none";
-  document.getElementById("videoQuality").innerHTML="<span>📺 Quality: Auto</span>";
-  frameBox.style.display="block";
-  embedPlayer.src=url;
-  document.getElementById("tvConnectionStatus").innerHTML="🟢 Player loaded — tap PLAY if needed";
-  return;
- }else{
+  tvPlayer.load();
+
+  /*
+   * Use one Chrome-compatible player path for every supplied TV URL.
+   * - Embedded HTTPS pages are loaded in the existing iframe player.
+   * - HLS/M3U8 streams are loaded through HLS.js + HTML5 video in Chrome.
+   */
+  if(url.toLowerCase().includes("embed.novastream.et/")){
+    tvPlayer.style.display="none";
+    frameBox.style.display="block";
+    embedPlayer.src=url;
+    document.getElementById("videoQuality").innerHTML="<span>📺 Quality: Auto</span>";
+    document.getElementById("tvConnectionStatus").innerHTML="🟢 Chrome player ready — tap PLAY if needed";
+    return;
+  }
+
   frameBox.style.display="none";
   embedPlayer.src="about:blank";
   tvPlayer.style.display="block";
- }
 
- if(hls){
-  hls.destroy();
-  hls=null;
- }
-
- clearTimeout(tvReconnectTimer);
-
- tvPlayer.pause();
- tvPlayer.removeAttribute("src");
- tvPlayer.load();
-
- if(url.toLowerCase().includes(".m3u8")){
-  if(tvPlayer.canPlayType("application/vnd.apple.mpegurl")){
-   tvPlayer.src=url;
-
-   tvPlayer.play().then(()=>{
-    setTVConnected();
-   }).catch(()=>{
-    document.getElementById("tvConnectionStatus").innerHTML="▶ Tap PLAY";
-   });
-  }else if(window.Hls && Hls.isSupported()){
-   hls=new Hls({
-    enableWorker:true,
-    maxBufferLength:30,
-    maxMaxBufferLength:60,
-    manifestLoadingMaxRetry:5,
-    levelLoadingMaxRetry:5,
-    fragLoadingMaxRetry:5,
-    enableManifestDiff: true,
-    backBufferLength:30
-   });
-
-   hls.loadSource(url);
-   hls.attachMedia(tvPlayer);
-
-   hls.on(Hls.Events.MANIFEST_PARSED,()=>{
-    updateQuality();
-
-    tvPlayer.play().then(()=>{
-     setTVConnected();
-    }).catch(()=>{
-     document.getElementById("tvConnectionStatus").innerHTML="▶ Tap PLAY";
+  if(window.Hls && Hls.isSupported()){
+    hls=new Hls({
+      enableWorker:true,
+      maxBufferLength:30,
+      maxMaxBufferLength:60,
+      manifestLoadingMaxRetry:5,
+      levelLoadingMaxRetry:5,
+      fragLoadingMaxRetry:5,
+      backBufferLength:30
     });
-   });
 
-   hls.on(Hls.Events.LEVEL_SWITCHED,()=>{
-    updateQuality();
-   });
+    hls.loadSource(url);
+    hls.attachMedia(tvPlayer);
 
-   hls.on(Hls.Events.ERROR,(event,data)=>{
-    if(data.fatal){
-     document.getElementById("tvConnectionStatus").innerHTML="🔄 Reconnecting...";
-     reconnectTV();
-    }
-   });
-  }else{
-   document.getElementById("tvConnectionStatus").innerHTML="⚠️ HLS not supported";
+    hls.on(Hls.Events.MANIFEST_PARSED,()=>{
+      updateQuality();
+      tvPlayer.play().then(()=>{
+        setTVConnected();
+      }).catch(()=>{
+        document.getElementById("tvConnectionStatus").innerHTML="▶ Tap PLAY";
+      });
+    });
+
+    hls.on(Hls.Events.ERROR,(event,data)=>{
+      if(data && data.fatal){
+        document.getElementById("tvConnectionStatus").innerHTML="⚠️ Stream unavailable";
+      }
+    });
+    return;
   }
- }else{
-  tvPlayer.src=url;
 
-  tvPlayer.play().then(()=>{
-   setTVConnected();
-  }).catch(()=>{
-   document.getElementById("tvConnectionStatus").innerHTML="▶ Tap PLAY";
-  });
- }
+  if(tvPlayer.canPlayType("application/vnd.apple.mpegurl")){
+    tvPlayer.src=url;
+    tvPlayer.play().then(()=>{
+      setTVConnected();
+    }).catch(()=>{
+      document.getElementById("tvConnectionStatus").innerHTML="▶ Tap PLAY";
+    });
+    return;
+  }
+
+  document.getElementById("tvConnectionStatus").innerHTML="⚠️ This stream format is not supported by this browser";
 }
-
 /* TV QUALITY */
 function updateQuality(){
  const box=document.getElementById("videoQuality");
