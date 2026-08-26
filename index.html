@@ -11,7 +11,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+  import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyC5uNWNp9KbcepO36VQCx8gfbyPmZW4fxM",
@@ -29,11 +29,15 @@
 
     const db = getFirestore(app);
     const ref = doc(db, "jonStream", "appData");
-    const snap = await getDoc(ref);
-
-    window.dispatchEvent(new CustomEvent("jon-firebase-data", {
-      detail: snap.exists() ? snap.data() : null
-    }));
+    onSnapshot(ref, (snap) => {
+      window.__JON_FIREBASE_DATA = snap.exists() ? snap.data() : null;
+      window.dispatchEvent(new CustomEvent("jon-firebase-data", {
+        detail: window.__JON_FIREBASE_DATA
+      }));
+    }, (error) => {
+      console.error("JON Stream Firestore listener failed:", error);
+      window.dispatchEvent(new CustomEvent("jon-firebase-error", {detail: error}));
+    });
   } catch (error) {
     console.error("JON Stream Firebase connection failed:", error);
     window.dispatchEvent(new CustomEvent("jon-firebase-error", {detail: error}));
@@ -677,7 +681,7 @@ document.querySelectorAll("[data-logo]").forEach(img=>{
                     RADIO LINKS
        🔒 DO NOT CHANGE / DELETE
 ===================================================== */
-const stations=[
+let stations=[
 {
  name:"JON FM ETHIOPIA",
  url:"https://jonmediaservice.volticast.net/primary.aac"
@@ -1608,55 +1612,111 @@ setMode(currentMode);
    Radio is never touched by TV playlist loading. */
 loadTV();
 
-/* =====================================================
-   FIREBASE DATA — ADMIN → FIREBASE → MAIN JON STREAM
-   Existing TV/Radio data remains the fallback.
-   Remote data is applied only when Firebase contains
-   valid TV/Radio arrays.
-===================================================== */
-window.addEventListener("jon-firebase-data",(event)=>{
-  const remote=event.detail;
-  if(!remote || !Array.isArray(remote.tv) || !Array.isArray(remote.radio)) return;
+/* Firebase data is handled by the additive sync block below.
+   Existing TV/Radio data remains intact when remote data is empty or partial. */
+</script>
 
-  const remoteTV=remote.tv
-    .filter(x=>x && x.enabled!==false && x.name && x.url)
-    .map(x=>({
-      name:x.name,
-      url:x.url,
-      logo:x.logo||"",
-      country:x.country||"",
-      group:x.category||x.group||"TV Channel",
-      id:x.id
-    }));
+<!-- =====================================================
+     JON STREAM LIVE DATA: ADS + NOTIFICATIONS
+     Additive only: existing UI, TV, Radio and player stay intact.
+===================================================== -->
+<style>
+#jonLiveUpdates{display:none;margin:14px 0;gap:10px;flex-direction:column}
+.jon-ad-card,.jon-notify-card{background:var(--card);border:1px solid var(--border);border-radius:17px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.jon-ad-card h3,.jon-notify-card h3{margin:0 0 7px;font-size:16px}
+.jon-ad-media{width:100%;max-height:360px;object-fit:cover;border-radius:12px;background:#000;display:block}
+.jon-ad-desc,.jon-notify-msg{font-size:13px;color:var(--muted);margin:8px 0}
+.jon-ad-btn{display:inline-block;text-decoration:none;background:var(--red);color:#fff;border-radius:10px;padding:9px 13px;font-weight:800;font-size:13px}
+#jonNotificationBell{position:fixed;right:14px;bottom:14px;z-index:9998;border:0;border-radius:999px;width:52px;height:52px;background:var(--red);color:#fff;font-size:22px;box-shadow:0 8px 24px rgba(0,0,0,.25);cursor:pointer}
+#jonNotificationPanel{display:none;position:fixed;right:14px;bottom:76px;z-index:9999;width:min(360px,calc(100vw - 28px));max-height:65vh;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:17px;padding:12px;box-shadow:0 15px 40px rgba(0,0,0,.3)}
+</style>
 
-  const remoteRadio=remote.radio
-    .filter(x=>x && x.enabled!==false && x.name && x.url)
-    .map(x=>({
-      name:x.name,
-      url:x.url,
-      logo:x.logo||""
-    }));
+<div id="jonLiveUpdates"></div>
+<button id="jonNotificationBell" type="button" aria-label="Notifications">🔔</button>
+<div id="jonNotificationPanel"></div>
 
-  if(remoteTV.length){
-    tvChannels=remoteTV;
-    filteredTV=tvChannels.slice();
-    renderTV(filteredTV);
-    const st=document.getElementById("tvStatus");
-    if(st) st.innerHTML="📺 "+tvChannels.length+" TV channels available";
+<script>
+(function(){
+  const liveBox=document.getElementById('jonLiveUpdates');
+  const bell=document.getElementById('jonNotificationBell');
+  const panel=document.getElementById('jonNotificationPanel');
+  if(!liveBox || !bell || !panel) return;
+
+  function safe(v){
+    return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
   }
 
-  if(remoteRadio.length){
-    stations=remoteRadio;
-    renderStations(getRadioList());
-    renderFavorites();
+  function activeAd(x){
+    if(!x || x.enabled===false) return false;
+    const now=new Date();
+    if(x.start){ const d=new Date(x.start+'T00:00:00'); if(!isNaN(d)&&now<d) return false; }
+    if(x.end){ const d=new Date(x.end+'T23:59:59'); if(!isNaN(d)&&now>d) return false; }
+    return true;
   }
 
-  /* Optional Admin settings */
-  if(remote.settings && remote.settings.maintenance===true){
-    console.warn("JON Stream maintenance mode is enabled from Firebase.");
+  function renderAds(ads){
+    if(!Array.isArray(ads)) return;
+    const list=ads.filter(activeAd);
+    if(!list.length){ liveBox.style.display='none'; liveBox.innerHTML=''; return; }
+    liveBox.style.display='flex';
+    liveBox.innerHTML=list.map(x=>{
+      const media=x.video||x.videoUrl||x.mediaUrl||'';
+      const image=x.image||x.imageUrl||x.banner||'';
+      let mediaHTML='';
+      if(media){
+        mediaHTML='<video class="jon-ad-media" controls playsinline preload="metadata" src="'+safe(media)+'"></video>';
+      }else if(image){
+        mediaHTML='<img class="jon-ad-media" loading="lazy" src="'+safe(image)+'" alt="Advertisement">';
+      }
+      const click=x.url||x.clickUrl||'';
+      return '<div class="jon-ad-card"><h3>📢 '+safe(x.title||x.name||'Advertisement')+'</h3>'+
+        mediaHTML+
+        (x.description?'<div class="jon-ad-desc">'+safe(x.description)+'</div>':'')+
+        (click?'<a class="jon-ad-btn" target="_blank" rel="noopener noreferrer" href="'+safe(click)+'">Open</a>':'')+
+        '</div>';
+    }).join('');
   }
-});
 
+  function renderNotifications(items){
+    if(!Array.isArray(items)){panel.innerHTML='<div class="jon-notify-card"><b>No notifications</b></div>';return;}
+    const list=items.filter(x=>x && x.enabled!==false);
+    panel.innerHTML=list.length ? list.map(x=>'<div class="jon-notify-card"><h3>🔔 '+safe(x.title||'Notification')+'</h3><div class="jon-notify-msg">'+safe(x.message||'')+'</div></div>').join('') : '<div class="jon-notify-card"><b>No notifications</b></div>';
+  }
+
+  bell.addEventListener('click',()=>{
+    panel.style.display=panel.style.display==='block'?'none':'block';
+  });
+
+  function syncFirebaseData(remote){
+    if(!remote) return;
+    renderAds(remote.ads);
+    renderNotifications(remote.notifications);
+
+    /* Safe additive TV/Radio sync: Firestore items are merged into the original
+       lists. Nothing already in this file is removed or replaced. */
+    if(Array.isArray(remote.tv)){
+      const incoming=remote.tv.filter(x=>x&&x.enabled!==false&&x.name&&x.url).map(x=>({name:x.name,url:x.url,logo:x.logo||'',country:x.country||'',group:x.category||x.group||'TV Channel',id:x.id}));
+      const merged=[...tvChannels,...incoming];
+      const seen=new Set();
+      tvChannels=merged.filter(x=>{const k=String(x.url||'').trim(); if(!k||seen.has(k)) return false; seen.add(k); return true;});
+      filteredTV=tvChannels.slice();
+      buildCountryFilter();
+      renderTV(filteredTV);
+      const st=document.getElementById('tvStatus'); if(st) st.innerHTML='📺 '+tvChannels.length+' TV channels available';
+    }
+    if(Array.isArray(remote.radio)){
+      const incoming=remote.radio.filter(x=>x&&x.enabled!==false&&x.name&&x.url).map(x=>({name:x.name,url:x.url,logo:x.logo||''}));
+      const merged=[...stations,...incoming];
+      const seen=new Set();
+      stations=merged.filter(x=>{const k=String(x.url||'').trim(); if(!k||seen.has(k)) return false; seen.add(k); return true;});
+      renderStations(getRadioList());
+      renderFavorites();
+    }
+  }
+
+  window.addEventListener('jon-firebase-data',(event)=>syncFirebaseData(event.detail));
+  if(window.__JON_FIREBASE_DATA) syncFirebaseData(window.__JON_FIREBASE_DATA);
+})();
 </script>
 </body>
 </html>
