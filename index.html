@@ -614,6 +614,17 @@ audio,video{
    <button onclick="playCurrent()">▶ PLAY</button>
    <button onclick="pauseRadio()">⏸ PAUSE</button>
    <button class="stop" onclick="stopRadio()">⏹ STOP</button>
+   <button type="button" class="more-control-btn" onclick="toggleMoreControls('radio')" aria-expanded="false" id="radioMoreBtn">⋯ MORE</button>
+  </div>
+
+  <div class="more-controls-panel" id="radioMoreControls" hidden>
+   <div class="more-controls-title">⚙️ Radio More Controls</div>
+   <div class="more-control-grid">
+    <button type="button" onclick="toggleMute()">🔊 MUTE</button>
+    <button type="button" onclick="startTimer(30)">⏱️ SLEEP 30 MIN</button>
+    <button type="button" onclick="cancelTimer()">⏹️ CANCEL TIMER</button>
+    <button type="button" onclick="toggleDiagnostics('radio')">📊 DIAGNOSTICS</button>
+   </div>
   </div>
 
   <div class="status" id="radioStatus">⚪ Ready</div>
@@ -703,6 +714,19 @@ audio,video{
    <button onclick="toggleTVMute()">🔊 MUTE</button>
    <button class="fullscreen" onclick="fullscreenTV()">⛶ FULLSCREEN</button>
    <button class="stop" onclick="stopTV()">⏹ STOP</button>
+   <button type="button" class="more-control-btn" onclick="toggleMoreControls('tv')" aria-expanded="false" id="tvMoreBtn">⋯ MORE</button>
+  </div>
+
+  <div class="more-controls-panel" id="tvMoreControls" hidden>
+   <div class="more-controls-title">⚙️ TV More Controls</div>
+   <div class="more-control-grid">
+    <button type="button" onclick="seekTV(-10)">⏪ 10 SEC</button>
+    <button type="button" onclick="seekTV(10)">10 SEC ⏩</button>
+    <button type="button" onclick="pictureInPictureTV()">🪟 PiP</button>
+    <button type="button" onclick="toggleDiagnostics('tv')">📊 DIAGNOSTICS</button>
+    <label>🔊 Audio <select id="tvAudioTrackSelect" onchange="setTVAudioTrack(this.value)"><option value="-1">Default</option></select></label>
+    <label>💬 Subtitles <select id="tvSubtitleSelect" onchange="setTVSubtitle(this.value)"><option value="-1">Off</option></select></label>
+   </div>
   </div>
 
   <div class="advanced-media-player" id="advancedMediaPlayer">
@@ -1932,6 +1956,58 @@ if("mediaSession" in navigator){
  navigator.mediaSession.setActionHandler("stop",()=>stopRadio());
 }
 
+
+/* MORE CONTROLS - additive only */
+function toggleMoreControls(type){
+ const panel=document.getElementById(type==='tv'?'tvMoreControls':'radioMoreControls');
+ const btn=document.getElementById(type==='tv'?'tvMoreBtn':'radioMoreBtn');
+ if(!panel||!btn)return;
+ const open=panel.hasAttribute('hidden');
+ if(open) panel.removeAttribute('hidden'); else panel.setAttribute('hidden','');
+ btn.setAttribute('aria-expanded',String(open));
+ btn.textContent=open?'⌃ LESS':'⋯ MORE';
+ if(type==='tv' && open) refreshTVExtraTracks();
+}
+function seekTV(seconds){
+ const v=document.getElementById('tvPlayer'); if(!v)return;
+ try{
+  if(v.seekable && v.seekable.length){
+   const target=Math.max(v.seekable.start(0),Math.min(v.currentTime+seconds,v.seekable.end(v.seekable.length-1)));
+   v.currentTime=target;
+  }else if(Number.isFinite(v.duration)){ v.currentTime=Math.max(0,Math.min(v.currentTime+seconds,v.duration)); }
+ }catch(e){}
+}
+function refreshTVExtraTracks(){
+ const v=document.getElementById('tvPlayer');
+ const a=document.getElementById('tvAudioTrackSelect');
+ const sub=document.getElementById('tvSubtitleSelect');
+ if(!v||!a||!sub)return;
+ a.innerHTML='<option value="-1">Default</option>';
+ sub.innerHTML='<option value="-1">Off</option>';
+ try{
+  if(v.audioTracks && v.audioTracks.length){
+   for(let i=0;i<v.audioTracks.length;i++){const t=v.audioTracks[i]; const o=document.createElement('option');o.value=i;o.textContent=t.label||t.language||('Track '+(i+1));a.appendChild(o);}
+  }
+ }catch(e){}
+ try{
+  if(v.textTracks && v.textTracks.length){
+   for(let i=0;i<v.textTracks.length;i++){const t=v.textTracks[i]; const o=document.createElement('option');o.value=i;o.textContent=t.label||t.language||('Subtitle '+(i+1));sub.appendChild(o);}
+  }
+ }catch(e){}
+}
+function setTVAudioTrack(value){
+ const v=document.getElementById('tvPlayer'); if(!v)return;
+ try{if(v.audioTracks && value!=='-1'){for(let i=0;i<v.audioTracks.length;i++)v.audioTracks[i].enabled=(String(i)===String(value));}}catch(e){}
+}
+function setTVSubtitle(value){
+ const v=document.getElementById('tvPlayer'); if(!v)return;
+ try{for(let i=0;i<v.textTracks.length;i++)v.textTracks[i].mode=(String(i)===String(value)?'showing':'disabled');}catch(e){}
+}
+document.addEventListener('DOMContentLoaded',()=>{
+ const v=document.getElementById('tvPlayer');
+ if(v){['loadedmetadata','durationchange','canplay'].forEach(ev=>v.addEventListener(ev,refreshTVExtraTracks));}
+});
+
 /* ESCAPE */
 function escapeHTML(value){
  return String(value)
@@ -1961,13 +2037,30 @@ loadTV();
 ===================================================== -->
 <style>
 #jonLiveUpdates{display:none;margin:14px 0;gap:10px;flex-direction:column}
+#jonLiveUpdates.jon-bottom-ad{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:9990;width:min(680px,calc(100vw - 24px));max-height:220px;overflow:auto;margin:0;padding:0;gap:8px;box-sizing:border-box;filter:drop-shadow(0 10px 28px rgba(0,0,0,.24));scrollbar-width:thin}
+body.jon-ad-visible{padding-bottom:245px}
+#jonLiveUpdates.jon-bottom-ad .jon-ad-card{position:relative}
+.jon-ad-desc.is-collapsed{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.jon-ad-desc.is-expanded{display:block}
+.jon-ad-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+.jon-ad-read,.jon-ad-more{border:0;text-decoration:none;cursor:pointer;border-radius:10px;padding:8px 11px;font-weight:800;font-size:12px;line-height:1}
+.jon-ad-read{background:transparent;color:var(--text);border:1px solid var(--border)}
+.jon-ad-more{background:var(--red);color:#fff}
 .jon-ad-card,.jon-notify-card{background:var(--card);border:1px solid var(--border);border-radius:17px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
 .jon-ad-card h3,.jon-notify-card h3{margin:0 0 7px;font-size:16px}
 .jon-ad-media{width:100%;max-height:360px;object-fit:cover;border-radius:12px;background:#000;display:block}
+#jonLiveUpdates .jon-ad-card{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:15px;backdrop-filter:blur(8px);position:relative;flex:0 0 100%;min-width:100%;max-width:100%}
+#jonLiveUpdates .jon-ad-media{max-height:125px;object-fit:cover;border-radius:10px}
+#jonLiveUpdates.jon-horizontal-ad-scroll{display:flex!important;flex-direction:row;flex-wrap:nowrap;gap:10px;overflow-x:auto;overflow-y:hidden;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#jonLiveUpdates.jon-horizontal-ad-scroll::-webkit-scrollbar{display:none}
+#jonLiveUpdates .jon-ad-countdown{position:absolute;top:8px;right:8px;z-index:2;background:rgba(0,0,0,.72);color:#fff;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:800;line-height:1;pointer-events:none}
+#jonLiveUpdates .jon-ad-desc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#jonLiveUpdates .jon-ad-desc.is-expanded{display:block !important;-webkit-line-clamp:unset;overflow:visible}
 .jon-ad-desc,.jon-notify-msg{font-size:13px;color:var(--muted);margin:8px 0}
 .jon-ad-btn{display:inline-block;text-decoration:none;background:var(--red);color:#fff;border-radius:10px;padding:9px 13px;font-weight:800;font-size:13px}
-#jonNotificationBell{position:fixed;right:14px;bottom:14px;z-index:9998;border:0;border-radius:999px;width:52px;height:52px;background:var(--red);color:#fff;font-size:22px;box-shadow:0 8px 24px rgba(0,0,0,.25);cursor:pointer}
-#jonNotificationPanel{display:none;position:fixed;right:14px;bottom:76px;z-index:9999;width:min(360px,calc(100vw - 28px));max-height:65vh;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:17px;padding:12px;box-shadow:0 15px 40px rgba(0,0,0,.3)}
+@media(max-width:600px){#jonLiveUpdates.jon-bottom-ad{bottom:8px;width:calc(100vw - 16px);max-height:210px}#jonLiveUpdates .jon-ad-media{max-height:95px}body.jon-ad-visible{padding-bottom:225px}}
+#jonNotificationBell{position:fixed;right:14px;bottom:235px;z-index:9998;border:0;border-radius:999px;width:52px;height:52px;background:var(--red);color:#fff;font-size:22px;box-shadow:0 8px 24px rgba(0,0,0,.25);cursor:pointer}
+#jonNotificationPanel{display:none;position:fixed;right:14px;bottom:297px;z-index:9999;width:min(360px,calc(100vw - 28px));max-height:65vh;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:17px;padding:12px;box-shadow:0 15px 40px rgba(0,0,0,.3)}
 </style>
 
 <div id="jonLiveUpdates"></div>
@@ -1996,9 +2089,12 @@ loadTV();
   function renderAds(ads){
     if(!Array.isArray(ads)) return;
     const list=ads.filter(activeAd);
-    if(!list.length){ liveBox.style.display='none'; liveBox.innerHTML=''; return; }
+    if(!list.length){ clearInterval(window.jonAdCountdownTimer); window.jonAdCountdownTimer=null; liveBox.style.display='none'; liveBox.innerHTML=''; document.body.classList.remove('jon-ad-visible'); return; }
     liveBox.style.display='flex';
-    liveBox.innerHTML=list.map(x=>{
+    liveBox.classList.add('jon-bottom-ad','jon-horizontal-ad-scroll');
+    document.body.classList.add('jon-ad-visible');
+    liveBox.setAttribute('aria-label','Advertisement');
+    liveBox.innerHTML=list.map((x,i)=>{
       const media=x.video||x.videoUrl||x.mediaUrl||'';
       const image=x.image||x.imageUrl||x.banner||'';
       let mediaHTML='';
@@ -2008,12 +2104,76 @@ loadTV();
         mediaHTML='<img class="jon-ad-media" loading="lazy" src="'+safe(image)+'" alt="Advertisement">';
       }
       const click=x.url||x.clickUrl||'';
-      return '<div class="jon-ad-card"><h3>📢 '+safe(x.title||x.name||'Advertisement')+'</h3>'+
-        mediaHTML+
-        (x.description?'<div class="jon-ad-desc">'+safe(x.description)+'</div>':'')+
-        (click?'<a class="jon-ad-btn" target="_blank" rel="noopener noreferrer" href="'+safe(click)+'">Open</a>':'')+
-        '</div>';
+      const desc=x.description?'<div id="jonAdDesc'+i+'" class="jon-ad-desc is-collapsed">'+safe(x.description)+'</div>':'';
+      const read=x.description?'<button type="button" class="jon-ad-read" data-ad-read="'+i+'" aria-expanded="false">Read More</button>':'';
+      const more=click?'<a class="jon-ad-more" target="_blank" rel="noopener noreferrer" href="'+safe(click)+'">More</a>':'';
+      return '<div class="jon-ad-card"><span class="jon-ad-countdown" data-ad-countdown="'+i+'">15s</span><h3>📢 '+safe(x.title||x.name||'Advertisement')+'</h3>'+mediaHTML+desc+(read||more?'<div class="jon-ad-actions">'+read+more+'</div>':'')+'</div>';
     }).join('');
+    clearInterval(window.jonAdCountdownTimer);
+    window.jonAdCountdownTimer=null;
+    let countdown=15;
+    let currentIndex=0;
+    let programmaticScroll=false;
+    let scrollEndTimer=null;
+
+    const getStep=()=>{
+      const card=liveBox.querySelector('.jon-ad-card');
+      return card ? card.getBoundingClientRect().width + 10 : liveBox.clientWidth + 10;
+    };
+    const showCountdown=()=>{
+      liveBox.querySelectorAll('.jon-ad-countdown').forEach((el,i)=>{
+        el.textContent=(i===currentIndex?countdown:15)+'s';
+      });
+    };
+    const goToAd=(index, smooth=true)=>{
+      if(!list.length) return;
+      currentIndex=(index+list.length)%list.length;
+      countdown=15;
+      programmaticScroll=true;
+      liveBox.scrollTo({left:currentIndex*getStep(),behavior:smooth?'smooth':'auto'});
+      showCountdown();
+      clearTimeout(scrollEndTimer);
+      scrollEndTimer=setTimeout(()=>{programmaticScroll=false;},smooth?700:50);
+    };
+
+    goToAd(0,false);
+    window.jonAdCountdownTimer=setInterval(()=>{
+      countdown--;
+      if(countdown<=0){
+        goToAd(currentIndex+1,true);
+      }else{
+        showCountdown();
+      }
+    },1000);
+
+    /* Manual horizontal scrolling is still allowed. When the user changes
+       cards manually, that card gets a fresh 15-second countdown. */
+    let userScrollTimer=null;
+    const markManualScroll=()=>{
+      if(programmaticScroll) return;
+      clearTimeout(userScrollTimer);
+      userScrollTimer=setTimeout(()=>{
+        const step=Math.max(1,getStep());
+        const idx=Math.round(liveBox.scrollLeft/step);
+        currentIndex=Math.min(list.length-1,Math.max(0,idx));
+        countdown=15;
+        showCountdown();
+      },80);
+    };
+    liveBox.addEventListener('scroll',markManualScroll,{passive:true});
+    liveBox.addEventListener('touchstart',()=>{programmaticScroll=false;},{passive:true});
+    liveBox.addEventListener('wheel',()=>{programmaticScroll=false;},{passive:true});
+
+    liveBox.querySelectorAll('[data-ad-read]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const d=document.getElementById('jonAdDesc'+btn.dataset.adRead);
+        if(!d) return;
+        const expanded=d.classList.toggle('is-expanded');
+        d.classList.toggle('is-collapsed',!expanded);
+        btn.textContent=expanded?'Read Less':'Read More';
+        btn.setAttribute('aria-expanded',String(expanded));
+      });
+    });
   }
 
   function renderNotifications(items){
@@ -2057,5 +2217,61 @@ loadTV();
   if(window.__JON_FIREBASE_DATA) syncFirebaseData(window.__JON_FIREBASE_DATA);
 })();
 </script>
+<style id="jon-advanced-features-css">
+#jonAdvancedBar{margin:14px auto 0;max-width:1100px;padding:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;background:rgba(20,24,32,.78);border:1px solid rgba(255,255,255,.12);border-radius:16px;backdrop-filter:blur(10px)}
+#jonAdvancedBar button,#jonAdvancedBar select{border:1px solid rgba(255,255,255,.15);background:#171c25;color:inherit;border-radius:10px;padding:9px 11px;font-size:13px;cursor:pointer}
+#jonAdvancedSearch{flex:1;min-width:190px;max-width:360px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f131a;color:inherit}
+.jonTag{display:inline-block;padding:3px 7px;border-radius:999px;background:rgba(0,150,255,.14);font-size:11px;margin:2px}.jonHidden{display:none!important}
+#jonFeaturePanel{position:fixed;inset:auto 12px 78px 12px;z-index:9998;max-width:620px;margin:auto;background:#11161e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:18px;padding:16px;box-shadow:0 16px 50px rgba(0,0,0,.45);display:none}
+#jonFeaturePanel.open{display:block}.jonFeatureGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px}.jonFeatureGrid button{padding:11px;border-radius:11px;border:1px solid rgba(255,255,255,.12);background:#1a202a;color:#fff;text-align:left}
+@media(max-width:600px){#jonAdvancedBar{margin-left:8px;margin-right:8px}.jonTag{font-size:10px}}
+
+.more-control-btn{font-weight:900}
+.more-controls-panel{margin-top:9px;padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--card2)}
+.more-controls-title{font-size:12px;font-weight:900;margin-bottom:8px}
+.more-control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.more-control-grid button,.more-control-grid select{min-height:34px;border:1px solid var(--border);border-radius:9px;background:var(--card);color:var(--text);padding:6px;font-weight:800;font-size:11px}
+.more-control-grid label{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:800}
+@media(max-width:520px){.more-control-grid{grid-template-columns:1fr 1fr}.more-control-grid label{flex-direction:column;align-items:stretch}}
+</style>
+<div id="jonAdvancedBar" aria-label="Advanced JON Stream controls">
+<input id="jonAdvancedSearch" type="search" placeholder="🔍 Search TV & Radio…" autocomplete="off">
+<button type="button" id="jonMyListBtn">❤️ My List</button>
+<button type="button" id="jonRecentBtn">🕘 Recently Watched</button>
+<button type="button" id="jonFeaturesBtn">⚙️ More</button>
+</div>
+<div id="jonFeaturePanel" role="dialog" aria-label="JON Stream advanced features">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><strong>JON Stream Advanced</strong><button id="jonCloseFeatures" type="button">✕</button></div>
+<div class="jonFeatureGrid">
+<button type="button" id="jonBack10">⏪ 10 sec Back</button><button type="button" id="jonForward10">⏩ 10 sec Forward</button>
+<button type="button" id="jonPip">🪟 Picture-in-Picture</button><button type="button" id="jonCast">📡 Cast / Share Screen</button>
+<button type="button" id="jonSubtitles">💬 Subtitles (SRT/WebVTT)</button><button type="button" id="jonAudioTracks">🔊 Audio Tracks</button>
+<button type="button" id="jonLanguage">🌐 Amharic / English</button><button type="button" id="jonParental">👨‍👩‍👧 Parental Control / PIN</button>
+<button type="button" id="jonDataSaver">📶 Network Saver</button><button type="button" id="jonTvRemote">🎮 TV Remote / Keyboard</button>
+</div></div>
+<script id="jon-advanced-features-js">(()=>{
+const q=s=>document.querySelector(s), qa=s=>[...document.querySelectorAll(s)];
+const listKey='jonStreamMyList', recentKey='jonStreamRecentlyWatched', langKey='jonStreamLang', pinKey='jonStreamParentalPin';
+const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}, set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const video=()=>document.querySelector('video');
+function seek(n){const v=video();if(v&&Number.isFinite(v.currentTime))v.currentTime=Math.max(0,v.currentTime+n)}
+q('#jonFeaturesBtn')?.addEventListener('click',()=>q('#jonFeaturePanel')?.classList.toggle('open'));q('#jonCloseFeatures')?.addEventListener('click',()=>q('#jonFeaturePanel')?.classList.remove('open'));
+q('#jonBack10')?.addEventListener('click',()=>seek(-10));q('#jonForward10')?.addEventListener('click',()=>seek(10));
+q('#jonPip')?.addEventListener('click',async()=>{const v=video();try{if(!document.pictureInPictureEnabled||!v)return alert('Picture-in-Picture is not available for this player/browser.');if(document.pictureInPictureElement)await document.exitPictureInPicture();else await v.requestPictureInPicture()}catch(e){alert('Picture-in-Picture could not be started.')}});
+q('#jonCast')?.addEventListener('click',async()=>{const v=video();try{if(navigator.presentation?.requestStart)await navigator.presentation.requestStart();else if(v?.remote?.prompt)await v.remote.prompt();else alert('Cast is available only when this browser/player supports Chromecast or Remote Playback.')}catch(e){alert('Cast/Remote Playback is not available here.')}});
+q('#jonAudioTracks')?.addEventListener('click',()=>{const v=video();const tracks=v?.audioTracks;if(tracks&&tracks.length){const names=[...tracks].map((t,i)=>`${i+1}. ${t.label||t.language||'Track '+(i+1)}`).join('\n');alert('Available audio tracks:\n'+names)}else alert('No alternate audio tracks are exposed by the current stream.')});
+q('#jonSubtitles')?.addEventListener('click',()=>{const v=video();const tracks=v?.textTracks;if(tracks?.length){const names=[...tracks].map((t,i)=>`${i+1}. ${t.label||t.language||'Subtitle '+(i+1)}`).join('\n');alert('Available subtitles:\n'+names)}else alert('No SRT/WebVTT subtitle track is attached to the current stream. Add a subtitle track to the media source to use this feature.')});
+q('#jonLanguage')?.addEventListener('click',()=>{const cur=localStorage.getItem(langKey)||'en';const next=cur==='en'?'am':'en';localStorage.setItem(langKey,next);alert(next==='am'?'Amharic mode selected.':'English mode selected. Reload/refresh the page to apply it where translations are available.')});
+q('#jonDataSaver')?.addEventListener('click',()=>{const on=localStorage.getItem('jonDataSaver')!=='1';localStorage.setItem('jonDataSaver',on?'1':'0');alert(on?'Network Saver enabled.':'Network Saver disabled.')});
+q('#jonTvRemote')?.addEventListener('click',()=>alert('TV remote/keyboard shortcuts: Arrow Up/Down = navigate, Enter = select, Space = play/pause, M = mute, F = fullscreen, ←/→ = seek 10 seconds.'));
+window.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;const v=video();if(e.key==='ArrowLeft')seek(-10);else if(e.key==='ArrowRight')seek(10);else if(e.code==='Space'&&v){e.preventDefault();v.paused?v.play():v.pause()}else if(e.key.toLowerCase()==='m'&&v)v.muted=!v.muted;else if(e.key.toLowerCase()==='f'&&v&&!document.fullscreenElement)v.requestFullscreen?.()});
+q('#jonParental')?.addEventListener('click',()=>{let pin=localStorage.getItem(pinKey);if(!pin){const p=prompt('Create a 4-digit parental PIN:');if(/^\d{4}$/.test(p||'')){localStorage.setItem(pinKey,p);alert('Parental PIN created.')}else alert('PIN must be exactly 4 digits.')}else{const entered=prompt('Enter parental PIN:');alert(entered===pin?'PIN verified.':'Incorrect PIN.')}});
+function collectText(el){return (el?.textContent||el?.getAttribute?.('aria-label')||el?.getAttribute?.('title')||'').toLowerCase()}
+q('#jonAdvancedSearch')?.addEventListener('input',e=>{const term=e.target.value.trim().toLowerCase();qa('button,a,[role="button"]').forEach(el=>{if(el.closest('#jonAdvancedBar')||el.closest('#jonFeaturePanel'))return;const text=collectText(el);el.classList.toggle('jonHidden',!!term&&!text.includes(term))})});
+q('#jonMyListBtn')?.addEventListener('click',()=>{const a=get(listKey,[]);alert(a.length?'My List:\n'+a.join('\n'):'My List is empty. Use the existing channel favorite controls to add channels.')});
+q('#jonRecentBtn')?.addEventListener('click',()=>{const a=get(recentKey,[]);alert(a.length?'Recently Watched:\n'+a.slice(0,20).join('\n'):'No recently watched channels yet.')});
+window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).filter(x=>x!==name);a.unshift(name);set(recentKey,a.slice(0,30))};
+})();</script>
+
 </body>
 </html>
