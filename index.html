@@ -550,6 +550,50 @@ audio,video{
 }
 
 </style>
+
+<style id="jonLandscapeReadMoreFix">
+/* JON additive fix: keep Read More / Read Less usable in landscape. */
+@media (orientation:landscape){
+ #jonLiveUpdates .jon-ad-desc{display:-webkit-box!important;}
+ #jonLiveUpdates .jon-ad-desc.is-collapsed{display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+ #jonLiveUpdates .jon-ad-desc.is-expanded{display:block!important;-webkit-line-clamp:unset;overflow:visible;}
+ #jonLiveUpdates .jon-ad-actions{display:flex!important;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;}
+ #jonLiveUpdates .jon-ad-read,#jonLiveUpdates .jon-ad-more{padding:5px 8px;font-size:10px;}
+}
+</style>
+<style id="jonLandscapeReadMoreFinalFix">
+/* Final landscape fix: Read More / Read Less must remain visible. */
+@media (orientation:landscape) {
+  #jonLiveUpdates .jon-ad-desc,
+  #jonLiveUpdates .jon-ad-actions {
+    display: revert !important;
+  }
+  #jonLiveUpdates .jon-ad-desc.is-collapsed {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+  #jonLiveUpdates .jon-ad-desc.is-expanded {
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    overflow: visible !important;
+  }
+  #jonLiveUpdates .jon-ad-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+    margin-top: 4px !important;
+  }
+  #jonLiveUpdates .jon-ad-read,
+  #jonLiveUpdates .jon-ad-more {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+</style>
 </head>
 
 <body>
@@ -1625,6 +1669,51 @@ function toggleTVFavorite(name,url){
 }
 
 /* TV LIST */
+/* JON PER-CHANNEL TV LOCK - ADDITIVE ONLY */
+const JON_CHANNEL_LOCKS_KEY="jonTVChannelLocks";
+const JON_PARENTAL_PIN_KEY="jonStreamParentalPin";
+function getJonChannelLocks(){
+ try{return JSON.parse(localStorage.getItem(JON_CHANNEL_LOCKS_KEY)||"[]")}catch(_){return []}
+}
+function saveJonChannelLocks(list){localStorage.setItem(JON_CHANNEL_LOCKS_KEY,JSON.stringify([...new Set(list)]))}
+function jonChannelLockId(channel){return String((channel&&channel.url)||"").trim()}
+function isJonChannelLocked(channel){const id=jonChannelLockId(channel);return !!id&&getJonChannelLocks().includes(id)}
+function getJonParentalPin(){return localStorage.getItem(JON_PARENTAL_PIN_KEY)||""}
+function ensureJonParentalPin(){
+ let pin=getJonParentalPin();
+ if(pin)return pin;
+ const created=prompt("🔐 Create a 4-digit PIN for TV channel locks:");
+ if(created===null)return "";
+ if(!/^\d{4}$/.test(created)){alert("PIN must be exactly 4 digits.");return ""}
+ localStorage.setItem(JON_PARENTAL_PIN_KEY,created);
+ return created;
+}
+function verifyJonParentalPin(message){
+ const pin=getJonParentalPin();
+ if(!pin)return false;
+ const entered=prompt(message||"🔒 Enter 4-digit PIN:");
+ if(entered===pin)return true;
+ if(entered!==null)alert("Incorrect parental PIN.");
+ return false;
+}
+function jonAllowsChannel(channel){
+ if(!isJonChannelLocked(channel))return true;
+ return verifyJonParentalPin("🔒 This TV channel is locked.\nEnter 4-digit PIN to watch:");
+}
+function toggleJonChannelLock(channel){
+ const id=jonChannelLockId(channel);if(!id)return;
+ let locks=getJonChannelLocks();
+ if(locks.includes(id)){
+  if(!verifyJonParentalPin("🔓 Enter 4-digit PIN to unlock this channel:"))return;
+  locks=locks.filter(x=>x!==id);
+ }else{
+  const pin=ensureJonParentalPin();if(!pin)return;
+  if(getJonParentalPin()!==pin)return;
+  locks.push(id);
+ }
+ saveJonChannelLocks(locks);
+ renderTV(filteredTV);
+}
 function renderTV(list){
  const box=document.getElementById("tvChannels");
  box.innerHTML="";
@@ -1655,13 +1744,21 @@ function renderTV(list){
 
    <button class="tv-play">▶</button>
 
+   <button class="tv-channel-lock" type="button" title="${isJonChannelLocked(channel)?"Unlock channel":"Lock channel"}" aria-label="${isJonChannelLocked(channel)?"Unlock channel":"Lock channel"}">${isJonChannelLocked(channel)?"🔒":"🔓"}</button>
+
    <button class="tv-favorite ${fav?"active":""}">
     ${fav?"★":"☆"}
    </button>
   `;
 
   card.querySelector(".tv-play").onclick=()=>{
+   if(!jonAllowsChannel(channel)) return;
    playTVStream(channel.url,channel.name,index);
+  };
+
+  card.querySelector(".tv-channel-lock").onclick=(event)=>{
+   event.stopPropagation();
+   toggleJonChannelLock(channel);
   };
 
   card.querySelector(".tv-favorite").onclick=()=>{
@@ -1814,7 +1911,7 @@ function nextTV(){
  }
 
  const channel=filteredTV[next];
-
+ if(!jonAllowsChannel(channel))return;
  playTVStream(channel.url,channel.name,next);
 }
 
@@ -1831,7 +1928,7 @@ function previousTV(){
  }
 
  const channel=filteredTV[previous];
-
+ if(!jonAllowsChannel(channel))return;
  playTVStream(channel.url,channel.name,previous);
 }
 
@@ -2052,6 +2149,29 @@ body.jon-ad-visible{padding-bottom:245px}
 #jonLiveUpdates .jon-ad-card{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:15px;backdrop-filter:blur(8px);position:relative;flex:0 0 100%;min-width:100%;max-width:100%}
 #jonLiveUpdates .jon-ad-media{max-height:125px;object-fit:cover;border-radius:10px}
 #jonLiveUpdates.jon-horizontal-ad-scroll{display:flex!important;flex-direction:row;flex-wrap:nowrap;gap:10px;overflow-x:auto;overflow-y:hidden;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+/* Compact advertisement layout for landscape rotation and Smart TV */
+@media (orientation:landscape) and (max-height:700px){
+#jonLiveUpdates.jon-bottom-ad{bottom:8px;width:min(520px,calc(100vw - 20px));max-height:70vh;overflow-x:auto;overflow-y:auto}
+#jonLiveUpdates .jon-ad-card{padding:7px 9px;border-radius:11px}
+#jonLiveUpdates .jon-ad-card h3{margin:0 0 4px;font-size:12px}
+#jonLiveUpdates .jon-ad-media{max-height:58px;border-radius:7px}
+#jonLiveUpdates .jon-ad-desc,#jonLiveUpdates .jon-ad-actions{display:block!important}
+#jonLiveUpdates .jon-ad-countdown{top:5px;right:5px;padding:3px 6px;font-size:9px}
+#jonLiveUpdates .jon-ad-close{top:5px;left:5px;width:22px;height:22px;font-size:14px;line-height:22px}
+body.jon-ad-visible{padding-bottom:95px}
+#jonNotificationBell{bottom:100px;width:42px;height:42px;font-size:18px}
+#jonNotificationPanel{bottom:150px;max-height:48vh}
+}
+@media (orientation:landscape) and (min-width:900px){
+.container{max-width:1600px;padding:18px 28px}.logo{width:105px;height:105px}.brand{padding:4px 0 12px}
+.brand h1{font-size:23px;margin:8px 0 3px}.time-panel,.mode-switch{max-width:900px;margin-left:auto;margin-right:auto}
+#jonLiveUpdates.jon-bottom-ad{width:min(460px,34vw);max-height:70vh;bottom:12px}
+#jonLiveUpdates .jon-ad-card{padding:7px 9px;border-radius:11px}
+#jonLiveUpdates .jon-ad-card h3{font-size:12px;margin-bottom:4px}
+#jonLiveUpdates .jon-ad-media{max-height:60px}
+#jonLiveUpdates .jon-ad-desc,#jonLiveUpdates .jon-ad-actions{display:block!important}
+body.jon-ad-visible{padding-bottom:85px}
+}
 #jonLiveUpdates.jon-horizontal-ad-scroll::-webkit-scrollbar{display:none}
 #jonLiveUpdates .jon-ad-countdown{position:absolute;top:8px;right:8px;z-index:2;background:rgba(0,0,0,.72);color:#fff;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:800;line-height:1;pointer-events:none}
 #jonLiveUpdates .jon-ad-close{position:absolute;top:8px;left:8px;z-index:3;width:28px;height:28px;border:0;border-radius:50%;background:rgba(0,0,0,.72);color:#fff;font-size:18px;font-weight:900;line-height:28px;text-align:center;padding:0;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)}
@@ -2290,6 +2410,14 @@ body.jon-ad-visible{padding-bottom:245px}
 #jonAdvancedBar button,#jonAdvancedBar select{border:1px solid rgba(255,255,255,.15);background:#171c25;color:inherit;border-radius:10px;padding:9px 11px;font-size:13px;cursor:pointer}
 #jonAdvancedSearch{flex:1;min-width:190px;max-width:360px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f131a;color:inherit}
 .jonTag{display:inline-block;padding:3px 7px;border-radius:999px;background:rgba(0,150,255,.14);font-size:11px;margin:2px}.jonHidden{display:none!important}
+/* Comfortable Parental Lock */
+.jon-parental-modal{position:fixed;inset:0;z-index:10001;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.68);backdrop-filter:blur(6px)}
+.jon-parental-modal[hidden]{display:none!important}.jon-parental-card{position:relative;width:min(390px,calc(100vw - 28px));background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:20px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.45);text-align:center}
+.jon-parental-icon{font-size:38px}.jon-parental-card h2{margin:5px 0;font-size:22px}.jon-parental-card p{margin:0 0 16px;color:var(--muted);font-size:13px}
+.jon-parental-close{position:absolute;top:10px;right:10px;width:34px;height:34px;padding:0;border-radius:50%;background:var(--card2);color:var(--text);border:1px solid var(--border)}
+.jon-parental-input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:18px;text-align:center;letter-spacing:6px;outline:none;margin-bottom:10px}
+.jon-parental-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.jon-parental-actions button{min-height:44px}.jon-parental-danger{background:#263750!important}
+.jon-parental-lock-state{padding:10px;border-radius:11px;background:var(--card2);border:1px solid var(--border);margin-bottom:10px;font-weight:800;font-size:13px}
 #jonFeaturePanel{position:fixed;inset:auto 12px 78px 12px;z-index:9998;max-width:620px;margin:auto;background:#11161e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:18px;padding:16px;box-shadow:0 16px 50px rgba(0,0,0,.45);display:none}
 #jonFeaturePanel.open{display:block}.jonFeatureGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px}.jonFeatureGrid button{padding:11px;border-radius:11px;border:1px solid rgba(255,255,255,.12);background:#1a202a;color:#fff;text-align:left}
 @media(max-width:600px){#jonAdvancedBar{margin-left:8px;margin-right:8px}.jonTag{font-size:10px}}
@@ -2308,6 +2436,14 @@ body.jon-ad-visible{padding-bottom:245px}
 <button type="button" id="jonRecentBtn">🕘 Recently Watched</button>
 <button type="button" id="jonFeaturesBtn">⚙️ More</button>
 </div>
+<div id="jonParentalModal" class="jon-parental-modal" role="dialog" aria-modal="true" hidden>
+<div class="jon-parental-card">
+<button type="button" class="jon-parental-close" id="jonParentalClose" aria-label="Close">✕</button>
+<div class="jon-parental-icon">👨‍👩‍👧</div>
+<h2>Parental Lock</h2>
+<p id="jonParentalStatus">Protect TV playback with a 4-digit PIN.</p>
+<div id="jonParentalForm"></div>
+</div></div>
 <div id="jonFeaturePanel" role="dialog" aria-label="JON Stream advanced features">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><strong>JON Stream Advanced</strong><button id="jonCloseFeatures" type="button">✕</button></div>
 <div class="jonFeatureGrid">
@@ -2333,7 +2469,28 @@ q('#jonLanguage')?.addEventListener('click',()=>{const cur=localStorage.getItem(
 q('#jonDataSaver')?.addEventListener('click',()=>{const on=localStorage.getItem('jonDataSaver')!=='1';localStorage.setItem('jonDataSaver',on?'1':'0');alert(on?'Network Saver enabled.':'Network Saver disabled.')});
 q('#jonTvRemote')?.addEventListener('click',()=>alert('TV remote/keyboard shortcuts: Arrow Up/Down = navigate, Enter = select, Space = play/pause, M = mute, F = fullscreen, ←/→ = seek 10 seconds.'));
 window.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;const v=video();if(e.key==='ArrowLeft')seek(-10);else if(e.key==='ArrowRight')seek(10);else if(e.code==='Space'&&v){e.preventDefault();v.paused?v.play():v.pause()}else if(e.key.toLowerCase()==='m'&&v)v.muted=!v.muted;else if(e.key.toLowerCase()==='f'&&v&&!document.fullscreenElement)v.requestFullscreen?.()});
-q('#jonParental')?.addEventListener('click',()=>{let pin=localStorage.getItem(pinKey);if(!pin){const p=prompt('Create a 4-digit parental PIN:');if(/^\d{4}$/.test(p||'')){localStorage.setItem(pinKey,p);alert('Parental PIN created.')}else alert('PIN must be exactly 4 digits.')}else{const entered=prompt('Enter parental PIN:');alert(entered===pin?'PIN verified.':'Incorrect PIN.')}});
+const parentalModal=q('#jonParentalModal'),parentalForm=q('#jonParentalForm'),parentalStatus=q('#jonParentalStatus');
+const parentalLockKey='jonStreamParentalLocked',parentalLocked=()=>localStorage.getItem(parentalLockKey)==='1',parentalPin=()=>localStorage.getItem(pinKey)||'';
+function closeParentalModal(){if(parentalModal)parentalModal.hidden=true}
+q('#jonParentalClose')?.addEventListener('click',closeParentalModal);
+parentalModal?.addEventListener('click',e=>{if(e.target===parentalModal)closeParentalModal()});
+function renderParentalPanel(){
+ if(!parentalForm)return; const pin=parentalPin(),locked=parentalLocked();
+ if(!pin){
+  parentalStatus.textContent='Create a 4-digit PIN to protect TV playback.';
+  parentalForm.innerHTML='<input id="jonPinInput" class="jon-parental-input" inputmode="numeric" maxlength="4" type="password" placeholder="••••"><div class="jon-parental-actions"><button type="button" id="jonSavePin">Create PIN</button><button type="button" class="jon-parental-danger" id="jonParentalCancel">Cancel</button></div>';
+  q('#jonSavePin')?.addEventListener('click',()=>{const v=q('#jonPinInput')?.value||'';if(!/^\d{4}$/.test(v)){parentalStatus.textContent='PIN must be exactly 4 digits.';return}localStorage.setItem(pinKey,v);localStorage.setItem(parentalLockKey,'1');renderParentalPanel()});
+  q('#jonParentalCancel')?.addEventListener('click',closeParentalModal);
+ }else{
+  parentalStatus.textContent='Enter the PIN to change the TV lock.';
+  parentalForm.innerHTML='<div class="jon-parental-lock-state">'+(locked?'🔒 TV Parental Lock: ON':'🔓 TV Parental Lock: OFF')+'</div><input id="jonPinInput" class="jon-parental-input" inputmode="numeric" maxlength="4" type="password" placeholder="••••"><div class="jon-parental-actions"><button type="button" id="jonToggleLock">'+(locked?'Unlock TV':'Lock TV')+'</button><button type="button" class="jon-parental-danger" id="jonResetPin">Change PIN</button></div>';
+  q('#jonToggleLock')?.addEventListener('click',()=>{const v=q('#jonPinInput')?.value||'';if(v!==pin){parentalStatus.textContent='Incorrect PIN.';return}localStorage.setItem(parentalLockKey,locked?'0':'1');renderParentalPanel()});
+  q('#jonResetPin')?.addEventListener('click',()=>{const v=q('#jonPinInput')?.value||'';if(v!==pin){parentalStatus.textContent='Enter the current PIN first.';return}localStorage.removeItem(pinKey);localStorage.removeItem(parentalLockKey);renderParentalPanel()});
+ }
+ parentalModal.hidden=false;setTimeout(()=>q('#jonPinInput')?.focus(),50);
+}
+q('#jonParental')?.addEventListener('click',renderParentalPanel);
+function parentalAllowsTV(){if(!parentalLocked())return true;const entered=prompt('🔒 Parental Lock\nEnter 4-digit PIN to play this TV channel:');if(entered===parentalPin())return true;alert('Incorrect parental PIN.');return false;}
 function collectText(el){return (el?.textContent||el?.getAttribute?.('aria-label')||el?.getAttribute?.('title')||'').toLowerCase()}
 q('#jonAdvancedSearch')?.addEventListener('input',e=>{const term=e.target.value.trim().toLowerCase();qa('button,a,[role="button"]').forEach(el=>{if(el.closest('#jonAdvancedBar')||el.closest('#jonFeaturePanel'))return;const text=collectText(el);el.classList.toggle('jonHidden',!!term&&!text.includes(term))})});
 q('#jonMyListBtn')?.addEventListener('click',()=>{const a=get(listKey,[]);alert(a.length?'My List:\n'+a.join('\n'):'My List is empty. Use the existing channel favorite controls to add channels.')});
@@ -2341,5 +2498,10 @@ q('#jonRecentBtn')?.addEventListener('click',()=>{const a=get(recentKey,[]);aler
 window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).filter(x=>x!==name);a.unshift(name);set(recentKey,a.slice(0,30))};
 })();</script>
 
+
+<style id="jonChannelLockStyle">
+.tv-channel-lock{width:45px;height:43px;padding:0;flex-shrink:0;background:#263750;font-size:18px}
+@media(max-width:520px){.tv-channel-lock{width:34px;height:34px;font-size:15px}}
+</style>
 </body>
 </html>
