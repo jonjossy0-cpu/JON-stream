@@ -594,7 +594,72 @@ audio,video{
   }
 }
 </style>
-</head>
+<style id="jonProfessionalMediaCSS">
+.jonMediaHero{width:100%;margin:0 0 16px;padding:0 2px}
+.jonMediaHeroFrame{
+ position:relative;width:100%;height:clamp(170px,30vw,320px);
+ overflow:hidden;border-radius:20px;
+ border:1px solid rgba(255,255,255,.16);
+ background:linear-gradient(135deg,rgba(20,28,42,.95),rgba(8,12,20,.98));
+ box-shadow:0 14px 38px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.09);
+}
+.jonMediaHeroFrame::before{
+ content:"";position:absolute;inset:0;border-radius:20px;
+ box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),inset 0 -60px 100px rgba(0,0,0,.22);
+ pointer-events:none;z-index:3;
+}
+.jonMediaHeroImage{
+ width:100%;height:100%;object-fit:cover;display:block;
+ opacity:0;transform:scale(1.015);
+ transition:opacity .8s ease,transform 6s ease;
+}
+.jonMediaHeroImage.show{opacity:1;transform:scale(1)}
+.jonMediaHeroShade{
+ position:absolute;inset:0;z-index:2;
+ background:linear-gradient(180deg,rgba(0,0,0,.06) 20%,rgba(0,0,0,.48) 100%);
+ pointer-events:none;
+}
+.jonMediaHeroBadge{
+ position:absolute;left:16px;bottom:14px;z-index:4;
+ padding:8px 12px;border-radius:999px;
+ background:rgba(0,0,0,.52);backdrop-filter:blur(10px);
+ border:1px solid rgba(255,255,255,.16);
+ color:#fff;font-weight:900;font-size:12px;letter-spacing:.5px;
+ box-shadow:0 5px 16px rgba(0,0,0,.22);
+}
+@media(max-width:600px){
+ .jonMediaHero{margin-bottom:12px}
+ .jonMediaHeroFrame{height:clamp(145px,42vw,220px);border-radius:15px}
+ .jonMediaHeroFrame::before{border-radius:15px}
+ .jonMediaHeroBadge{left:11px;bottom:10px;padding:7px 10px;font-size:11px}
+}
+</style><style id="jonTVFavoriteRestoreCSS">
+#jonTVFavControl{position:relative;display:inline-flex;align-items:center;margin:0 0 14px;margin-left:8px}
+#jonTVFavoriteIcon{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer}
+#jonTVFavoritePanel{position:absolute;left:0;top:48px;z-index:9999;width:min(390px,calc(100vw - 30px));max-height:55vh;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+#jonTVFavoritePanel[hidden]{display:none}
+.tvfav-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.tvfav-head button{border:0;background:transparent;color:inherit;font-size:18px;cursor:pointer}
+.tvfav-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border)}
+.tvfav-name{flex:1;font-size:13px;font-weight:800}
+.tvfav-row button{border:1px solid var(--border);background:var(--card2);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}
+</style><style id="jonTVFavoriteEthiopiaCSS">
+#jonTVFavControl{vertical-align:middle}
+#jonTVFavoriteIcon{white-space:nowrap}
+@media(max-width:600px){
+  #jonTVFavControl{margin-left:6px}
+  #jonTVFavoriteIcon{padding:8px 10px;font-size:12px}
+}
+</style><style id="jonTVFavoriteRestoreStyle">
+#jonTVFavoriteRestore{display:block!important;visibility:visible!important}
+#jonTVFavoriteIcon{display:inline-flex!important;align-items:center;gap:5px;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer}
+#jonTVFavoritePanel[hidden]{display:none!important}
+</style><style id="jonTVFavoriteExactPlacement">
+.tv-filter-row #jonTVFavControl{display:inline-flex!important;position:relative!important;vertical-align:middle!important;margin:0 0 0 8px!important;z-index:100!important}
+.tv-filter-row #jonTVFavoriteIcon{display:inline-flex!important;visibility:visible!important;opacity:1!important;align-items:center;gap:5px;white-space:nowrap}
+.tv-filter-row #jonTVFavoritePanel{position:absolute!important;left:0!important;top:46px!important;z-index:99999!important}
+@media(max-width:600px){.tv-filter-row #jonTVFavControl{margin-left:5px!important}.tv-filter-row #jonTVFavoriteIcon{padding:8px 10px;font-size:12px}}
+</style></head>
 
 <body>
 <div class="container">
@@ -637,7 +702,13 @@ audio,video{
 <!-- =====================================================
                      RADIO ONLY
 ===================================================== -->
-<div class="section radio-section active">
+<div class="section radio-section active"><div class="jonMediaHero" data-jon-media="radio">
+  <div class="jonMediaHeroFrame">
+    <img class="jonMediaHeroImage" data-jon-hero-img="radio" alt="">
+    <div class="jonMediaHeroShade"></div>
+    <div class="jonMediaHeroBadge">📻 RADIO</div>
+  </div>
+</div>
  <div class="section-head">
   <h2>📻 RADIO</h2>
  </div>
@@ -725,7 +796,13 @@ audio,video{
 <!-- =====================================================
                        TV ONLY
 ===================================================== -->
-<div class="section tv-section">
+<div class="section tv-section"><div class="jonMediaHero" data-jon-media="tv">
+  <div class="jonMediaHeroFrame">
+    <img class="jonMediaHeroImage" data-jon-hero-img="tv" alt="">
+    <div class="jonMediaHeroShade"></div>
+    <div class="jonMediaHeroBadge">📺 TV</div>
+  </div>
+</div>
  <div class="section-head">
   <h2>📺 TV</h2>
  </div>
@@ -737,6 +814,7 @@ audio,video{
  <div class="tv-filter-row">
   <button id="allFilter" class="selected" onclick="setTVFilter('all')">🌍 ALL</button>
   <button id="ethFilter" onclick="setTVFilter('ethiopia')">🇪🇹 ETHIOPIA</button>
+  <div id="jonTVFavControl"><button type="button" id="jonTVFavoriteIcon">❤️ Favorites <span id="jonTVFavoriteCount">0</span></button><div id="jonTVFavoritePanel" hidden><div class="tvfav-head"><b>❤️ Favorite TV</b><button type="button" id="jonTVFavoriteClose">✕</button></div><div id="jonTVFavoriteItems"></div></div></div>
  </div>
 
  <select id="countryFilter" class="country-select" onchange="searchTVChannels()">
@@ -2503,5 +2581,66 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
 .tv-channel-lock{width:45px;height:43px;padding:0;flex-shrink:0;background:#263750;font-size:18px}
 @media(max-width:520px){.tv-channel-lock{width:34px;height:34px;font-size:15px}}
 </style>
-</body>
+<script id="jonProfessionalMediaJS">
+(function(){
+ let list=[],idx=0,timer=null;
+ const images={
+  radio:document.querySelector('[data-jon-hero-img="radio"]'),
+  tv:document.querySelector('[data-jon-hero-img="tv"]')
+ };
+ function ok(u){try{let x=new URL(u);return x.protocol==="http:"||x.protocol==="https:"}catch(e){return false}}
+ function setList(remote){
+  const a=Array.isArray(remote?.backgrounds)?remote.backgrounds
+    .filter(x=>x&&x.enabled!==false&&ok(x.url))
+    .map(x=>({url:String(x.url),seconds:Math.max(1,Number(x.seconds)||5)})):[];
+  if(JSON.stringify(a)!==JSON.stringify(list)){list=a;idx=0;clearTimeout(timer);show()}
+ }
+ function show(){
+  if(!list.length)return;
+  const item=list[idx],pre=new Image();
+  pre.onload=function(){
+   Object.values(images).forEach(im=>{if(im){im.src=item.url;im.classList.add("show")}})
+   clearTimeout(timer);
+   if(list.length>1)timer=setTimeout(()=>{idx=(idx+1)%list.length;show()},item.seconds*1000);
+  };
+  pre.onerror=function(){
+   if(list.length>1){idx=(idx+1)%list.length;show()}
+  };
+  pre.src=item.url;
+ }
+ window.addEventListener("jon-firebase-data",e=>setList(e.detail));
+})();
+</script><script id="jonTVFavoriteRestoreJS">
+(function(){
+ const icon=document.getElementById("jonTVFavoriteIcon"),panel=document.getElementById("jonTVFavoritePanel"),items=document.getElementById("jonTVFavoriteItems"),count=document.getElementById("jonTVFavoriteCount");
+ if(!icon||!panel||!items)return;
+ const get=()=>{try{return [...new Set(JSON.parse(localStorage.getItem("jonTVFavorites")||"[]"))]}catch(e){return[]}};
+ const save=a=>localStorage.setItem("jonTVFavorites",JSON.stringify([...new Set(a)]));
+ const esc=x=>String(x).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+ function render(){
+  const f=get(), ch=(typeof tvChannels!=="undefined"?tvChannels:[]);
+  count.textContent=f.length;
+  items.innerHTML=f.length?f.map(u=>{const i=ch.findIndex(x=>x?.url===u),n=i>=0?ch[i].name:u;return `<div class="tvfav-row"><div class="tvfav-name">📺 ${esc(n)}</div>${i>=0?`<button data-p="${i}">▶</button>`:""}<button data-r="${encodeURIComponent(u)}">✕</button></div>`}).join(""):'<div style="padding:12px;opacity:.7;text-align:center">No favorite TV channels.</div>';
+ }
+ icon.onclick=()=>{render();panel.hidden=!panel.hidden};
+ document.getElementById("jonTVFavoriteClose")?.addEventListener("click",()=>panel.hidden=true);
+ items.onclick=e=>{
+  const p=e.target.closest("[data-p]"),r=e.target.closest("[data-r]");
+  if(p&&typeof playTVStream==="function"){let i=+p.dataset.p;playTVStream(tvChannels[i].url,tvChannels[i].name,i);panel.hidden=true}
+  if(r){save(get().filter(x=>x!==decodeURIComponent(r.dataset.r)));render();if(typeof renderTV==="function"&&typeof filteredTV!=="undefined")renderTV(filteredTV)}
+ };
+ window.addEventListener("jon-firebase-data",render); setTimeout(render,300);
+})();
+</script><script id="jonTVFavoriteRestoreJS2">
+(function(){
+const b=document.getElementById("jonTVFavoriteIcon"),p=document.getElementById("jonTVFavoritePanel"),it=document.getElementById("jonTVFavoriteItems"),c=document.getElementById("jonTVFavoriteCount");
+if(!b||!p||!it)return;
+const get=()=>{try{return [...new Set(JSON.parse(localStorage.getItem("jonTVFavorites")||"[]"))]}catch(e){return[]}};
+const esc=x=>String(x).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+function render(){let f=get(),a=typeof tvChannels!=="undefined"?tvChannels:[];c.textContent=f.length;it.innerHTML=f.length?f.map(u=>{let i=a.findIndex(x=>x?.url===u),n=i>=0?a[i].name:u;return `<div style="display:flex;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)"><span style="flex:1;font-weight:800">📺 ${esc(n)}</span>${i>=0?`<button data-p="${i}">▶</button>`:""}<button data-r="${encodeURIComponent(u)}">✕</button></div>`}).join(""):'<div style="padding:12px;text-align:center;opacity:.7">No favorite TV channels yet.</div>'}
+b.onclick=()=>{render();p.hidden=!p.hidden};document.getElementById("jonTVFavoriteClose")?.addEventListener("click",()=>p.hidden=true);
+it.onclick=e=>{let x=e.target.closest("[data-p]"),r=e.target.closest("[data-r]");if(x&&typeof playTVStream==="function"){let i=+x.dataset.p;playTVStream(tvChannels[i].url,tvChannels[i].name,i);p.hidden=true}if(r){localStorage.setItem("jonTVFavorites",JSON.stringify(get().filter(u=>u!==decodeURIComponent(r.dataset.r))));render();if(typeof renderTV==="function"&&typeof filteredTV!=="undefined")renderTV(filteredTV)}};
+window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
+})();
+</script></body>
 </html>
