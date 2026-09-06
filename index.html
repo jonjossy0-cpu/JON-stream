@@ -633,6 +633,11 @@ audio,video{
  .jonMediaHeroFrame::before{border-radius:15px}
  .jonMediaHeroBadge{left:11px;bottom:10px;padding:7px 10px;font-size:11px}
 }
+</style>
+<style id="jonRadioLogoCSS">
+.radio-logo{width:48px;height:48px;flex:0 0 48px;object-fit:contain;border-radius:10px;background:#fff;border:1px solid rgba(255,255,255,.12);box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.radio-logo-fallback{display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--card,#fff);color:var(--text,#111)}
+@media(max-width:600px){.radio-logo{width:42px;height:42px;flex-basis:42px;border-radius:9px}}
 </style><style id="jonTVFavoriteRestoreCSS">
 #jonTVFavControl{position:relative;display:inline-flex;align-items:center;margin:0 0 14px;margin-left:8px}
 #jonTVFavoriteIcon{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer}
@@ -1347,7 +1352,12 @@ function renderFavorites(){
   const div=document.createElement("div");
   div.className="station";
 
+  const logoHTML=station.logo
+   ? `<img class="radio-logo" src="${escapeHTML(station.logo)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+   : `<div class="radio-logo radio-logo-fallback">📻</div>`;
+
   div.innerHTML=`
+   ${logoHTML}
    <div class="live-dot"></div>
    <div class="station-info">
     <div class="station-name">${escapeHTML(station.name)}</div>
@@ -1383,7 +1393,12 @@ function renderStations(list){
   const div=document.createElement("div");
   div.className="station";
 
+  const logoHTML=station.logo
+   ? `<img class="radio-logo" src="${escapeHTML(station.logo)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+   : `<div class="radio-logo radio-logo-fallback">📻</div>`;
+
   div.innerHTML=`
+   ${logoHTML}
    <div class="live-dot"></div>
    <div class="station-info">
     <div class="station-name">${escapeHTML(station.name)}</div>
@@ -2599,7 +2614,9 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
   if(!list.length)return;
   const item=list[idx],pre=new Image();
   pre.onload=function(){
-   Object.values(images).forEach(im=>{if(im){im.src=item.url;im.classList.add("show")}})
+   const targets=Object.values(images).filter(Boolean);
+   targets.forEach(im=>im.classList.remove("show"));
+   setTimeout(()=>{targets.forEach(im=>{im.src=item.url;im.classList.add("show")})},450)
    clearTimeout(timer);
    if(list.length>1)timer=setTimeout(()=>{idx=(idx+1)%list.length;show()},item.seconds*1000);
   };
