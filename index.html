@@ -664,7 +664,24 @@ audio,video{
 .tv-filter-row #jonTVFavoriteIcon{display:inline-flex!important;visibility:visible!important;opacity:1!important;align-items:center;gap:5px;white-space:nowrap}
 .tv-filter-row #jonTVFavoritePanel{position:absolute!important;left:0!important;top:46px!important;z-index:99999!important}
 @media(max-width:600px){.tv-filter-row #jonTVFavControl{margin-left:5px!important}.tv-filter-row #jonTVFavoriteIcon{padding:8px 10px;font-size:12px}}
-</style></head>
+</style>
+<style id="jonTVDisplayShortcutCSS">
+/* JON TV Display Shortcut - additive only */
+#jonTVDisplayShortcut{
+ position:fixed;right:22px;bottom:22px;z-index:10000;
+ display:none;align-items:center;justify-content:center;gap:7px;
+ min-width:150px;min-height:52px;padding:12px 18px;
+ border:2px solid rgba(255,255,255,.22);border-radius:16px;
+ background:var(--red);color:#fff;font-size:15px;font-weight:900;
+ box-shadow:0 10px 28px rgba(0,0,0,.35);cursor:pointer;
+}
+#jonTVDisplayShortcut.show{display:inline-flex}
+#jonTVDisplayShortcut:focus{outline:3px solid #fff;outline-offset:3px}
+@media(max-width:600px){
+ #jonTVDisplayShortcut{right:12px;bottom:12px;min-width:125px;min-height:46px;padding:10px 14px;font-size:13px}
+}
+</style>
+</head>
 
 <body>
 <div class="container">
@@ -2659,5 +2676,72 @@ b.onclick=()=>{render();p.hidden=!p.hidden};document.getElementById("jonTVFavori
 it.onclick=e=>{let x=e.target.closest("[data-p]"),r=e.target.closest("[data-r]");if(x&&typeof playTVStream==="function"){let i=+x.dataset.p;playTVStream(tvChannels[i].url,tvChannels[i].name,i);p.hidden=true}if(r){localStorage.setItem("jonTVFavorites",JSON.stringify(get().filter(u=>u!==decodeURIComponent(r.dataset.r))));render();if(typeof renderTV==="function"&&typeof filteredTV!=="undefined")renderTV(filteredTV)}};
 window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
 })();
-</script></body>
+</script>
+<button type="button" id="jonTVDisplayShortcut" aria-label="Go to TV display">📺 DISPLAY</button>
+
+<script id="jonTVDisplayShortcutJS">
+(function(){
+ const btn=document.getElementById('jonTVDisplayShortcut');
+ const box=document.getElementById('tvPlayerBox');
+ const list=document.getElementById('tvChannels');
+ const tvSection=document.querySelector('.tv-section');
+ if(!btn||!box||!list)return;
+
+ function inTVMode(){
+   return !!tvSection && tvSection.classList.contains('active');
+ }
+ function showShortcut(){
+   if(inTVMode()) btn.classList.add('show');
+ }
+ function hideShortcut(){btn.classList.remove('show')}
+ function goDisplay(){
+   if(!inTVMode())return;
+   box.classList.add('tv-display-persistent');
+   box.scrollIntoView({behavior:'smooth',block:'start'});
+   setTimeout(function(){
+     const v=document.getElementById('tvPlayer');
+     if(v)try{v.focus({preventScroll:true})}catch(_){}
+   },350);
+   hideShortcut();
+ }
+ btn.addEventListener('click',goDisplay);
+
+ /* When a channel is selected, return to the display automatically. */
+ list.addEventListener('click',function(e){
+   if(e.target.closest('.tv-play,.tv-favorite,.tv-channel-lock')){
+     setTimeout(function(){
+       if(inTVMode()) box.scrollIntoView({behavior:'smooth',block:'start'});
+     },80);
+   }
+ });
+
+ /* TV remote: DOWN moves toward channels; UP from the channel area returns to display. */
+ window.addEventListener('keydown',function(e){
+   if(!inTVMode())return;
+   if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;
+   if(e.key==='ArrowDown'){
+     showShortcut();
+   }else if(e.key==='ArrowUp'){
+     const r=list.getBoundingClientRect();
+     const nearList=r.top<window.innerHeight && r.bottom>0;
+     if(nearList){
+       e.preventDefault();
+       goDisplay();
+     }
+   }
+ });
+
+ window.addEventListener('scroll',function(){
+   if(!inTVMode()){hideShortcut();return}
+   const r=box.getBoundingClientRect();
+   const displayAway=r.bottom<0 || r.top>window.innerHeight;
+   if(displayAway) showShortcut(); else hideShortcut();
+ },{passive:true});
+
+ /* Keep shortcut state correct when Radio/TV mode changes. */
+ document.getElementById('tvModeBtn')?.addEventListener('click',function(){setTimeout(showShortcut,120)});
+ document.getElementById('radioModeBtn')?.addEventListener('click',hideShortcut);
+})();
+</script>
+</body>
 </html>
