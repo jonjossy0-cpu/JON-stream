@@ -1621,17 +1621,29 @@ let filteredTV=[];
 let currentTVIndex=-1;
 let tvFilter="all";
 const JON_TV_ORDER_KEY="jonTVChannelOrder";
+const JON_TV_ORDER_COOKIE="jonTVChannelOrder";
 
 function getSavedTVOrder(){
  try{
-  const raw=JSON.parse(localStorage.getItem(JON_TV_ORDER_KEY)||"[]");
-  return Array.isArray(raw)?raw.filter(Boolean):[];
- }catch(_){return []}
+  const raw=localStorage.getItem(JON_TV_ORDER_KEY);
+  if(raw){const parsed=JSON.parse(raw);if(Array.isArray(parsed)&&parsed.length)return parsed.filter(Boolean);}
+ }catch(_){}
+ try{
+  const m=document.cookie.match(/(?:^|; )jonTVChannelOrder=([^;]*)/);
+  if(m){const parsed=JSON.parse(decodeURIComponent(m[1]));if(Array.isArray(parsed))return parsed.filter(Boolean);}
+ }catch(_){}
+ return [];
 }
 
 function saveTVOrder(){
- localStorage.setItem(JON_TV_ORDER_KEY,JSON.stringify(tvChannels.map(ch=>String(ch.url||""))));
+ const order=JSON.stringify(tvChannels.map(ch=>String(ch.url||"")));
+ try{localStorage.setItem(JON_TV_ORDER_KEY,order)}catch(_){}
+ try{document.cookie=JON_TV_ORDER_COOKIE+"="+encodeURIComponent(order)+"; Max-Age=31536000; Path=/; SameSite=Lax"}catch(_){}
 }
+
+function persistTVOrderBeforeExit(){try{saveTVOrder()}catch(_){}}
+window.addEventListener("beforeunload",persistTVOrderBeforeExit);
+window.addEventListener("pagehide",persistTVOrderBeforeExit);
 
 function applySavedTVOrder(list){
  const order=getSavedTVOrder();
@@ -1644,6 +1656,20 @@ function applySavedTVOrder(list){
  });
 }
 
+function showTVSavedMessage(){
+ let e=document.getElementById("jonTVSavedMessage");
+ if(!e){
+  e=document.createElement("div");
+  e.id="jonTVSavedMessage";
+  e.textContent="✓ Saved";
+  e.style.cssText="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:99999;background:#111;color:#fff;padding:12px 24px;border-radius:999px;font-size:18px;font-weight:800;box-shadow:0 8px 30px rgba(0,0,0,.35);pointer-events:none;opacity:0;transition:opacity .2s";
+  document.body.appendChild(e);
+ }
+ clearTimeout(window.jonTVSavedTimer);
+ e.style.opacity="1";
+ window.jonTVSavedTimer=setTimeout(()=>{e.style.opacity="0"},1400);
+}
+
 function moveTVChannelToNumber(channel,targetNumber){
  const current=tvChannels.findIndex(ch=>ch.url===channel.url);
  if(current<0)return;
@@ -1652,12 +1678,14 @@ function moveTVChannelToNumber(channel,targetNumber){
   alert("Enter a channel number from 1 to "+tvChannels.length+".");
   return;
  }
- if(n===current+1)return;
- const moved=tvChannels.splice(current,1)[0];
- tvChannels.splice(n-1,0,moved);
+ if(n!==current+1){
+  const moved=tvChannels.splice(current,1)[0];
+  tvChannels.splice(n-1,0,moved);
+  filteredTV=tvChannels.slice();
+  searchTVChannels();
+ }
  saveTVOrder();
- filteredTV=tvChannels.slice();
- searchTVChannels();
+ showTVSavedMessage();
 }
 
 function promptMoveTVChannel(channel){
@@ -1665,6 +1693,27 @@ function promptMoveTVChannel(channel){
  const target=prompt("Move "+channel.name+" to channel number (1-"+tvChannels.length+"):",String(current));
  if(target!==null)moveTVChannelToNumber(channel,target);
 }
+
+/* TV REMOTE NUMBER KEYS: 1, 15, 153 ... */
+let jonTVRemoteNumberBuffer="",jonTVRemoteNumberTimer=null;
+window.addEventListener("keydown",e=>{
+ if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName))return;
+ const k=e.key;
+ if(!/^\d$/.test(k))return;
+ jonTVRemoteNumberBuffer+=k;
+ clearTimeout(jonTVRemoteNumberTimer);
+ jonTVRemoteNumberTimer=setTimeout(()=>{
+  const number=parseInt(jonTVRemoteNumberBuffer,10);
+  jonTVRemoteNumberBuffer="";
+  if(!Number.isInteger(number)||number<1||number>tvChannels.length)return;
+  const channel=tvChannels[number-1];
+  const index=filteredTV.findIndex(ch=>ch.url===channel.url);
+  if(index>=0){
+   if(!jonAllowsChannel(channel))return;
+   playTVStream(channel.url,channel.name,index);
+  }
+ },1200);
+});
 
 const tvPlayer=document.getElementById("tvPlayer");
 let hls=null;
@@ -2044,7 +2093,7 @@ function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
 function recoverTVStream(){
  if(!currentTV)return;clearTimeout(tvRetryTimer);
  if(tvRetryAttempt>=TV_MAX_RETRIES){
-  if(tvSourceIndex+1<tvSourceList.length){tvSourceIndex++;tvRetryAttempt=0;tvStatus("?? Switching to backup source...");playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex);return}
+  if(tvSourceIndex+1<tvSourceList.length){tvSourceIndex++;tvRetryAttempt=0;tvStatus("🔀 Switching to backup source...");playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex);return}
   tvStatus("⚠️ Stream unavailable — retry protection active");return;
  }
  const delay=TV_RETRY_DELAYS[Math.min(tvRetryAttempt,TV_RETRY_DELAYS.length-1)];tvRetryAttempt++;tvDiag("diagReconnects",tvRetryAttempt);
