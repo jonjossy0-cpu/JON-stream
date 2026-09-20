@@ -1,6 +1,7 @@
 package com.jonstream.app;
 
 import android.app.Activity;
+import android.app.PictureInPictureParams;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.Network;
@@ -8,6 +9,7 @@ import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Rational;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
@@ -151,7 +153,28 @@ public class MainActivity extends Activity {
 
     private void channelStep(int direction) {
         runOnUiThread(()->webView.evaluateJavascript(
-            "(function(){try{var a=(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels))?tvChannels:[];if(!a.length)return;var cur=(typeof currentTV!=='undefined')?currentTV:null;var i=cur?a.indexOf(cur):-1;if(i<0)i="+direction+"<0?0:-1;var n=(i+"+direction+"+a.length)%a.length;var ch=a[n];if(ch&&typeof playTVStream==='function')playTVStream(ch.url,ch.name,n);}catch(e){}})();",null));
+            "(function(){try{var a=(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels))?tvChannels:[];if(!a.length)return;var cur=(typeof currentTV!=='undefined')?currentTV:null;var i=cur?a.indexOf(cur):-1;if(i="+direction+"<0) i=0; else if(i<0) i=-1;var n=(i+"+direction+"+a.length)%a.length;var ch=a[n];if(ch&&typeof playTVStream==='function')playTVStream(ch.url,ch.name,n);}catch(e){}})();",null));
+    }
+
+    @Override public void onUserLeaveHint() {
+        super.onUserLeaveHint();
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && !isInPictureInPictureMode()) {
+            try {
+                PictureInPictureParams params = new PictureInPictureParams.Builder()
+                    .setAspectRatio(new Rational(16, 9))
+                    .build();
+                enterPictureInPictureMode(params);
+            } catch (Exception ignored) {}
+        }
+    }
+
+    @Override public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode);
+        if (isInPictureInPictureMode) {
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
+        } else if (customView == null) {
+            exitImmersive();
+        }
     }
 
     @Override public void onBackPressed() {
@@ -161,6 +184,7 @@ public class MainActivity extends Activity {
             }
             return;
         }
+        if (isInPictureInPictureMode()) return;
         if(webView!=null&&webView.canGoBack())webView.goBack(); else super.onBackPressed();
     }
 
