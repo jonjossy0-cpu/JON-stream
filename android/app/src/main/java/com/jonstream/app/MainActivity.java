@@ -36,8 +36,7 @@ public class MainActivity extends Activity {
     private Runnable commitTask;
     private boolean pipSettingsOpened = false;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -46,14 +45,12 @@ public class MainActivity extends Activity {
         webView = new WebView(this);
         root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
 
-        WebView.setWebContentsDebuggingEnabled(false);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
         webView.getSettings().setAllowFileAccess(false);
         webView.getSettings().setAllowContentAccess(false);
         webView.getSettings().setSupportZoom(false);
-
         webView.addJavascriptInterface(new JONNativeBridge(), "JONNative");
 
         webView.setWebChromeClient(new WebChromeClient() {
@@ -65,7 +62,6 @@ public class MainActivity extends Activity {
                 webView.setVisibility(View.GONE);
                 enterImmersive();
             }
-
             @Override public void onHideCustomView() {
                 if (customView == null) return;
                 root.removeView(customView);
@@ -84,11 +80,9 @@ public class MainActivity extends Activity {
                 super.onPageFinished(view, url);
                 installNativePipButton();
             }
-
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
-                String url = uri.toString();
-                if (url.startsWith(HOME)) return false;
+                if (uri.toString().startsWith(HOME)) return false;
                 try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); return true; }
                 catch (Exception ignored) { return false; }
             }
@@ -101,30 +95,31 @@ public class MainActivity extends Activity {
     private void installNativePipButton() {
         if (webView == null) return;
         String js =
-            "(function(){try{" +
+            "(function(){" +
             "if(window.__JON_NATIVE_PIP_INSTALLED)return;" +
             "window.__JON_NATIVE_PIP_INSTALLED=true;" +
             "document.addEventListener('click',function(e){" +
-            "var b=e.target.closest('#jonPip,button[onclick*=\\\"pictureInPictureTV\\\"]');" +
-            "if(b){e.preventDefault();e.stopImmediatePropagation();if(window.JONNative)JONNative.enterPip();}" +
+            "var t=e.target;" +
+            "var b=(t&&t.closest)?t.closest('#jonPip'):null;" +
+            "if(!b&&t&&t.closest){" +
+            "var q=t.closest('button');" +
+            "if(q&&String(q.getAttribute('onclick')||'').indexOf('pictureInPictureTV')>=0)b=q;" +
+            "}" +
+            "if(b&&window.JONNative){e.preventDefault();e.stopImmediatePropagation();JONNative.enterPip();}" +
             "},true);" +
-            "}catch(e){}})();";
+            "})();";
         webView.evaluateJavascript(js, null);
     }
 
     private class JONNativeBridge {
-        @JavascriptInterface
-        public void enterPip() {
-            runOnUiThread(() -> startPipFromButton());
+        @JavascriptInterface public void enterPip() {
+            runOnUiThread(MainActivity.this::startPipFromButton);
         }
     }
 
     private void startPipFromButton() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
-        if (!isPipAllowed()) {
-            requestPipPermission();
-            return;
-        }
+        if (!isPipAllowed()) { requestPipPermission(); return; }
         enterPipNow();
     }
 
@@ -132,17 +127,17 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || isInPictureInPictureMode()) return;
         try {
             PictureInPictureParams params = new PictureInPictureParams.Builder()
-                .setAspectRatio(new Rational(16, 9))
-                .build();
+                    .setAspectRatio(new Rational(16, 9))
+                    .build();
             enterPictureInPictureMode(params);
         } catch (Exception ignored) {}
     }
 
     private void enterImmersive() {
         getWindow().getDecorView().setSystemUiVisibility(
-            View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+                View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
     }
 
     private void exitImmersive() {
@@ -160,18 +155,19 @@ public class MainActivity extends Activity {
         Network n = cm.getActiveNetwork();
         if (n == null) return false;
         NetworkCapabilities c = cm.getNetworkCapabilities(n);
-        return c != null && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        return c != null && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                c.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
     }
 
     private boolean isPipAllowed() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false;
         try {
             AppOpsManager appOps = (AppOpsManager)getSystemService(Context.APP_OPS_SERVICE);
-            int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_PICTURE_IN_PICTURE, getApplicationInfo().uid, getPackageName());
+            int mode = appOps.checkOpNoThrow(
+                    AppOpsManager.OPSTR_PICTURE_IN_PICTURE,
+                    getApplicationInfo().uid, getPackageName());
             return mode == AppOpsManager.MODE_ALLOWED;
-        } catch (Exception e) {
-            return true;
-        }
+        } catch (Exception e) { return true; }
     }
 
     private void requestPipPermission() {
@@ -194,10 +190,14 @@ public class MainActivity extends Activity {
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
             int k = event.getKeyCode();
-            if (k >= KeyEvent.KEYCODE_0 && k <= KeyEvent.KEYCODE_9) { addDigit(k - KeyEvent.KEYCODE_0); return true; }
+            if (k >= KeyEvent.KEYCODE_0 && k <= KeyEvent.KEYCODE_9) {
+                addDigit(k - KeyEvent.KEYCODE_0); return true;
+            }
             if (k == KeyEvent.KEYCODE_CHANNEL_UP) { channelStep(1); return true; }
             if (k == KeyEvent.KEYCODE_CHANNEL_DOWN) { channelStep(-1); return true; }
-            if (k == KeyEvent.KEYCODE_ENTER || k == KeyEvent.KEYCODE_DPAD_CENTER) { commitNumber(); return true; }
+            if (k == KeyEvent.KEYCODE_ENTER || k == KeyEvent.KEYCODE_DPAD_CENTER) {
+                commitNumber(); return true;
+            }
         }
         return super.dispatchKeyEvent(event);
     }
@@ -216,38 +216,54 @@ public class MainActivity extends Activity {
         final String s = numberBuffer.toString();
         numberBuffer.setLength(0);
         runOnUiThread(() -> webView.evaluateJavascript(
-            "(function(){try{var n=" + s + ";var a=(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels))?tvChannels:[];if(n<1||n>a.length)return;var ch=a[n-1];if(ch&&typeof playTVStream==='function')playTVStream(ch.url,ch.name,n-1);}catch(e){}})();", null));
+                "(function(){try{" +
+                "var n=" + s + ";" +
+                "var a=(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels))?tvChannels:[];" +
+                "if(n<1||n>a.length)return;" +
+                "var ch=a[n-1];" +
+                "if(ch&&typeof playTVStream==='function')playTVStream(ch.url,ch.name,n-1);" +
+                "}catch(e){}})();", null));
     }
 
     private void channelStep(int direction) {
         runOnUiThread(() -> webView.evaluateJavascript(
-            "(function(){try{var a=(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels))?tvChannels:[];if(!a.length)return;var cur=(typeof currentTV!=='undefined')?currentTV:null;var i=cur?a.indexOf(cur):-1;var n;if(i<0)n=0;else n=(i+" + direction + "+a.length)%a.length;var ch=a[n];if(ch&&typeof playTVStream==='function')playTVStream(ch.url,ch.name,n);}catch(e){}})();", null));
+                "(function(){try{" +
+                "var a=(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels))?tvChannels:[];" +
+                "if(!a.length)return;" +
+                "var cur=(typeof currentTV!=='undefined')?currentTV:null;" +
+                "var i=cur?a.indexOf(cur):-1;" +
+                "var n=(i<0)?0:(i+" + direction + "+a.length)%a.length;" +
+                "var ch=a[n];" +
+                "if(ch&&typeof playTVStream==='function')playTVStream(ch.url,ch.name,n);" +
+                "}catch(e){}})();", null));
     }
 
     @Override public void onUserLeaveHint() {
         super.onUserLeaveHint();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !isInPictureInPictureMode()) {
-            if (!isPipAllowed()) {
-                requestPipPermission();
-                return;
-            }
+            if (!isPipAllowed()) { requestPipPermission(); return; }
             enterPipNow();
         }
     }
 
     @Override public void onPictureInPictureModeChanged(boolean isPictureInPictureMode) {
         super.onPictureInPictureModeChanged(isPictureInPictureMode);
-        if (isPictureInPictureMode) getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
-        else if (customView == null) exitImmersive();
+        if (isPictureInPictureMode) {
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
+        } else if (customView == null) {
+            exitImmersive();
+        }
     }
 
     @Override public void onBackPressed() {
         if (customView != null) {
-            if (webView.getWebChromeClient() != null) ((WebChromeClient) webView.getWebChromeClient()).onHideCustomView();
+            if (webView.getWebChromeClient() != null)
+                ((WebChromeClient) webView.getWebChromeClient()).onHideCustomView();
             return;
         }
         if (isInPictureInPictureMode()) return;
-        if (webView != null && webView.canGoBack()) webView.goBack(); else super.onBackPressed();
+        if (webView != null && webView.canGoBack()) webView.goBack();
+        else super.onBackPressed();
     }
 
     @Override protected void onDestroy() {
