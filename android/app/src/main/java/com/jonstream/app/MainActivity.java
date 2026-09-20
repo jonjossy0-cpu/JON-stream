@@ -34,8 +34,17 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        // Keep the screen awake while watching TV in the JON Stream app.\n        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        // Re-apply periodically so TV playback never loses the screen-awake flag.\n        handler.postDelayed(new Runnable() {\n            @Override public void run() {\n                if (!isFinishing()) {\n                    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);\n                    handler.postDelayed(this, 15000);\n                }\n            }\n        }, 15000);
+        // Keep the screen awake while watching TV in the JON Stream app.
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // Re-apply periodically so TV playback never loses the screen-awake flag.
+        handler.postDelayed(new Runnable() {
+            @Override public void run() {
+                if (!isFinishing()) {
+                    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                    handler.postDelayed(this, 15000);
+                }
+            }
+        }, 15000);
 
         // Keep the Android process alive while the WebView radio is playing in background.
         try {
@@ -49,7 +58,9 @@ public class MainActivity extends Activity {
         }
 
         root = new FrameLayout(this);
+        root.setKeepScreenOn(true);
         webView = new WebView(this);
+        webView.setKeepScreenOn(true);
         root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
 
         WebView.setWebContentsDebuggingEnabled(false);
@@ -69,6 +80,7 @@ public class MainActivity extends Activity {
                 customView = view;
                 customViewCallback = callback;
                 root.addView(customView, new FrameLayout.LayoutParams(-1, -1));
+                customView.setKeepScreenOn(true);
                 webView.setVisibility(View.GONE);
                 enterImmersive();
             }
@@ -171,6 +183,25 @@ public class MainActivity extends Activity {
     private void channelStep(int direction) {
         runOnUiThread(()->webView.evaluateJavascript(
             "(function(){try{var a=(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels))?tvChannels:[];if(!a.length)return;var cur=(typeof currentTV!=='undefined')?currentTV:null;var i=cur?a.indexOf(cur):-1;if(i<0)i="+direction+"<0?0:-1;var n=(i+"+direction+"+a.length)%a.length;var ch=a[n];if(ch&&typeof playTVStream==='function')playTVStream(ch.url,ch.name,n);}catch(e){}})();",null));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        keepScreenAwake();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) keepScreenAwake();
+    }
+
+    private void keepScreenAwake() {
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (root != null) root.setKeepScreenOn(true);
+        if (webView != null) webView.setKeepScreenOn(true);
+        if (customView != null) customView.setKeepScreenOn(true);
     }
 
     @Override public void onBackPressed() {
