@@ -30,6 +30,7 @@ public class MainActivity extends Activity {
     private FrameLayout root;
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
+    private WebChromeClient chromeClient;
     private static final String HOME = "https://jonjossy0-cpu.github.io/JON-stream/";
     private final StringBuilder numberBuffer = new StringBuilder();
     private final Handler handler = new Handler();
@@ -53,7 +54,7 @@ public class MainActivity extends Activity {
         webView.getSettings().setSupportZoom(false);
         webView.addJavascriptInterface(new JONNativeBridge(), "JONNative");
 
-        webView.setWebChromeClient(new WebChromeClient() {
+        chromeClient = new WebChromeClient() {
             @Override public void onShowCustomView(View view, CustomViewCallback callback) {
                 if (customView != null) { callback.onCustomViewHidden(); return; }
                 customView = view;
@@ -73,7 +74,8 @@ public class MainActivity extends Activity {
                 }
                 exitImmersive();
             }
-        });
+        };
+        webView.setWebChromeClient(chromeClient);
 
         webView.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
@@ -257,8 +259,7 @@ public class MainActivity extends Activity {
 
     @Override public void onBackPressed() {
         if (customView != null) {
-            if (webView.getWebChromeClient() != null)
-                ((WebChromeClient) webView.getWebChromeClient()).onHideCustomView();
+            if (chromeClient != null) chromeClient.onHideCustomView();
             return;
         }
         if (isInPictureInPictureMode()) return;
