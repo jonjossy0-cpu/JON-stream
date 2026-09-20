@@ -17,7 +17,6 @@
             android:exported="true"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|uiMode"
             android:screenOrientation="fullSensor"
-            android:supportsPictureInPicture="true"
             android:resizeableActivity="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
