@@ -86,11 +86,11 @@ public class MainActivity extends Activity {
             }
 
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                Uri uri=request.getUrl();
-                String url=uri.toString();
-                if(url.startsWith(HOME)) return false;
-                try { startActivity(new Intent(Intent.ACTION_VIEW,uri)); return true; }
-                catch(Exception ignored) { return false; }
+                Uri uri = request.getUrl();
+                String url = uri.toString();
+                if (url.startsWith(HOME)) return false;
+                try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); return true; }
+                catch (Exception ignored) { return false; }
             }
         });
 
@@ -105,7 +105,7 @@ public class MainActivity extends Activity {
             "if(window.__JON_NATIVE_PIP_INSTALLED)return;" +
             "window.__JON_NATIVE_PIP_INSTALLED=true;" +
             "document.addEventListener('click',function(e){" +
-            "var b=e.target.closest('#jonPip,button[onclick*="pictureInPictureTV"]');" +
+            "var b=e.target.closest('#jonPip,button[onclick*=\\\"pictureInPictureTV\\\"]');" +
             "if(b){e.preventDefault();e.stopImmediatePropagation();if(window.JONNative)JONNative.enterPip();}" +
             "},true);" +
             "}catch(e){}})();";
@@ -150,17 +150,17 @@ public class MainActivity extends Activity {
     }
 
     private void loadHome() {
-        if(isOnline()) webView.loadUrl(HOME);
+        if (isOnline()) webView.loadUrl(HOME);
         else webView.loadData("<html><body style='text-align:center;padding-top:30%;font-family:sans-serif'><h2>JON Stream</h2><p>No Internet Connection</p><p>Connect to the Internet and try again.</p></body></html>","text/html","UTF-8");
     }
 
     private boolean isOnline() {
-        ConnectivityManager cm=(ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE);
-        if(cm==null)return false;
-        Network n=cm.getActiveNetwork();
-        if(n==null)return false;
-        NetworkCapabilities c=cm.getNetworkCapabilities(n);
-        return c!=null && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        ConnectivityManager cm = (ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE);
+        if (cm == null) return false;
+        Network n = cm.getActiveNetwork();
+        if (n == null) return false;
+        NetworkCapabilities c = cm.getNetworkCapabilities(n);
+        return c != null && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
     }
 
     private boolean isPipAllowed() {
@@ -192,36 +192,36 @@ public class MainActivity extends Activity {
     }
 
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
-        if(event.getAction()==KeyEvent.ACTION_DOWN && event.getRepeatCount()==0) {
-            int k=event.getKeyCode();
-            if(k>=KeyEvent.KEYCODE_0 && k<=KeyEvent.KEYCODE_9) { addDigit(k-KeyEvent.KEYCODE_0); return true; }
-            if(k==KeyEvent.KEYCODE_CHANNEL_UP) { channelStep(1); return true; }
-            if(k==KeyEvent.KEYCODE_CHANNEL_DOWN) { channelStep(-1); return true; }
-            if(k==KeyEvent.KEYCODE_ENTER || k==KeyEvent.KEYCODE_DPAD_CENTER) { commitNumber(); return true; }
+        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+            int k = event.getKeyCode();
+            if (k >= KeyEvent.KEYCODE_0 && k <= KeyEvent.KEYCODE_9) { addDigit(k - KeyEvent.KEYCODE_0); return true; }
+            if (k == KeyEvent.KEYCODE_CHANNEL_UP) { channelStep(1); return true; }
+            if (k == KeyEvent.KEYCODE_CHANNEL_DOWN) { channelStep(-1); return true; }
+            if (k == KeyEvent.KEYCODE_ENTER || k == KeyEvent.KEYCODE_DPAD_CENTER) { commitNumber(); return true; }
         }
         return super.dispatchKeyEvent(event);
     }
 
     private void addDigit(int digit) {
-        if(numberBuffer.length()>=3) numberBuffer.setLength(0);
+        if (numberBuffer.length() >= 3) numberBuffer.setLength(0);
         numberBuffer.append(digit);
-        if(commitTask!=null) handler.removeCallbacks(commitTask);
-        commitTask=this::commitNumber;
-        handler.postDelayed(commitTask,1500);
+        if (commitTask != null) handler.removeCallbacks(commitTask);
+        commitTask = this::commitNumber;
+        handler.postDelayed(commitTask, 1500);
     }
 
     private void commitNumber() {
-        if(commitTask!=null) handler.removeCallbacks(commitTask);
-        if(numberBuffer.length()==0)return;
-        final String s=numberBuffer.toString();
+        if (commitTask != null) handler.removeCallbacks(commitTask);
+        if (numberBuffer.length() == 0) return;
+        final String s = numberBuffer.toString();
         numberBuffer.setLength(0);
-        runOnUiThread(()->webView.evaluateJavascript(
-            "(function(){try{var n="+s+";var a=(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels))?tvChannels:[];if(n<1||n>a.length)return;var ch=a[n-1];if(ch&&typeof playTVStream==='function')playTVStream(ch.url,ch.name,n-1);}catch(e){}})();",null));
+        runOnUiThread(() -> webView.evaluateJavascript(
+            "(function(){try{var n=" + s + ";var a=(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels))?tvChannels:[];if(n<1||n>a.length)return;var ch=a[n-1];if(ch&&typeof playTVStream==='function')playTVStream(ch.url,ch.name,n-1);}catch(e){}})();", null));
     }
 
     private void channelStep(int direction) {
-        runOnUiThread(()->webView.evaluateJavascript(
-            "(function(){try{var a=(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels))?tvChannels:[];if(!a.length)return;var cur=(typeof currentTV!=='undefined')?currentTV:null;var i=cur?a.indexOf(cur):-1;if(i="+direction+"<0) i=0; else if(i<0) i=-1;var n=(i+"+direction+"+a.length)%a.length;var ch=a[n];if(ch&&typeof playTVStream==='function')playTVStream(ch.url,ch.name,n);}catch(e){}})();",null));
+        runOnUiThread(() -> webView.evaluateJavascript(
+            "(function(){try{var a=(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels))?tvChannels:[];if(!a.length)return;var cur=(typeof currentTV!=='undefined')?currentTV:null;var i=cur?a.indexOf(cur):-1;var n;if(i<0)n=0;else n=(i+" + direction + "+a.length)%a.length;var ch=a[n];if(ch&&typeof playTVStream==='function')playTVStream(ch.url,ch.name,n);}catch(e){}})();", null));
     }
 
     @Override public void onUserLeaveHint() {
@@ -242,17 +242,17 @@ public class MainActivity extends Activity {
     }
 
     @Override public void onBackPressed() {
-        if(customView != null) {
-            if(webView.getWebChromeClient() != null) ((WebChromeClient) webView.getWebChromeClient()).onHideCustomView();
+        if (customView != null) {
+            if (webView.getWebChromeClient() != null) ((WebChromeClient) webView.getWebChromeClient()).onHideCustomView();
             return;
         }
         if (isInPictureInPictureMode()) return;
-        if(webView!=null&&webView.canGoBack())webView.goBack(); else super.onBackPressed();
+        if (webView != null && webView.canGoBack()) webView.goBack(); else super.onBackPressed();
     }
 
     @Override protected void onDestroy() {
         handler.removeCallbacksAndMessages(null);
-        if(webView!=null){webView.stopLoading();webView.destroy();}
+        if (webView != null) { webView.stopLoading(); webView.destroy(); }
         super.onDestroy();
     }
 }
