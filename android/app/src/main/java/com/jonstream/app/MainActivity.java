@@ -35,6 +35,7 @@ public class MainActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         // Keep the screen awake while watching TV in the JON Stream app.\n        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // Re-apply periodically so TV playback never loses the screen-awake flag.\n        handler.postDelayed(new Runnable() {\n            @Override public void run() {\n                if (!isFinishing()) {\n                    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);\n                    handler.postDelayed(this, 15000);\n                }\n            }\n        }, 15000);
 
         // Keep the Android process alive while the WebView radio is playing in background.
         try {
