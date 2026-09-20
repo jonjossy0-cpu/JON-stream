@@ -9,6 +9,7 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
@@ -17,6 +18,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -52,6 +54,8 @@ public class MainActivity extends Activity {
         webView.getSettings().setAllowContentAccess(false);
         webView.getSettings().setSupportZoom(false);
 
+        webView.addJavascriptInterface(new JONNativeBridge(), "JONNative");
+
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public void onShowCustomView(View view, CustomViewCallback callback) {
                 if (customView != null) { callback.onCustomViewHidden(); return; }
@@ -76,6 +80,11 @@ public class MainActivity extends Activity {
         });
 
         webView.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                installNativePipButton();
+            }
+
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri=request.getUrl();
                 String url=uri.toString();
@@ -87,6 +96,46 @@ public class MainActivity extends Activity {
 
         setContentView(root);
         loadHome();
+    }
+
+    private void installNativePipButton() {
+        if (webView == null) return;
+        String js =
+            "(function(){try{" +
+            "if(window.__JON_NATIVE_PIP_INSTALLED)return;" +
+            "window.__JON_NATIVE_PIP_INSTALLED=true;" +
+            "document.addEventListener('click',function(e){" +
+            "var b=e.target.closest('#jonPip,button[onclick*="pictureInPictureTV"]');" +
+            "if(b){e.preventDefault();e.stopImmediatePropagation();if(window.JONNative)JONNative.enterPip();}" +
+            "},true);" +
+            "}catch(e){}})();";
+        webView.evaluateJavascript(js, null);
+    }
+
+    private class JONNativeBridge {
+        @JavascriptInterface
+        public void enterPip() {
+            runOnUiThread(() -> startPipFromButton());
+        }
+    }
+
+    private void startPipFromButton() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+        if (!isPipAllowed()) {
+            requestPipPermission();
+            return;
+        }
+        enterPipNow();
+    }
+
+    private void enterPipNow() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || isInPictureInPictureMode()) return;
+        try {
+            PictureInPictureParams params = new PictureInPictureParams.Builder()
+                .setAspectRatio(new Rational(16, 9))
+                .build();
+            enterPictureInPictureMode(params);
+        } catch (Exception ignored) {}
     }
 
     private void enterImmersive() {
@@ -115,7 +164,7 @@ public class MainActivity extends Activity {
     }
 
     private boolean isPipAllowed() {
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) return false;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false;
         try {
             AppOpsManager appOps = (AppOpsManager)getSystemService(Context.APP_OPS_SERVICE);
             int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_PICTURE_IN_PICTURE, getApplicationInfo().uid, getPackageName());
@@ -126,7 +175,7 @@ public class MainActivity extends Activity {
     }
 
     private void requestPipPermission() {
-        if (pipSettingsOpened || android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) return;
+        if (pipSettingsOpened || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         pipSettingsOpened = true;
         try {
             Intent intent = new Intent(Settings.ACTION_PICTURE_IN_PICTURE_SETTINGS);
@@ -177,16 +226,12 @@ public class MainActivity extends Activity {
 
     @Override public void onUserLeaveHint() {
         super.onUserLeaveHint();
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && !isInPictureInPictureMode()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !isInPictureInPictureMode()) {
             if (!isPipAllowed()) {
                 requestPipPermission();
                 return;
             }
-            try {
-                PictureInPictureParams params = new PictureInPictureParams.Builder()
-                    .setAspectRatio(new Rational(16, 9)).build();
-                enterPictureInPictureMode(params);
-            } catch (Exception ignored) {}
+            enterPipNow();
         }
     }
 
