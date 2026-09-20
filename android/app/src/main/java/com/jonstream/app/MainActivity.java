@@ -263,10 +263,23 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        // Keep WebView media playback alive when the app goes to background.
+        // The web app remains unchanged.
+        if (webView != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            webView.onPause();
+        }
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
-        if (pipSettingsOpened && isPipAllowed()) pipSettingsOpened = false;
-        if (webView != null) webView.postDelayed(this::installPipButtonHook, 300);
+        if (webView != null) {
+            webView.onResume();
+            if (pipSettingsOpened && isPipAllowed()) pipSettingsOpened = false;
+            webView.postDelayed(this::installPipButtonHook, 300);
+        }
     }
 
     @Override
