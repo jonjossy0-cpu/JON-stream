@@ -108,7 +108,11 @@ public class MainActivity extends Activity {
         });
 
         setContentView(webView);
-        loadHome();
+        if (savedInstanceState != null && savedInstanceState.getBundle("webview_state") != null) {
+            webView.restoreState(savedInstanceState.getBundle("webview_state"));
+        } else {
+            loadHome();
+        }
     }
 
     private void installPipButtonHook() {
@@ -298,6 +302,22 @@ public class MainActivity extends Activity {
         return caps != null &&
             caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
             caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        Bundle webState = new Bundle();
+        if (webView != null) webView.saveState(webState);
+        outState.putBundle("webview_state", webState);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode);
+        if (webView != null) {
+            webView.postDelayed(this::installPipButtonHook, 200);
+        }
     }
 
     @Override
