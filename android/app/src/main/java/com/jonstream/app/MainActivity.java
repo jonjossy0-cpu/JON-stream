@@ -35,6 +35,17 @@ public class MainActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
+        // Keep the Android process alive while the WebView radio is playing in background.
+        try {
+            Intent serviceIntent = new Intent(this, BackgroundPlaybackService.class);
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent);
+            } else {
+                startService(serviceIntent);
+            }
+        } catch (Exception ignored) {
+        }
+
         root = new FrameLayout(this);
         webView = new WebView(this);
         root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
