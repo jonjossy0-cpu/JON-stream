@@ -183,10 +183,14 @@ public class MainActivity extends Activity {
             requestPipPermission();
             return;
         }
+
+        // Keep the TV player as the PiP content. Android controls the actual
+        // PiP position; the app cannot force the window to a specific corner.
         try {
-            enterPictureInPictureMode(new PictureInPictureParams.Builder()
-                .setAspectRatio(new Rational(16, 9))
-                .build());
+            PictureInPictureParams.Builder builder =
+                new PictureInPictureParams.Builder()
+                    .setAspectRatio(new Rational(16, 9));
+            enterPictureInPictureMode(builder.build());
         } catch (Exception ignored) {}
     }
 
