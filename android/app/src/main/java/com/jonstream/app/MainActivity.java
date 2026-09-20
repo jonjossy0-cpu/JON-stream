@@ -265,21 +265,15 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        // Keep WebView media playback alive when the app goes to background.
-        // The web app remains unchanged.
-        if (webView != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            webView.onPause();
-        }
+        // Intentionally do not call WebView.onPause(): radio audio must continue
+        // while the Activity is in the background.
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (webView != null) {
-            webView.onResume();
-            if (pipSettingsOpened && isPipAllowed()) pipSettingsOpened = false;
-            webView.postDelayed(this::installPipButtonHook, 300);
-        }
+        if (pipSettingsOpened && isPipAllowed()) pipSettingsOpened = false;
+        if (webView != null) webView.postDelayed(this::installPipButtonHook, 300);
     }
 
     @Override
