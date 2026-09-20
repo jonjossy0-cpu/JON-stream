@@ -183,33 +183,11 @@ public class MainActivity extends Activity {
             requestPipPermission();
             return;
         }
-
-        // APK-only: temporarily make the playing video fill the Activity
-        // so Android PiP contains the channel video rather than the whole page.
-        if (webView != null) {
-            webView.evaluateJavascript(
-                "(function(){document.body.setAttribute('data-jon-pip','1');" +
-                "var s=document.getElementById('__jon_pip_style');" +
-                "if(!s){s=document.createElement('style');s.id='__jon_pip_style';" +
-                "s.textContent='body *{visibility:hidden!important} video{visibility:visible!important;position:fixed!important;left:0!important;top:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;object-fit:contain!important;z-index:2147483647!important}';" +
-                "document.head.appendChild(s);} })()", null);
-        }
-
-        webView.postDelayed(() -> {
-            try {
-                enterPictureInPictureMode(new PictureInPictureParams.Builder()
-                    .setAspectRatio(new Rational(16, 9))
-                    .build());
-            } catch (Exception ignored) {}
-        }, 120);
-    }
-
-    private void restoreAfterPip() {
-        if (webView != null) {
-            webView.evaluateJavascript(
-                "(function(){var s=document.getElementById('__jon_pip_style');" +
-                "if(s)s.remove();document.body.removeAttribute('data-jon-pip');})()", null);
-        }
+        try {
+            enterPictureInPictureMode(new PictureInPictureParams.Builder()
+                .setAspectRatio(new Rational(16, 9))
+                .build());
+        } catch (Exception ignored) {}
     }
 
     private boolean isNumberKey(int keyCode) {
@@ -338,9 +316,6 @@ public class MainActivity extends Activity {
     public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode);
         if (webView != null) {
-            if (!isInPictureInPictureMode) {
-                webView.postDelayed(this::restoreAfterPip, 100);
-            }
             webView.postDelayed(this::installPipButtonHook, 250);
         }
     }
