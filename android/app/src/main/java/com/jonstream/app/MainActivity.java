@@ -5,8 +5,6 @@ import android.app.AppOpsManager;
 import android.app.PictureInPictureParams;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.graphics.Rect;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -15,11 +13,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
-import android.webkit.WebResourceRequest;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.util.Rational;
@@ -28,6 +24,11 @@ public class MainActivity extends Activity {
     private WebView webView;
     private static final String HOME = "https://jonjossy0-cpu.github.io/JON-stream/";
     private boolean pipSettingsOpened = false;
+    private String numberBuffer = "";
+    private long lastNumberTime = 0L;
+    private WebChromeClient chromeClient;
+    private View customView;
+    private WebChromeClient.CustomViewCallback customViewCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,10 +44,46 @@ public class MainActivity extends Activity {
         webView.getSettings().setAllowContentAccess(false);
         webView.getSettings().setSupportZoom(false);
 
-        // Required for JavaScript alert/prompt/confirm dialogs used by TV Move and Parental Lock.
-        webView.setWebChromeClient(new WebChromeClient());
+        chromeClient = new WebChromeClient() {
+            @Override
+            public void onShowCustomView(View view, CustomViewCallback callback) {
+                if (customView != null) {
+                    callback.onCustomViewHidden();
+                    return;
+                }
+                customView = view;
+                customViewCallback = callback;
+                webView.setVisibility(View.GONE);
+                getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_FULLSCREEN |
+                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
+                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                );
+                addContentView(customView, new android.view.ViewGroup.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                ));
+            }
 
-        // APK-only bridge: does not modify index.html.
+            @Override
+            public void onHideCustomView() {
+                if (customView == null) return;
+                ((android.view.ViewGroup) customView.getParent()).removeView(customView);
+                customView = null;
+                if (customViewCallback != null) {
+                    customViewCallback.onCustomViewHidden();
+                    customViewCallback = null;
+                }
+                webView.setVisibility(View.VISIBLE);
+                getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            }
+        };
+        webView.setWebChromeClient(chromeClient);
+
+        // APK-only bridge; index.html is not modified.
         webView.addJavascriptInterface(new JONNativeBridge(), "JONNative");
 
         webView.setWebViewClient(new WebViewClient() {
@@ -54,11 +91,7 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 String url = uri.toString();
-
-                if (url.startsWith(HOME)) {
-                    return false;
-                }
-
+                if (url.startsWith(HOME)) return false;
                 try {
                     startActivity(new Intent(Intent.ACTION_VIEW, uri));
                     return true;
@@ -80,7 +113,6 @@ public class MainActivity extends Activity {
 
     private void installPipButtonHook() {
         if (webView == null) return;
-
         String js =
             "(function(){" +
             "if(window.__jonNativePipHook)return;" +
@@ -92,8 +124,7 @@ public class MainActivity extends Activity {
             "var cls=(typeof el.className==='string'?el.className:'').toLowerCase();" +
             "var txt=(el.innerText||el.textContent||'').trim().toLowerCase();" +
             "var oc=(el.getAttribute&&el.getAttribute('onclick')||'').toLowerCase();" +
-            "if(id==='jonpip'||id.indexOf('pip')>=0||cls.indexOf('pip')>=0||oc.indexOf('pictureinpiptv')>=0||" +
-            "oc.indexOf('pictureinpicture')>=0||txt==='pip'||txt==='picture in picture'||txt.indexOf('pip')>=0){" +
+            "if(id==='jonpip'||id.indexOf('pip')>=0||cls.indexOf('pip')>=0||oc.indexOf('pictureinpiptv')>=0||oc.indexOf('pictureinpicture')>=0||txt==='pip'||txt==='picture in picture'||txt.indexOf('pip')>=0){" +
             "e.preventDefault();e.stopImmediatePropagation();" +
             "if(window.JONNative&&window.JONNative.enterPip)window.JONNative.enterPip();" +
             "return;" +
@@ -102,7 +133,6 @@ public class MainActivity extends Activity {
             "}" +
             "},true);" +
             "})();";
-
         webView.evaluateJavascript(js, null);
     }
 
@@ -115,24 +145,16 @@ public class MainActivity extends Activity {
 
     private boolean isPipAllowed() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false;
-
         try {
             AppOpsManager appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
             if (appOps == null) return true;
-
             int mode;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                mode = appOps.unsafeCheckOpNoThrow(
-                    AppOpsManager.OPSTR_PICTURE_IN_PICTURE,
-                    android.os.Process.myUid(),
-                    getPackageName()
-                );
+                mode = appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_PICTURE_IN_PICTURE,
+                    android.os.Process.myUid(), getPackageName());
             } else {
-                mode = appOps.checkOpNoThrow(
-                    AppOpsManager.OPSTR_PICTURE_IN_PICTURE,
-                    android.os.Process.myUid(),
-                    getPackageName()
-                );
+                mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_PICTURE_IN_PICTURE,
+                    android.os.Process.myUid(), getPackageName());
             }
             return mode == AppOpsManager.MODE_ALLOWED;
         } catch (Exception ignored) {
@@ -142,103 +164,140 @@ public class MainActivity extends Activity {
 
     private void requestPipPermission() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
-
         try {
-            Intent intent = new Intent(
-                Settings.ACTION_PICTURE_IN_PICTURE_SETTINGS,
-                Uri.parse("package:" + getPackageName())
-            );
             pipSettingsOpened = true;
-            startActivity(intent);
+            startActivity(new Intent(Settings.ACTION_PICTURE_IN_PICTURE_SETTINGS,
+                Uri.parse("package:" + getPackageName())));
         } catch (Exception ignored) {
-            try {
-                startActivity(new Intent(Settings.ACTION_SETTINGS));
-            } catch (Exception ignoredAgain) {
-            }
+            try { startActivity(new Intent(Settings.ACTION_SETTINGS)); } catch (Exception ignoredAgain) {}
         }
     }
 
     private void startPipFromButton() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            return;
-        }
-
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         if (!isPipAllowed()) {
             requestPipPermission();
             return;
         }
-
         try {
-            Rational ratio = new Rational(16, 9);
-            PictureInPictureParams params =
-                new PictureInPictureParams.Builder()
-                    .setAspectRatio(ratio)
-                    .build();
+            enterPictureInPictureMode(new PictureInPictureParams.Builder()
+                .setAspectRatio(new Rational(16, 9))
+                .build());
+        } catch (Exception ignored) {}
+    }
 
-            enterPictureInPictureMode(params);
-        } catch (Exception ignored) {
+    private boolean isNumberKey(int keyCode) {
+        return keyCode >= android.view.KeyEvent.KEYCODE_0 &&
+               keyCode <= android.view.KeyEvent.KEYCODE_9;
+    }
+
+    private void commitChannelNumber() {
+        if (webView == null || numberBuffer.length() == 0) return;
+        final String value = numberBuffer;
+        numberBuffer = "";
+        webView.post(() -> webView.evaluateJavascript(
+            "(function(){var n=" + Integer.parseInt(value) + ";" +
+            "if(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels)&&n>=1&&n<=tvChannels.length){" +
+            "var c=tvChannels[n-1];if(c&&typeof playTVStream==='function'){playTVStream(c.url,c.name);}}" +
+            "})()", null));
+    }
+
+    private void changeChannel(int delta) {
+        if (webView == null) return;
+        webView.post(() -> webView.evaluateJavascript(
+            "(function(){if(typeof tvChannels==='undefined'||!Array.isArray(tvChannels)||!tvChannels.length)return;" +
+            "var i=(typeof currentTVIndex==='number')?currentTVIndex:-1;" +
+            "if(i<0){var p=document.querySelector('video');}" +
+            "i=(i+delta+tvChannels.length)%tvChannels.length;" +
+            "var c=tvChannels[i];if(c&&typeof playTVStream==='function'){playTVStream(c.url,c.name);" +
+            "if(typeof currentTVIndex!=='undefined')currentTVIndex=i;}" +
+            "})()".replace("delta", String(delta)), null));
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(android.view.KeyEvent event) {
+        if (event.getAction() == android.view.KeyEvent.ACTION_DOWN) {
+            int key = event.getKeyCode();
+
+            if (isNumberKey(key)) {
+                long now = System.currentTimeMillis();
+                if (now - lastNumberTime > 1500) numberBuffer = "";
+                if (numberBuffer.length() < 3) {
+                    numberBuffer += String.valueOf(key - android.view.KeyEvent.KEYCODE_0);
+                }
+                lastNumberTime = now;
+                return true;
+            }
+
+            if (key == android.view.KeyEvent.KEYCODE_ENTER ||
+                key == android.view.KeyEvent.KEYCODE_DPAD_CENTER) {
+                if (!numberBuffer.isEmpty()) {
+                    commitChannelNumber();
+                    return true;
+                }
+            }
+
+            if (key == android.view.KeyEvent.KEYCODE_CHANNEL_UP ||
+                key == android.view.KeyEvent.KEYCODE_PAGE_UP) {
+                numberBuffer = "";
+                changeChannel(1);
+                return true;
+            }
+
+            if (key == android.view.KeyEvent.KEYCODE_CHANNEL_DOWN ||
+                key == android.view.KeyEvent.KEYCODE_PAGE_DOWN) {
+                numberBuffer = "";
+                changeChannel(-1);
+                return true;
+            }
         }
+        return super.dispatchKeyEvent(event);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (pipSettingsOpened && isPipAllowed()) {
-            pipSettingsOpened = false;
-        }
-        if (webView != null) {
-            webView.postDelayed(this::installPipButtonHook, 300);
-        }
+        if (pipSettingsOpened && isPipAllowed()) pipSettingsOpened = false;
+        if (webView != null) webView.postDelayed(this::installPipButtonHook, 300);
     }
 
     @Override
     public void onUserLeaveHint() {
         super.onUserLeaveHint();
-
-        // Home button: keep the existing automatic PiP behavior.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && isPipAllowed()) {
             startPipFromButton();
         }
     }
 
-    private void loadHome() {
-        if (isOnline()) {
-            webView.loadUrl(HOME);
-        } else {
-            webView.loadData(
-                "<html><body style='text-align:center;padding-top:30%;font-family:sans-serif'>" +
-                "<h2>JON Stream</h2><p>No Internet Connection</p>" +
-                "<p>Connect to the Internet and try again.</p></body></html>",
-                "text/html", "UTF-8"
-            );
+    @Override
+    public void onBackPressed() {
+        if (customView != null && chromeClient != null) {
+            chromeClient.onHideCustomView();
+            return;
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && isInPictureInPictureMode()) return;
+        if (webView != null && webView.canGoBack()) webView.goBack();
+        else super.onBackPressed();
+    }
+
+    private void loadHome() {
+        if (isOnline()) webView.loadUrl(HOME);
+        else webView.loadData(
+            "<html><body style='text-align:center;padding-top:30%;font-family:sans-serif'>" +
+            "<h2>JON Stream</h2><p>No Internet Connection</p>" +
+            "<p>Connect to the Internet and try again.</p></body></html>",
+            "text/html", "UTF-8");
     }
 
     private boolean isOnline() {
-        ConnectivityManager cm =
-            (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         if (cm == null) return false;
-
         Network network = cm.getActiveNetwork();
         if (network == null) return false;
-
         NetworkCapabilities caps = cm.getNetworkCapabilities(network);
         return caps != null &&
             caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
             caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && isInPictureInPictureMode()) {
-            return;
-        }
-
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
     }
 
     @Override
