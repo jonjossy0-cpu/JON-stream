@@ -285,9 +285,8 @@ public class MainActivity extends Activity {
     @Override
     public void onUserLeaveHint() {
         super.onUserLeaveHint();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && isPipAllowed()) {
-            startPipFromButton();
-        }
+        // Do not enter PiP automatically when Home is pressed.
+        // PiP is available only through the in-app PiP button.
     }
 
     @Override
