@@ -9,13 +9,20 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.KeyEvent;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
 
 public class MainActivity extends Activity {
     private WebView webView;
+    private FrameLayout root;
+    private View customView;
+    private WebChromeClient.CustomViewCallback customViewCallback;
     private static final String HOME = "https://jonjossy0-cpu.github.io/JON-stream/";
     private final StringBuilder numberBuffer = new StringBuilder();
     private final Handler handler = new Handler();
@@ -24,7 +31,13 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+        root = new FrameLayout(this);
         webView = new WebView(this);
+        root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
+
         WebView.setWebContentsDebuggingEnabled(false);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
@@ -32,7 +45,33 @@ public class MainActivity extends Activity {
         webView.getSettings().setAllowFileAccess(false);
         webView.getSettings().setAllowContentAccess(false);
         webView.getSettings().setSupportZoom(false);
-        webView.setWebChromeClient(new WebChromeClient());
+
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override public void onShowCustomView(View view, CustomViewCallback callback) {
+                if (customView != null) {
+                    callback.onCustomViewHidden();
+                    return;
+                }
+                customView = view;
+                customViewCallback = callback;
+                root.addView(customView, new FrameLayout.LayoutParams(-1, -1));
+                webView.setVisibility(View.GONE);
+                enterImmersive();
+            }
+
+            @Override public void onHideCustomView() {
+                if (customView == null) return;
+                root.removeView(customView);
+                customView = null;
+                webView.setVisibility(View.VISIBLE);
+                if (customViewCallback != null) {
+                    customViewCallback.onCustomViewHidden();
+                    customViewCallback = null;
+                }
+                exitImmersive();
+            }
+        });
+
         webView.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri=request.getUrl();
@@ -42,8 +81,24 @@ public class MainActivity extends Activity {
                 catch(Exception ignored) { return false; }
             }
         });
-        setContentView(webView);
+
+        setContentView(root);
         loadHome();
+    }
+
+    private void enterImmersive() {
+        getWindow().getDecorView().setSystemUiVisibility(
+            View.SYSTEM_UI_FLAG_FULLSCREEN |
+            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
+            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        );
+    }
+
+    private void exitImmersive() {
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
     }
 
     private void loadHome() {
@@ -96,10 +151,16 @@ public class MainActivity extends Activity {
 
     private void channelStep(int direction) {
         runOnUiThread(()->webView.evaluateJavascript(
-            "(function(){try{var a=(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels))?tvChannels:[];if(!a.length)return;var cur=(typeof currentTV!=='undefined')?currentTV:null;var i=cur?a.indexOf(cur):-1;if(i<0)i=direction<0?0:-1;var n=(i+"+direction+"+a.length)%a.length;var ch=a[n];if(ch&&typeof playTVStream==='function')playTVStream(ch.url,ch.name,n);}catch(e){}})();",null));
+            "(function(){try{var a=(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels))?tvChannels:[];if(!a.length)return;var cur=(typeof currentTV!=='undefined')?currentTV:null;var i=cur?a.indexOf(cur):-1;if(i<0)i="+direction+"<0?0:-1;var n=(i+"+direction+"+a.length)%a.length;var ch=a[n];if(ch&&typeof playTVStream==='function')playTVStream(ch.url,ch.name,n);}catch(e){}})();",null));
     }
 
     @Override public void onBackPressed() {
+        if(customView != null) {
+            if(webView.getWebChromeClient() != null) {
+                ((WebChromeClient) webView.getWebChromeClient()).onHideCustomView();
+            }
+            return;
+        }
         if(webView!=null&&webView.canGoBack())webView.goBack(); else super.onBackPressed();
     }
 
