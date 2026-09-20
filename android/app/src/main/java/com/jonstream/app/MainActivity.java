@@ -170,7 +170,7 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         try {
             pipSettingsOpened = true;
-            startActivity(new Intent(Settings.ACTION_PICTURE_IN_PICTURE_SETTINGS,
+            startActivity(new Intent("android.settings.PICTURE_IN_PICTURE_SETTINGS",
                 Uri.parse("package:" + getPackageName())));
         } catch (Exception ignored) {
             try { startActivity(new Intent(Settings.ACTION_SETTINGS)); } catch (Exception ignoredAgain) {}
@@ -215,7 +215,7 @@ public class MainActivity extends Activity {
             "i=(i+delta+tvChannels.length)%tvChannels.length;" +
             "var c=tvChannels[i];if(c&&typeof playTVStream==='function'){playTVStream(c.url,c.name);" +
             "if(typeof currentTVIndex!=='undefined')currentTVIndex=i;}" +
-            "})()".replace("delta", String(delta)), null));
+            "})()".replace("delta", Integer.toString(delta)), null));
     }
 
     @Override
