@@ -1,37 +1,45 @@
 package com.jonstream.app;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.view.KeyEvent;
 import android.view.View;
-import android.webkit.JavascriptInterface;
-import android.webkit.WebChromeClient;
+import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
 
 public class MainActivity extends Activity {
     private WebView webView;
-    private static final String HOME = "https://jonjossy0-cpu.github.io/JON-stream/";
-    private String numberBuffer = "";
-    private long lastNumberTime = 0L;
-    private WebChromeClient chromeClient;
+    private FrameLayout root;
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
+    private WebChromeClient chromeClient;
+    private static final String HOME = "https://jonjossy0-cpu.github.io/JON-stream/";
+    private final StringBuilder numberBuffer = new StringBuilder();
+    private final Handler handler = new Handler();
+    private Runnable commitTask;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
+        root = new FrameLayout(this);
         webView = new WebView(this);
-        WebView.setWebContentsDebuggingEnabled(false);
+        root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
 
+        WebView.setWebContentsDebuggingEnabled(false);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
@@ -40,65 +48,43 @@ public class MainActivity extends Activity {
         webView.getSettings().setSupportZoom(false);
 
         chromeClient = new WebChromeClient() {
-            @Override
-            public void onShowCustomView(View view, CustomViewCallback callback) {
+            @Override public void onShowCustomView(View view, CustomViewCallback callback) {
                 if (customView != null) {
                     callback.onCustomViewHidden();
                     return;
                 }
                 customView = view;
                 customViewCallback = callback;
+                root.addView(customView, new FrameLayout.LayoutParams(-1, -1));
                 webView.setVisibility(View.GONE);
-                getWindow().getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_FULLSCREEN |
-                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
-                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
-                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                );
-                addContentView(customView, new android.view.ViewGroup.LayoutParams(
-                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                    android.view.ViewGroup.LayoutParams.MATCH_PARENT
-                ));
+                enterImmersive();
             }
 
-            @Override
-            public void onHideCustomView() {
+            @Override public void onHideCustomView() {
                 if (customView == null) return;
-                ((android.view.ViewGroup) customView.getParent()).removeView(customView);
+                root.removeView(customView);
                 customView = null;
+                webView.setVisibility(View.VISIBLE);
                 if (customViewCallback != null) {
                     customViewCallback.onCustomViewHidden();
                     customViewCallback = null;
                 }
-                webView.setVisibility(View.VISIBLE);
-                getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+                exitImmersive();
             }
         };
         webView.setWebChromeClient(chromeClient);
 
         webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                Uri uri = request.getUrl();
-                String url = uri.toString();
-                if (url.startsWith(HOME)) return false;
-                try {
-                    startActivity(new Intent(Intent.ACTION_VIEW, uri));
-                    return true;
-                } catch (Exception ignored) {
-                    return false;
-                }
-            }
-
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
+            @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri=request.getUrl();
+                String url=uri.toString();
+                if(url.startsWith(HOME)) return false;
+                try { startActivity(new Intent(Intent.ACTION_VIEW,uri)); return true; }
+                catch(Exception ignored) { return false; }
             }
         });
 
-        setContentView(webView);
+        setContentView(root);
         if (savedInstanceState != null && savedInstanceState.getBundle("webview_state") != null) {
             webView.restoreState(savedInstanceState.getBundle("webview_state"));
         } else {
@@ -106,116 +92,80 @@ public class MainActivity extends Activity {
         }
     }
 
-    private boolean isNumberKey(int keyCode) {
-        return keyCode >= android.view.KeyEvent.KEYCODE_0 &&
-               keyCode <= android.view.KeyEvent.KEYCODE_9;
+    private void enterImmersive() {
+        getWindow().getDecorView().setSystemUiVisibility(
+            View.SYSTEM_UI_FLAG_FULLSCREEN |
+            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
+            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        );
     }
 
-    private void commitChannelNumber() {
-        if (webView == null || numberBuffer.length() == 0) return;
-        final String value = numberBuffer;
-        numberBuffer = "";
-        webView.post(() -> webView.evaluateJavascript(
-            "(function(){var n=" + Integer.parseInt(value) + ";" +
-            "if(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels)&&n>=1&&n<=tvChannels.length){" +
-            "var c=tvChannels[n-1];if(c&&typeof playTVStream==='function'){playTVStream(c.url,c.name);}}" +
-            "})()", null));
+    private void exitImmersive() {
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
     }
 
-    private void changeChannel(int delta) {
-        if (webView == null) return;
-        webView.post(() -> webView.evaluateJavascript(
-            "(function(){if(typeof tvChannels==='undefined'||!Array.isArray(tvChannels)||!tvChannels.length)return;" +
-            "var i=(typeof currentTVIndex==='number')?currentTVIndex:-1;" +
-            "if(i<0){var p=document.querySelector('video');}" +
-            "i=(i+delta+tvChannels.length)%tvChannels.length;" +
-            "var c=tvChannels[i];if(c&&typeof playTVStream==='function'){playTVStream(c.url,c.name);" +
-            "if(typeof currentTVIndex!=='undefined')currentTVIndex=i;}" +
-            "})()".replace("delta", Integer.toString(delta)), null));
+    private void loadHome() {
+        if(isOnline()) webView.loadUrl(HOME);
+        else webView.loadData("<html><body style='text-align:center;padding-top:30%;font-family:sans-serif'><h2>JON Stream</h2><p>No Internet Connection</p><p>Connect to the Internet and try again.</p></body></html>","text/html","UTF-8");
     }
 
-    @Override
-    public boolean dispatchKeyEvent(android.view.KeyEvent event) {
-        if (event.getAction() == android.view.KeyEvent.ACTION_DOWN) {
-            int key = event.getKeyCode();
+    private boolean isOnline() {
+        ConnectivityManager cm=(ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE);
+        if(cm==null)return false;
+        Network n=cm.getActiveNetwork();
+        if(n==null)return false;
+        NetworkCapabilities c=cm.getNetworkCapabilities(n);
+        return c!=null && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+    }
 
-            if (isNumberKey(key)) {
-                long now = System.currentTimeMillis();
-                if (now - lastNumberTime > 1500) numberBuffer = "";
-                if (numberBuffer.length() < 3) {
-                    numberBuffer += String.valueOf(key - android.view.KeyEvent.KEYCODE_0);
-                }
-                lastNumberTime = now;
+    @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        if(event.getAction()==KeyEvent.ACTION_DOWN && event.getRepeatCount()==0) {
+            int k=event.getKeyCode();
+            if(k>=KeyEvent.KEYCODE_0 && k<=KeyEvent.KEYCODE_9) {
+                addDigit(k-KeyEvent.KEYCODE_0);
                 return true;
             }
-
-            if (key == android.view.KeyEvent.KEYCODE_ENTER ||
-                key == android.view.KeyEvent.KEYCODE_DPAD_CENTER) {
-                if (!numberBuffer.isEmpty()) {
-                    commitChannelNumber();
-                    return true;
-                }
-            }
-
-            if (key == android.view.KeyEvent.KEYCODE_CHANNEL_UP ||
-                key == android.view.KeyEvent.KEYCODE_PAGE_UP) {
-                numberBuffer = "";
-                changeChannel(1);
-                return true;
-            }
-
-            if (key == android.view.KeyEvent.KEYCODE_CHANNEL_DOWN ||
-                key == android.view.KeyEvent.KEYCODE_PAGE_DOWN) {
-                numberBuffer = "";
-                changeChannel(-1);
+            if(k==KeyEvent.KEYCODE_CHANNEL_UP) { channelStep(1); return true; }
+            if(k==KeyEvent.KEYCODE_CHANNEL_DOWN) { channelStep(-1); return true; }
+            if(k==KeyEvent.KEYCODE_ENTER || k==KeyEvent.KEYCODE_DPAD_CENTER) {
+                commitNumber();
                 return true;
             }
         }
         return super.dispatchKeyEvent(event);
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        // Intentionally do not call WebView.onPause(): radio audio must continue
-        // while the Activity is in the background.
+    private void addDigit(int digit) {
+        if(numberBuffer.length()>=3) numberBuffer.setLength(0);
+        numberBuffer.append(digit);
+        if(commitTask!=null) handler.removeCallbacks(commitTask);
+        commitTask=this::commitNumber;
+        handler.postDelayed(commitTask,1500);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (webView != null) webView.postDelayed(this::installPipButtonHook, 300);
+    private void commitNumber() {
+        if(commitTask!=null) handler.removeCallbacks(commitTask);
+        if(numberBuffer.length()==0)return;
+        final String s=numberBuffer.toString();
+        numberBuffer.setLength(0);
+        runOnUiThread(()->webView.evaluateJavascript(
+            "(function(){try{var n="+s+";var a=(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels))?tvChannels:[];if(n<1||n>a.length)return;var ch=a[n-1];if(ch&&typeof playTVStream==='function')playTVStream(ch.url,ch.name,n-1);}catch(e){}})();",null));
     }
 
-    @Override
-    public void onBackPressed() {
-        if (customView != null && chromeClient != null) {
-            chromeClient.onHideCustomView();
+    private void channelStep(int direction) {
+        runOnUiThread(()->webView.evaluateJavascript(
+            "(function(){try{var a=(typeof tvChannels!=='undefined'&&Array.isArray(tvChannels))?tvChannels:[];if(!a.length)return;var cur=(typeof currentTV!=='undefined')?currentTV:null;var i=cur?a.indexOf(cur):-1;if(i<0)i="+direction+"<0?0:-1;var n=(i+"+direction+"+a.length)%a.length;var ch=a[n];if(ch&&typeof playTVStream==='function')playTVStream(ch.url,ch.name,n);}catch(e){}})();",null));
+    }
+
+    @Override public void onBackPressed() {
+        if(customView != null) {
+            if(chromeClient != null) chromeClient.onHideCustomView();
             return;
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && isInPictureInPictureMode()) return;
-        if (webView != null && webView.canGoBack()) webView.goBack();
-        else super.onBackPressed();
-    }
-
-    private void loadHome() {
-        if (isOnline()) webView.loadUrl(HOME);
-        else webView.loadData(
-            "<html><body style='text-align:center;padding-top:30%;font-family:sans-serif'>" +
-            "<h2>JON Stream</h2><p>No Internet Connection</p>" +
-            "<p>Connect to the Internet and try again.</p></body></html>",
-            "text/html", "UTF-8");
-    }
-
-    private boolean isOnline() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-        if (cm == null) return false;
-        Network network = cm.getActiveNetwork();
-        if (network == null) return false;
-        NetworkCapabilities caps = cm.getNetworkCapabilities(network);
-        return caps != null &&
-            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        if(webView!=null&&webView.canGoBack())webView.goBack(); else super.onBackPressed();
     }
 
     @Override
@@ -226,12 +176,9 @@ public class MainActivity extends Activity {
         super.onSaveInstanceState(outState);
     }
 
-    @Override
-    protected void onDestroy() {
-        if (webView != null) {
-            webView.stopLoading();
-            webView.destroy();
-        }
+    @Override protected void onDestroy() {
+        handler.removeCallbacksAndMessages(null);
+        if(webView!=null){webView.stopLoading();webView.destroy();}
         super.onDestroy();
     }
 }
