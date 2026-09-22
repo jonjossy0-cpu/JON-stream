@@ -134,7 +134,6 @@ public class MainActivity extends Activity {
 
     private void loadHome() {
         webView.loadUrl(HOME);
-        else webView.loadData("<html><body style='text-align:center;padding-top:30%;font-family:sans-serif'><h2>JON Stream</h2><p>No Internet Connection</p><p>Connect to the Internet and try again.</p></body></html>","text/html","UTF-8");
     }
 
     private boolean isOnline() {
