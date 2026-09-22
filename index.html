@@ -300,27 +300,6 @@ audio,video{
  min-width:0;
 }
 
-.tv-number{
- width:34px;
- height:34px;
- border-radius:10px;
- display:flex;
- align-items:center;
- justify-content:center;
- flex-shrink:0;
- background:#263750;
- color:#fff;
- font-weight:800;
- font-size:13px;
- border:1px solid var(--border);
-}
-
-.tv-move{
- min-width:62px;
- padding:8px 7px;
- font-size:11px;
-}
-
 .station-name,.tv-name{
  font-size:15px;
  font-weight:700;
@@ -701,17 +680,6 @@ audio,video{
 @media(max-width:600px){
  #jonTVDisplayShortcut{right:12px;bottom:12px;min-width:125px;min-height:46px;padding:10px 14px;font-size:13px}
 }
-/* JON TV satellite-style numeric remote display */
-#jonTVRemoteDisplay{
- position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:10020;
- min-width:150px;padding:10px 18px;border-radius:12px;text-align:center;
- background:rgba(0,0,0,.88);color:#fff;border:2px solid rgba(255,255,255,.2);
- box-shadow:0 10px 28px rgba(0,0,0,.4);font-size:22px;font-weight:900;
- letter-spacing:2px;opacity:0;pointer-events:none;transition:opacity .15s ease;
-}
-#jonTVRemoteDisplay.show{opacity:1}
-#jonTVRemoteDisplay small{display:block;font-size:10px;letter-spacing:1px;opacity:.72;margin-bottom:2px}
-@media(max-width:600px){#jonTVRemoteDisplay{top:10px;min-width:120px;padding:8px 14px;font-size:19px}}
 </style>
 </head>
 
@@ -1138,7 +1106,7 @@ function reconnectRadio(){
 
  reconnectAttempts++;
 
- const delay=Math.min(30000,Math.max(10000,reconnectAttempts*10000));
+ const delay=Math.min(30000,Math.max(3000,reconnectAttempts*3000));
 
  reconnectTimer=setTimeout(()=>{
   radioPlayer.src=currentStation.url;
@@ -1159,7 +1127,7 @@ let radioAdvancedDiagnosticsTimer=null;
 let radioAdvancedRetryAttempts=0;
 let radioAdvancedLastTime=0;
 let radioAdvancedLastTimeAt=Date.now();
-const RADIO_RETRY_DELAYS=[10000,15000,20000,30000];
+const RADIO_RETRY_DELAYS=[3000,5000,10000,15000,20000,30000];
 const RADIO_MAX_RETRIES=8;
 const RADIO_STALL_LIMIT=15000;
 
@@ -1631,121 +1599,6 @@ let tvChannels=USER_TV_CHANNELS.slice();
 let filteredTV=[];
 let currentTVIndex=-1;
 let tvFilter="all";
-const JON_TV_ORDER_KEY="jonTVChannelOrder";
-const JON_TV_ORDER_COOKIE="jonTVChannelOrder";
-
-function getSavedTVOrder(){
- try{
-  const raw=localStorage.getItem(JON_TV_ORDER_KEY);
-  if(raw){const parsed=JSON.parse(raw);if(Array.isArray(parsed)&&parsed.length)return parsed.filter(Boolean);}
- }catch(_){}
- try{
-  const m=document.cookie.match(/(?:^|; )jonTVChannelOrder=([^;]*)/);
-  if(m){const parsed=JSON.parse(decodeURIComponent(m[1]));if(Array.isArray(parsed))return parsed.filter(Boolean);}
- }catch(_){}
- return [];
-}
-
-function saveTVOrder(){
- const order=JSON.stringify(tvChannels.map(ch=>String(ch.url||"")));
- try{localStorage.setItem(JON_TV_ORDER_KEY,order)}catch(_){}
- try{document.cookie=JON_TV_ORDER_COOKIE+"="+encodeURIComponent(order)+"; Max-Age=31536000; Path=/; SameSite=Lax"}catch(_){}
-}
-
-/* Re-apply the saved order after Firebase merges its channel list.
-   This prevents a moved Firebase channel from jumping back after reload. */
-function reapplySavedTVOrder(){
- if(!Array.isArray(tvChannels)||!tvChannels.length)return;
- tvChannels=applySavedTVOrder(tvChannels);
- filteredTV=tvChannels.slice();
-}
-
-function persistTVOrderBeforeExit(){try{saveTVOrder()}catch(_){}}
-window.addEventListener("beforeunload",persistTVOrderBeforeExit);
-window.addEventListener("pagehide",persistTVOrderBeforeExit);
-
-function applySavedTVOrder(list){
- const order=getSavedTVOrder();
- if(!order.length)return list.slice();
- const pos=new Map(order.map((url,i)=>[url,i]));
- return list.slice().sort((a,b)=>{
-  const pa=pos.has(String(a.url||""))?pos.get(String(a.url||"")):999999999;
-  const pb=pos.has(String(b.url||""))?pos.get(String(b.url||"")):999999999;
-  return pa-pb;
- });
-}
-
-function showTVSavedMessage(){
- let e=document.getElementById("jonTVSavedMessage");
- if(!e){
-  e=document.createElement("div");
-  e.id="jonTVSavedMessage";
-  e.textContent="✓ Saved";
-  e.style.cssText="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:99999;background:#111;color:#fff;padding:12px 24px;border-radius:999px;font-size:18px;font-weight:800;box-shadow:0 8px 30px rgba(0,0,0,.35);pointer-events:none;opacity:0;transition:opacity .2s";
-  document.body.appendChild(e);
- }
- clearTimeout(window.jonTVSavedTimer);
- e.style.opacity="1";
- window.jonTVSavedTimer=setTimeout(()=>{e.style.opacity="0"},1400);
-}
-
-function moveTVChannelToNumber(channel,targetNumber){
- const current=tvChannels.findIndex(ch=>ch.url===channel.url);
- if(current<0)return;
- const n=parseInt(targetNumber,10);
- if(!Number.isInteger(n)||n<1||n>tvChannels.length){
-  alert("Enter a channel number from 1 to "+tvChannels.length+".");
-  return;
- }
- if(n!==current+1){
-  const moved=tvChannels.splice(current,1)[0];
-  tvChannels.splice(n-1,0,moved);
-  filteredTV=tvChannels.slice();
-  searchTVChannels();
- }
- saveTVOrder();
- showTVSavedMessage();
-}
-
-function promptMoveTVChannel(channel){
- const current=tvChannels.findIndex(ch=>ch.url===channel.url)+1;
- const target=prompt("Move "+channel.name+" to channel number (1-"+tvChannels.length+"):",String(current));
- if(target!==null)moveTVChannelToNumber(channel,target);
-}
-
-/* TV REMOTE NUMBER KEYS: 1, 15, 153 ... */
-let jonTVRemoteNumberBuffer="",jonTVRemoteNumberTimer=null,jonTVRemoteDisplayTimer=null;
-function updateTVRemoteDisplay(value){
- const box=document.getElementById("jonTVRemoteDisplay");
- const num=document.getElementById("jonTVRemoteNumber");
- if(!box||!num)return;
- num.textContent=value||"--";
- box.classList.add("show");
- clearTimeout(jonTVRemoteDisplayTimer);
- jonTVRemoteDisplayTimer=setTimeout(()=>box.classList.remove("show"),1350);
-}
-window.addEventListener("keydown",e=>{
- if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName))return;
- const k=e.key;
- if(!/^\d$/.test(k))return;
- jonTVRemoteNumberBuffer+=k;
- updateTVRemoteDisplay(jonTVRemoteNumberBuffer);
- clearTimeout(jonTVRemoteNumberTimer);
- jonTVRemoteNumberTimer=setTimeout(()=>{
-  const number=parseInt(jonTVRemoteNumberBuffer,10);
-  jonTVRemoteNumberBuffer="";
-  if(!Number.isInteger(number)||number<1||number>tvChannels.length)return;
-  const channel=tvChannels[number-1];
-  if(!channel||!jonAllowsChannel(channel))return;
-  /* Numeric selection behaves like a satellite receiver and ignores the
-     current search/country filter. */
-  const oldFiltered=filteredTV;
-  filteredTV=tvChannels.slice();
-  const index=number-1;
-  playTVStream(channel.url,channel.name,index);
-  filteredTV=oldFiltered;
- },1200);
-});
 
 const tvPlayer=document.getElementById("tvPlayer");
 let hls=null;
@@ -1759,7 +1612,7 @@ let tvReconnectTimer=null;
 */
 function loadTV(){
  const status=document.getElementById("tvStatus");
- tvChannels=applySavedTVOrder(USER_TV_CHANNELS.slice());
+ tvChannels=USER_TV_CHANNELS.slice();
  filteredTV=tvChannels.slice();
  buildCountryFilter();
  status.innerHTML="📺 "+tvChannels.length+" TV channels available";
@@ -1803,8 +1656,7 @@ async function loadTVPlaylistFromURL(playlistURL){
   const response=await fetch(playlistURL,{cache:"no-store"});if(!response.ok)throw new Error("HTTP "+response.status);
   const parsed=parseM3U(await response.text());if(!parsed.length)return 0;
   const merged=[...tvChannels,...parsed],seen=new Set();
-  tvChannels=applySavedTVOrder(merged.filter(ch=>{const key=String(ch.url||"").trim();if(!key||seen.has(key))return false;seen.add(key);return true}));
-  saveTVOrder();
+  tvChannels=merged.filter(ch=>{const key=String(ch.url||"").trim();if(!key||seen.has(key))return false;seen.add(key);return true});
   filteredTV=tvChannels.slice();buildCountryFilter();renderTV(filteredTV);
   const st=document.getElementById("tvStatus");if(st)st.innerHTML="📺 "+tvChannels.length+" TV channels available";return parsed.length;
  }catch(error){console.warn("JON Stream M3U playlist load failed:",error);return 0}
@@ -1986,7 +1838,6 @@ function renderTV(list){
  display.forEach((channel,index)=>{
   const card=document.createElement("div");
   card.className="tv-card";
-  const channelNumber=tvChannels.findIndex(ch=>ch.url===channel.url)+1;
 
   const fav=tvFavorites.includes(channel.url);
 
@@ -1995,7 +1846,6 @@ function renderTV(list){
    : `<div class="tv-logo" style="display:flex;align-items:center;justify-content:center;font-size:24px">📺</div>`;
 
   card.innerHTML=`
-   <div class="tv-number" title="Channel number">${channelNumber}</div>
    ${logoHTML}
    <div class="tv-info">
     <div class="tv-name">${escapeHTML(channel.name)}</div>
@@ -2005,8 +1855,6 @@ function renderTV(list){
    <button class="tv-play">▶</button>
 
    <button class="tv-channel-lock" type="button" title="${isJonChannelLocked(channel)?"Unlock channel":"Lock channel"}" aria-label="${isJonChannelLocked(channel)?"Unlock channel":"Lock channel"}">${isJonChannelLocked(channel)?"🔒":"🔓"}</button>
-
-   <button class="tv-move" type="button" title="Move channel by number" aria-label="Move channel by number">↕ MOVE</button>
 
    <button class="tv-favorite ${fav?"active":""}">
     ${fav?"★":"☆"}
@@ -2023,11 +1871,6 @@ function renderTV(list){
    toggleJonChannelLock(channel);
   };
 
-  card.querySelector(".tv-move").onclick=(event)=>{
-   event.stopPropagation();
-   promptMoveTVChannel(channel);
-  };
-
   card.querySelector(".tv-favorite").onclick=()=>{
    toggleTVFavorite(channel.name,channel.url);
   };
@@ -2040,7 +1883,7 @@ function renderTV(list){
 let tvRetryAttempt=0,tvRetryTimer=null,tvStallTimer=null,tvDiagnosticsTimer=null;
 let tvSourceIndex=0,tvSourceList=[],tvLastProgress=0,tvLastProgressAt=0;
 let tvManualQuality=-1,tvLatencyMode="balanced",tvLowData=false;
-const TV_RETRY_DELAYS=[3000,15000,30000,3000],TV_MAX_RETRIES=Infinity,TV_STALL_LIMIT_MS=12000;
+const TV_RETRY_DELAYS=[3000,5000,10000,15000,20000,30000],TV_MAX_RETRIES=8,TV_STALL_LIMIT_MS=12000;
 
 function tvStatus(text){
  const e=document.getElementById("tvConnectionStatus");if(e)e.innerHTML=text;
@@ -2093,14 +1936,14 @@ function configureHLS(){
   manifestLoadingMaxRetryTimeout:8000,levelLoadingMaxRetryTimeout:8000,startFragPrefetch:true,capLevelToPlayerSize:true,
   abrEwmaFastLive:2,abrEwmaSlowLive:5,maxBufferHole:.5};
 }
-function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
+function playTVStream(url,name,index,sourceIndex=0){
  const channel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
  currentTV={...channel,url};currentTVIndex=index;tvSourceList=buildTVSources(currentTV);
  tvSourceIndex=Math.max(0,Math.min(sourceIndex,tvSourceList.length-1));
  document.getElementById("tvPlayerBox").style.display="block";
  document.getElementById("tvPlayerBox").classList.add("tv-display-persistent");
  document.getElementById("tvPlayerTitle").innerHTML="📺 "+escapeHTML(name);tvStatus("🔄 Connecting...");
- tvDiag("diagSource",tvSourceIndex===0?"Primary":"Backup "+tvSourceIndex);if(resetRetry)tvRetryAttempt=0;clearTimeout(tvReconnectTimer);cleanupPreviousTV();
+ tvDiag("diagSource",tvSourceIndex===0?"Primary":"Backup "+tvSourceIndex);tvRetryAttempt=0;clearTimeout(tvReconnectTimer);cleanupPreviousTV();
  const source=tvSourceList[tvSourceIndex]||url;if(!source){tvStatus("⚠️ No stream source");return}
  const isM3U8=/\.m3u8($|\?)/i.test(source);
  if(isM3U8&&window.Hls&&Hls.isSupported()){
@@ -2130,7 +1973,7 @@ function recoverTVStream(){
  }
  const delay=TV_RETRY_DELAYS[Math.min(tvRetryAttempt,TV_RETRY_DELAYS.length-1)];tvRetryAttempt++;tvDiag("diagReconnects",tvRetryAttempt);
  tvStatus("🔄 Reconnecting in "+Math.round(delay/1000)+"s...");
- tvRetryTimer=setTimeout(()=>{if(currentTV)playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex,false)},delay);
+ tvRetryTimer=setTimeout(()=>{if(currentTV)playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex)},delay);
 }
 function reconnectTV(){recoverTVStream()}
 function setTVConnected(){tvRetryAttempt=0;tvStatus("🟢 Connected");updateTVDiagnostics()}
@@ -2229,7 +2072,7 @@ function reconnectTV(){
 
  tvReconnectTimer=setTimeout(()=>{
   playTVStream(currentTV.url,currentTV.name,currentTVIndex);
- },10000);
+ },5000);
 }
 
 /* TV FULLSCREEN */
@@ -2653,9 +2496,7 @@ body.jon-ad-visible{padding-bottom:85px}
       const merged=[...tvChannels,...incoming];
       const seen=new Set();
       tvChannels=merged.filter(x=>{const k=String(x.url||'').trim(); if(!k||seen.has(k)) return false; seen.add(k); return true;});
-      /* Firebase may arrive after the local order was restored. Always apply
-         the saved order again so moved channels keep their positions. */
-      reapplySavedTVOrder();
+      filteredTV=tvChannels.slice();
       buildCountryFilter();
       renderTV(filteredTV);
       const st=document.getElementById('tvStatus'); if(st) st.innerHTML='📺 '+tvChannels.length+' TV channels available';
@@ -2837,7 +2678,6 @@ window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
 })();
 </script>
 <button type="button" id="jonTVDisplayShortcut" aria-label="Go to TV display">📺 DISPLAY</button>
-<div id="jonTVRemoteDisplay" aria-live="polite"><small>TV CHANNEL</small><span id="jonTVRemoteNumber">--</span></div>
 
 <script id="jonTVDisplayShortcutJS">
 (function(){
