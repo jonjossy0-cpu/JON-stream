@@ -883,7 +883,7 @@ audio,video{
 
   <video id="tvPlayer" controls playsinline preload="metadata"></video>
   <div id="novaTVFrame" style="display:none;margin-top:17px;border-radius:12px;overflow:hidden;background:#000;min-height:220px;">
-   <iframe id="novaTVPlayer" title="NovaStream TV" style="width:100%;height:260px;border:0;display:block;background:#000;" allow="autoplay; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+   <iframe id="novaTVPlayer" title="NovaStream TV" style="width:100%;height:260px;border:0;display:block;background:#000;" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" loading="eager" playsinline></iframe>
   </div>
 
   <div class="quality" id="videoQuality">
@@ -2914,7 +2914,6 @@ it.onclick=e=>{let x=e.target.closest("[data-p]"),r=e.target.closest("[data-r]")
 window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
 })();
 </script>
-<button type="button" id="jonTVDisplayShortcut" aria-label="Go to TV display">📺 DISPLAY</button>
 <div id="jonTVRemoteDisplay" aria-live="polite"><small>TV CHANNEL</small><span id="jonTVRemoteNumber">--</span></div>
 
 <script id="jonTVDisplayShortcutJS">
