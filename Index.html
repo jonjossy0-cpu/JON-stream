@@ -508,6 +508,9 @@ audio,video{
   <div class="now" id="nowPlaying">Select a radio station</div>
 
   <audio id="radioPlayer" controls preload="none"></audio>
+  <div id="novaRadioFrame" style="display:none;width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;margin-top:17px;">
+   <iframe id="novaRadioPlayer" title="NovaStream Radio Player" allow="autoplay" style="width:100%;height:100%;border:0;"></iframe>
+  </div>
 
   <div class="volume-box">
    <span id="volumeIcon">🔊</span>
@@ -725,6 +728,8 @@ const radioPlayer=document.getElementById("radioPlayer");
 const nowPlaying=document.getElementById("nowPlaying");
 const radioStatus=document.getElementById("radioStatus");
 const volume=document.getElementById("volume");
+const novaRadioFrame=document.getElementById("novaRadioFrame");
+const novaRadioPlayer=document.getElementById("novaRadioPlayer");
 
 let currentStation=null;
 let reconnectTimer=null;
@@ -736,12 +741,26 @@ let favorites=JSON.parse(localStorage.getItem("jonRadioFavorites")||"[]");
 function selectStation(index){
  currentStation=stations[index];
  clearTimeout(reconnectTimer);
-
- radioPlayer.src=currentStation.url;
+ reconnectAttempts=0;
 
  nowPlaying.innerHTML="🔴 Now Playing: <b>"+escapeHTML(currentStation.name)+"</b>";
+
+ if(isNovaStation(currentStation)){
+  radioPlayer.pause();
+  radioPlayer.removeAttribute("src");
+  radioPlayer.load();
+  radioPlayer.style.display="none";
+  novaRadioFrame.style.display="block";
+  novaRadioPlayer.src=currentStation.url;
+  radioStatus.innerHTML="🟢 NovaStream Player";
+  return;
+ }
+
+ novaRadioPlayer.src="";
+ novaRadioFrame.style.display="none";
+ radioPlayer.style.display="block";
+ radioPlayer.src=currentStation.url;
  radioStatus.innerHTML="🔄 Connecting...";
- reconnectAttempts=0;
 
  radioPlayer.play().then(()=>{
   radioStatus.innerHTML="🟢 Connected";
@@ -750,11 +769,24 @@ function selectStation(index){
  });
 }
 
+function isNovaStation(station){
+ return !!station && typeof station.url==="string" && station.url.toLowerCase().includes("embed.novastream.et/");
+}
+
 function playCurrent(){
  if(!currentStation){
   selectStation(0);
   return;
  }
+
+ if(isNovaStation(currentStation)){
+  novaRadioFrame.style.display="block";
+  radioPlayer.style.display="none";
+  if(novaRadioPlayer.src!==currentStation.url) novaRadioPlayer.src=currentStation.url;
+  radioStatus.innerHTML="🟢 NovaStream Player";
+  return;
+ }
+
  radioPlayer.play().then(()=>{
   radioStatus.innerHTML="🟢 Connected";
  }).catch(()=>{
@@ -772,6 +804,9 @@ function stopRadio(){
  radioPlayer.pause();
  radioPlayer.removeAttribute("src");
  radioPlayer.load();
+ novaRadioPlayer.src="";
+ novaRadioFrame.style.display="none";
+ radioPlayer.style.display="block";
  nowPlaying.innerHTML="Radio stopped";
  radioStatus.innerHTML="⚪ Stopped";
 }
@@ -786,14 +821,14 @@ radioPlayer.addEventListener("waiting",()=>{
 });
 
 radioPlayer.addEventListener("error",()=>{
- if(!currentStation)return;
+ if(!currentStation || isNovaStation(currentStation))return;
  radioStatus.innerHTML="🔄 Reconnecting...";
  reconnectRadio();
 });
 
 function reconnectRadio(){
  clearTimeout(reconnectTimer);
- if(!currentStation)return;
+ if(!currentStation || isNovaStation(currentStation))return;
 
  reconnectAttempts++;
 
