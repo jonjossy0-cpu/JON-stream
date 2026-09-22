@@ -882,6 +882,9 @@ audio,video{
   <div class="tv-player-title" id="tvPlayerTitle">📺 TV</div>
 
   <video id="tvPlayer" controls playsinline preload="metadata"></video>
+  <div id="novaTVFrame" style="display:none;margin-top:17px;border-radius:12px;overflow:hidden;background:#000;min-height:220px;">
+   <iframe id="novaTVPlayer" title="NovaStream TV" style="width:100%;height:260px;border:0;display:block;background:#000;" allow="autoplay; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  </div>
 
   <div class="quality" id="videoQuality">
    <span>Quality: Auto</span>
@@ -2107,7 +2110,7 @@ function updateTVDiagnostics(){
 }
 function stopTVTimers(){clearTimeout(tvRetryTimer);clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);tvRetryTimer=tvDiagnosticsTimer=tvStallTimer=null}
 function destroyTVEngine(){stopTVTimers();if(hls){try{hls.destroy()}catch(_){}hls=null}}
-function cleanupPreviousTV(){destroyTVEngine();try{tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load()}catch(_){}}
+function cleanupPreviousTV(){destroyTVEngine();try{tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load()}catch(_){};const f=document.getElementById("novaTVFrame"),i=document.getElementById("novaTVPlayer");if(f)f.style.display="none";if(i)i.src="about:blank";tvPlayer.style.display="block"}
 function buildTVSources(channel){
  const list=[];if(channel&&channel.url)list.push(channel.url);
  const backups=channel&&(Array.isArray(channel.backupUrls)?channel.backupUrls:Array.isArray(channel.backupStreams)?channel.backupStreams:channel.backupUrl?[channel.backupUrl]:[]);
@@ -2132,6 +2135,7 @@ function configureHLS(){
   manifestLoadingMaxRetryTimeout:8000,levelLoadingMaxRetryTimeout:8000,startFragPrefetch:true,capLevelToPlayerSize:true,
   abrEwmaFastLive:2,abrEwmaSlowLive:5,maxBufferHole:.5};
 }
+function isNovaStreamURL(url){return typeof url==="string" && /(^|\/)embed\.novastream\.et\//i.test(url)}
 function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  const channel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
  currentTV={...channel,url};currentTVIndex=index;tvSourceList=buildTVSources(currentTV);
@@ -2141,6 +2145,7 @@ function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  document.getElementById("tvPlayerTitle").innerHTML="📺 "+escapeHTML(name);tvStatus("🔄 Connecting...");
  tvDiag("diagSource",tvSourceIndex===0?"Primary":"Backup "+tvSourceIndex);if(resetRetry)tvRetryAttempt=0;clearTimeout(tvReconnectTimer);cleanupPreviousTV();
  const source=tvSourceList[tvSourceIndex]||url;if(!source){tvStatus("⚠️ No stream source");return}
+ if(isNovaStreamURL(source)){const f=document.getElementById("novaTVFrame"),i=document.getElementById("novaTVPlayer");if(f&&i){tvPlayer.style.display="none";f.style.display="block";i.src=source;tvStatus("🔄 Opening NovaStream TV...");i.onload=()=>tvStatus("🟢 NovaStream player loaded");}startTVDiagnostics();return}
  const isM3U8=/\.m3u8($|\?)/i.test(source);
  if(isM3U8&&window.Hls&&Hls.isSupported()){
   hls=new Hls(configureHLS());hls.attachMedia(tvPlayer);
@@ -2255,6 +2260,10 @@ function stopTV(){
  tvPlayer.pause();
  tvPlayer.removeAttribute("src");
  tvPlayer.load();
+ const f=document.getElementById("novaTVFrame"),i=document.getElementById("novaTVPlayer");
+ if(f)f.style.display="none";
+ if(i)i.src="about:blank";
+ tvPlayer.style.display="block";
 
  document.getElementById("tvPlayerTitle").innerHTML="📺 TV stopped";
  document.getElementById("tvConnectionStatus").innerHTML="⚪ Stopped";
