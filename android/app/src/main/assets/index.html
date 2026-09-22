@@ -1,0 +1,120 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><title>JON Stream Admin</title><style>*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#172033}header{background:#111827;color:#fff;padding:18px;position:sticky;top:0;z-index:5}header h1{margin:0;font-size:22px}nav{display:flex;gap:7px;overflow:auto;padding:10px;background:#fff;position:sticky;top:65px;z-index:4;border-bottom:1px solid #ddd}nav button{border:0;padding:10px 13px;border-radius:10px;background:#edf1f6;font-weight:700;white-space:nowrap}nav button.active{background:#111827;color:#fff}main{max-width:950px;margin:auto;padding:15px}.page{display:none}.page.active{display:block}.panel,.card{background:#fff;border-radius:15px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px #0001}.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.card b{font-size:26px;display:block;margin-top:5px}.muted{color:#6b7280;font-size:13px}input,select,textarea{width:100%;padding:11px;margin:6px 0 11px;border:1px solid #d5dbe5;border-radius:9px;font-size:15px}label{font-size:13px;font-weight:700}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}button{cursor:pointer}.primary{background:#111827;color:#fff;border:0;border-radius:10px;padding:11px 15px;font-weight:700}.secondary{background:#e8eef6;border:0;border-radius:9px;padding:9px 11px}.danger{background:#fee2e2;color:#991b1b;border:0;border-radius:9px;padding:9px 11px}.item{border:1px solid #e0e5ec;border-radius:12px;padding:12px;margin:9px 0}.item h3{margin:0 0 5px}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.badge{display:inline-block;padding:4px 8px;border-radius:20px;background:#dcfce7;color:#166534;font-size:12px}.off{background:#fee2e2;color:#991b1b}.switch{display:flex;align-items:center;gap:8px}.switch input{width:auto}.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:18px;z-index:20}.modalbox{background:#fff;width:100%;max-width:500px;border-radius:16px;padding:18px;max-height:90vh;overflow:auto}pre{background:#0f172a;color:#dbeafe;padding:12px;border-radius:10px;overflow:auto;font-size:12px}#login{position:fixed;inset:0;background:#111827;z-index:50;display:flex;align-items:center;justify-content:center;padding:20px}.loginbox{background:#fff;border-radius:18px;padding:24px;width:100%;max-width:380px}@media(min-width:700px){.cards{grid-template-columns:repeat(4,1fr)}}
+
+</style></head><body>
+
+<div id="login"><div class="loginbox"><h2>🔐 JON Stream Admin</h2><p class="muted">First demo password: <b>1234</b></p><input id="lp" type="password" placeholder="Admin password"><button class="primary" style="width:100%" onclick="login()">Login</button><p id="lm" style="color:#b91c1c"></p></div></div>
+
+<div id="app" style="display:none"><header><h1>JON Stream Admin</h1><small>TV • Radio • Ads • Notifications • Settings</small></header><nav><button class="active" onclick="page('dash',this)">📊 Dashboard</button><button onclick="page('tv',this)">📺 TV</button><button onclick="page('radio',this)">📻 Radio</button><button onclick="page('ads',this)">📢 Ads</button><button onclick="page('notify',this)">🔔 Notify</button><button onclick="page('settings',this)">⚙️ Settings</button><button onclick="page('background',this)">🖼️ Background</button></nav><div id="fbStatus" style="padding:8px 15px;text-align:center;font-weight:700;background:#eefbf1;color:#16753a">🟡 Connecting Firebase...</div><main>
+
+<section id="dash" class="page active"><div class="cards"><div class="card">📺 TV<b id="tc">0</b><span class="muted">channels</span></div><div class="card">📻 Radio<b id="rc">0</b><span class="muted">stations</span></div><div class="card">📢 Ads<b id="ac">0</b><span class="muted">advertisements</span></div><div class="card">🔔 Alerts<b id="nc">0</b><span class="muted">notifications</span></div></div><div class="panel"><h3>💾 Data</h3><p class="muted">This version stores data locally and can export/import data.json. Later it can be connected to your online backend.</p><button class="primary" onclick="exportData()">Export data.json</button> <button class="secondary" onclick="document.getElementById('fi').click()">Import</button><input id="fi" type="file" accept=".json" hidden onchange="importData(event)"></div></section>
+
+<section id="tv" class="page"><div class="panel"><h2>📺 TV Manager</h2><input id="tq" placeholder="Search TV..." oninput="render()"><div class="row"><input id="tn" placeholder="Channel name"><input id="tu" placeholder="M3U8/HLS URL"></div><div class="row"><input id="tl" placeholder="Logo URL"><input id="tco" placeholder="Country"></div><input id="tcat" placeholder="Category"><button class="primary" onclick="addTV()">➕ Add TV</button></div><div id="tvlist"></div></section>
+
+<section id="radio" class="page"><div class="panel"><h2>📻 Radio Manager</h2><input id="rq" placeholder="Search Radio..." oninput="render()"><div class="row"><input id="rn" placeholder="Station name"><input id="ru" placeholder="Stream URL"></div><input id="rl" placeholder="Logo URL"><button class="primary" onclick="addRadio()">➕ Add Radio</button></div><div id="rlist"></div></section>
+
+<section id="ads" class="page"><div class="panel"><h2>📢 Advertisement Manager</h2><input id="an" placeholder="Advertisement name"><div class="row"><input id="at" placeholder="Title"><input id="ai" placeholder="Banner/Image URL"></div><input id="av" placeholder="Video URL (.mp4 / .webm / .m3u8)"><textarea id="ad" rows="3" placeholder="Description"></textarea><input id="au" placeholder="Click URL"><div class="row"><select id="ap"><option>Home</option><option>TV</option><option>Radio</option><option>All</option></select><input id="as" type="date"><input id="ae" type="date"></div><label class="switch"><input id="ax" type="checkbox" checked> Active</label><br><br><button class="primary" onclick="addAd()">➕ Add Advertisement</button></div><div id="alist"></div></section>
+
+<section id="notify" class="page"><div class="panel"><h2>🔔 Notification Manager</h2><input id="nt" placeholder="Notification title"><textarea id="nm" rows="3" placeholder="Message"></textarea><button class="primary" onclick="addNotify()">➕ Add Notification</button></div><div id="nlist"></div></section>
+
+<section id="settings" class="page"><div class="panel"><h2>⚙️ App Settings</h2><label>Version</label><input id="ver"><label class="switch"><input id="maint" type="checkbox"> Maintenance mode</label><br><br><label>Featured TV channel ID</label><input id="feat" placeholder="ID or blank"><button class="primary" onclick="saveSettings()">Save Settings</button><hr><h3>🔑 Change password</h3><input id="np" type="password" placeholder="New password"><button class="secondary" onclick="changePass()">Change Password</button></div><div class="panel"><h3>Preview</h3><pre id="preview"></pre></div></section>
+
+
+<section id="background" class="page">
+  <div class="panel">
+    <h2>🖼️ Background Manager</h2>
+    <p class="muted">Add landscape background images using URL. Images are stored as URLs in Firebase, not in Firebase Storage.</p>
+    <label>Landscape Image URL</label>
+    <input id="bgurl" type="url" placeholder="https://example.com/landscape.jpg">
+    <div class="row">
+      <input id="bgname" placeholder="Background name (optional)">
+      <input id="bgseconds" type="number" min="1" value="5" placeholder="Seconds">
+    </div>
+    <label class="switch"><input id="bgactive" type="checkbox" checked> Active</label>
+    <br><br>
+    <button class="primary" onclick="addBackground()">➕ Add Background</button>
+  </div>
+  <div id="bglist"></div>
+</section>
+</main></div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+
+import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+const firebaseConfig={apiKey:"AIzaSyC5uNWNp9KbcepO36VQCx8gfbyPmZW4fxM",authDomain:"jon-stream.firebaseapp.com",projectId:"jon-stream",storageBucket:"jon-stream.firebasestorage.app",messagingSenderId:"189801194527",appId:"1:189801194527:web:c7d99f83a2c4c604fa212a"};
+
+let fbApp=null,db=null,appRef=null;
+
+try{
+
+  fbApp=initializeApp(firebaseConfig);
+
+  db=getFirestore(fbApp);
+
+  appRef=doc(db,"jonStream","appData");
+
+}catch(e){console.error("Firebase init failed:",e)}
+
+let firebaseReady=false;
+
+const DKEY='jon_stream_admin_v2',PKEY='jon_stream_admin_password';let d=JSON.parse(localStorage.getItem(DKEY)||'null')||{tv:[],radio:[],ads:[],notifications:[],settings:{version:'1.0.0',maintenance:false,featured:''},backgrounds:[]};
+
+if(appRef) onSnapshot(appRef,snap=>{if(snap.exists()){d={...d,...snap.data(),tv:Array.isArray(snap.data().tv)?snap.data().tv:d.tv,radio:Array.isArray(snap.data().radio)?snap.data().radio:d.radio,ads:Array.isArray(snap.data().ads)?snap.data().ads:d.ads,notifications:Array.isArray(snap.data().notifications)?snap.data().notifications:d.notifications,backgrounds:Array.isArray(snap.data().backgrounds)?snap.data().backgrounds:d.backgrounds,settings:{...d.settings,...(snap.data().settings||{})}};localStorage.setItem(DKEY,JSON.stringify(d));render();}firebaseReady=true;const st=document.getElementById('fbStatus');if(st)st.textContent='🟢 Firebase connected';},e=>{console.error(e);const st=document.getElementById('fbStatus');if(st)st.textContent='🔴 Firebase connection failed';});const $=id=>document.getElementById(id);async function save(){localStorage.setItem(DKEY,JSON.stringify(d));render();try{if(!appRef)throw new Error('Firebase unavailable');await setDoc(appRef,d,{merge:true});firebaseReady=true;const st=document.getElementById('fbStatus');if(st)st.textContent='🟢 Firebase synced';}catch(e){console.error(e);const st=document.getElementById('fbStatus');if(st)st.textContent='🟠 Local save only — Firebase sync failed';}}function login(){if($('lp').value===(localStorage.getItem(PKEY)||'1234')){$('login').style.display='none';$('app').style.display='block';render()}else $('lm').textContent='Wrong password.'}function page(id,b){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');render()}
+
+function addTV(){if(!tn.value.trim()||!tu.value.trim())return alert('Name and URL required');d.tv.push({id:Date.now(),name:tn.value.trim(),url:tu.value.trim(),logo:tl.value.trim(),country:tco.value.trim(),category:tcat.value.trim(),enabled:true,featured:false});['tn','tu','tl','tco','tcat'].forEach(x=>$(x).value='');save()}function addRadio(){if(!rn.value.trim()||!ru.value.trim())return alert('Name and URL required');d.radio.push({id:Date.now(),name:rn.value.trim(),url:ru.value.trim(),logo:rl.value.trim(),enabled:true});['rn','ru','rl'].forEach(x=>$(x).value='');save()}function addAd(){if(!an.value.trim()||!at.value.trim())return alert('Advertisement name and title required');d.ads.unshift({id:Date.now(),name:an.value.trim(),title:at.value.trim(),image:ai.value.trim(),videoUrl:av.value.trim(),description:ad.value.trim(),url:au.value.trim(),position:ap.value,start:as.value,end:ae.value,enabled:ax.checked});['an','at','ai','av','ad','au','as','ae'].forEach(x=>$(x).value='');ax.checked=true;save()}function addNotify(){if(!nt.value.trim()||!nm.value.trim())return alert('Title and message required');d.notifications.unshift({id:Date.now(),title:nt.value.trim(),message:nm.value.trim(),date:new Date().toISOString(),enabled:true});nt.value='';nm.value='';save()}function toggle(type,id){let x=d[type].find(x=>x.id===id);if(x)x.enabled=!x.enabled;save()}function del(type,id){if(confirm('Delete?')){d[type]=d[type].filter(x=>x.id!==id);save()}}function edit(type,id){let x=d[type].find(x=>x.id===id);if(!x)return;let n=prompt('Name/title:',x.name||x.title);if(n===null)return;x.name?x.name=n.trim()||x.name:x.title=n.trim()||x.title;if(x.url!==undefined){let u=prompt('Stream URL:',x.url);if(u!==null)x.url=u.trim()||x.url}save()}function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+
+
+function addBackground(){
+  let url=$('bgurl').value.trim();
+  if(!url)return alert('Image URL required');
+  try{new URL(url)}catch(e){return alert('Please enter a valid image URL');}
+  let seconds=Math.max(1,Number($('bgseconds').value)||5);
+  d.backgrounds=d.backgrounds||[];
+  d.backgrounds.push({id:Date.now(),name:$('bgname').value.trim()||('Background '+(d.backgrounds.length+1)),url,seconds,enabled:$('bgactive').checked,createdAt:new Date().toISOString()});
+  $('bgurl').value='';$('bgname').value='';$('bgseconds').value=5;$('bgactive').checked=true;
+  save();
+}
+function toggleBackground(id){
+  let x=(d.backgrounds||[]).find(x=>x.id===id);
+  if(x)x.enabled=!x.enabled;
+  save();
+}
+function deleteBackground(id){
+  if(confirm('Delete this background?')){
+    d.backgrounds=(d.backgrounds||[]).filter(x=>x.id!==id);
+    save();
+  }
+}
+function editBackground(id){
+  let x=(d.backgrounds||[]).find(x=>x.id===id);
+  if(!x)return;
+  let name=prompt('Background name:',x.name||'');
+  if(name!==null)x.name=name.trim()||x.name;
+  let url=prompt('Image URL:',x.url||'');
+  if(url!==null){
+    url=url.trim();
+    try{new URL(url);x.url=url}catch(e){return alert('Invalid URL');}
+  }
+  let sec=prompt('Seconds:',String(x.seconds||5));
+  if(sec!==null)x.seconds=Math.max(1,Number(sec)||5);
+  save();
+}
+function render(){tc.textContent=d.tv.length;rc.textContent=d.radio.length;ac.textContent=d.ads.length;nc.textContent=d.notifications.length;ver.value=d.settings.version;maint.checked=d.settings.maintenance;feat.value=d.settings.featured||'';preview.textContent=JSON.stringify(d,null,2);let q=(tq.value||'').toLowerCase();tvlist.innerHTML=d.tv.filter(x=>(x.name+' '+x.country+' '+x.category).toLowerCase().includes(q)).map(x=>`<div class="item"><h3>📺 ${esc(x.name)} ${x.enabled?'<span class="badge">ON</span>':'<span class="badge off">OFF</span>'}</h3><div class="muted">${esc(x.country)} • ${esc(x.category)}<br>${esc(x.url)}</div><div class="actions"><button class="secondary" onclick="edit('tv',${x.id})">✏️ Edit</button><button class="secondary" onclick="toggle('tv',${x.id})">${x.enabled?'Disable':'Enable'}</button><button class="danger" onclick="del('tv',${x.id})">Delete</button></div></div>`).join('')||'<div class="panel muted">No TV channels.</div>';let r=(rq.value||'').toLowerCase();rlist.innerHTML=d.radio.filter(x=>x.name.toLowerCase().includes(r)).map(x=>`<div class="item"><h3>📻 ${esc(x.name)} ${x.enabled?'<span class="badge">ON</span>':'<span class="badge off">OFF</span>'}</h3><div class="muted">${esc(x.url)}</div><div class="actions"><button class="secondary" onclick="edit('radio',${x.id})">✏️ Edit</button><button class="secondary" onclick="toggle('radio',${x.id})">${x.enabled?'Disable':'Enable'}</button><button class="danger" onclick="del('radio',${x.id})">Delete</button></div></div>`).join('')||'<div class="panel muted">No radio stations.</div>';alist.innerHTML=d.ads.map(x=>`<div class="item"><h3>📢 ${esc(x.title)} ${x.enabled?'<span class="badge">ON</span>':'<span class="badge off">OFF</span>'}</h3><div class="muted">${esc(x.name)} • Position: ${esc(x.position)}<br>${esc(x.start||'')} → ${esc(x.end||'')}</div><p>${esc(x.description)}</p><div class="muted">Image: ${esc(x.image)}<br>Video: ${esc(x.videoUrl||x.videoURL||x.video||x.mediaUrl||'')}<br>Click: ${esc(x.url)}</div><div class="actions"><button class="secondary" onclick="toggle('ads',${x.id})">${x.enabled?'Disable':'Enable'}</button><button class="danger" onclick="del('ads',${x.id})">Delete</button></div></div>`).join('')||'<div class="panel muted">No advertisements.</div>';nlist.innerHTML=d.notifications.map(x=>`<div class="item"><h3>🔔 ${esc(x.title)}</h3><p>${esc(x.message)}</p><div class="actions"><button class="secondary" onclick="toggle('notifications',${x.id})">${x.enabled?'Disable':'Enable'}</button><button class="danger" onclick="del('notifications',${x.id})">Delete</button></div></div>`).join('')||'<div class="panel muted">No notifications.</div>';
+let bl=d.backgrounds||[];
+bglist.innerHTML=bl.map(x=>`<div class="item">
+<h3>🖼️ ${esc(x.name||'Background')} ${x.enabled?'<span class="badge">ON</span>':'<span class="badge off">OFF</span>'}</h3>
+<div style="margin:8px 0"><img src="${esc(x.url)}" alt="" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px" onerror="this.style.display='none'"></div>
+<div class="muted">URL: ${esc(x.url)}<br>Interval: ${esc(x.seconds||5)} seconds</div>
+<div class="actions">
+<button class="secondary" onclick="editBackground(${x.id})">✏️ Edit</button>
+<button class="secondary" onclick="toggleBackground(${x.id})">${x.enabled?'Disable':'Enable'}</button>
+<button class="danger" onclick="deleteBackground(${x.id})">Delete</button>
+</div></div>`).join('')||'<div class="panel muted">No background images.</div>'}
+
+function saveSettings(){d.settings.version=ver.value.trim()||'1.0.0';d.settings.maintenance=maint.checked;d.settings.featured=feat.value.trim();save();alert('Saved')}function changePass(){let p=np.value.trim();if(p.length<4)return alert('Minimum 4 characters');localStorage.setItem(PKEY,p);np.value='';alert('Password changed')}function exportData(){let b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='data.json';a.click()}function importData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.tv||!x.radio)throw 0;d=x;save();alert('Imported')}catch(_){alert('Invalid data.json')}};r.readAsText(f)}
+
+window.page=page;window.login=login;window.addTV=addTV;window.addRadio=addRadio;window.addAd=addAd;window.addNotify=addNotify;window.toggle=toggle;window.del=del;window.edit=edit;window.saveSettings=saveSettings;window.changePass=changePass;window.exportData=exportData;window.importData=importData;window.addBackground=addBackground;window.toggleBackground=toggleBackground;window.deleteBackground=deleteBackground;window.editBackground=editBackground;
+
+</script></body></html>
