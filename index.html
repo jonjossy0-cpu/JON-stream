@@ -2135,7 +2135,17 @@ function configureHLS(){
   manifestLoadingMaxRetryTimeout:8000,levelLoadingMaxRetryTimeout:8000,startFragPrefetch:true,capLevelToPlayerSize:true,
   abrEwmaFastLive:2,abrEwmaSlowLive:5,maxBufferHole:.5};
 }
-function isNovaStreamURL(url){return typeof url==="string" && /(^|\/)embed\.novastream\.et\//i.test(url)}
+function isNovaStreamURL(url){
+ if(typeof url!=="string")return false;
+ const raw=url.trim();
+ try{
+  const u=new URL(raw);
+  const host=u.hostname.toLowerCase();
+  return host==="novastream.et"||host.endsWith(".novastream.et");
+ }catch(_){
+  return /(^|\/)embed\.novastream\.et\//i.test(raw);
+ }
+}
 function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  const channel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
  currentTV={...channel,url};currentTVIndex=index;tvSourceList=buildTVSources(currentTV);
