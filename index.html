@@ -772,9 +772,6 @@ audio,video{
   <div class="now" id="nowPlaying">Select a radio station</div>
 
   <audio id="radioPlayer" controls preload="none"></audio>
-  <div id="novaRadioFrame" style="display:none;margin-top:17px;border-radius:12px;overflow:hidden;background:#000;min-height:120px;">
-   <iframe id="novaRadioPlayer" title="NovaStream Radio" style="width:100%;height:180px;border:0;display:block;background:#000;" allow="autoplay; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-  </div>
 
   <div class="volume-box">
    <span id="volumeIcon">🔊</span>
@@ -882,9 +879,6 @@ audio,video{
   <div class="tv-player-title" id="tvPlayerTitle">📺 TV</div>
 
   <video id="tvPlayer" controls playsinline preload="metadata"></video>
-  <div id="novaTVFrame" style="display:none;margin-top:17px;border-radius:12px;overflow:hidden;background:#000;min-height:220px;">
-   <iframe id="novaTVPlayer" title="NovaStream TV" style="width:100%;height:260px;border:0;display:block;background:#000;" allow="autoplay; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-  </div>
 
   <div class="quality" id="videoQuality">
    <span>Quality: Auto</span>
@@ -1068,8 +1062,6 @@ let stations=[
                          RADIO
 ===================================================== */
 const radioPlayer=document.getElementById("radioPlayer");
-const novaRadioFrame=document.getElementById("novaRadioFrame");
-const novaRadioPlayer=document.getElementById("novaRadioPlayer");
 const nowPlaying=document.getElementById("nowPlaying");
 const radioStatus=document.getElementById("radioStatus");
 const volume=document.getElementById("volume");
@@ -1081,31 +1073,11 @@ let previousVolume=.8;
 
 let favorites=JSON.parse(localStorage.getItem("jonRadioFavorites")||"[]");
 
-function isNovaStation(station){
- return !!station && typeof station.url==="string" && station.url.toLowerCase().includes("embed.novastream.et/");
-}
-
 function selectStation(index){
  currentStation=stations[index];
   updateRadioMediaSession();
  clearTimeout(reconnectTimer);
 
- if(isNovaStation(currentStation)){
-  radioPlayer.pause();
-  radioPlayer.removeAttribute("src");
-  radioPlayer.load();
-  radioPlayer.style.display="none";
-  novaRadioFrame.style.display="block";
-  novaRadioPlayer.src=currentStation.url;
-  nowPlaying.innerHTML="🔴 Now Playing: <b>"+escapeHTML(currentStation.name)+"</b>";
-  radioStatus.innerHTML="🟢 NovaStream Player";
-  reconnectAttempts=0;
-  return;
- }
-
- novaRadioPlayer.removeAttribute("src");
- novaRadioFrame.style.display="none";
- radioPlayer.style.display="";
  radioPlayer.src=currentStation.url;
 
  nowPlaying.innerHTML="🔴 Now Playing: <b>"+escapeHTML(currentStation.name)+"</b>";
@@ -1124,12 +1096,6 @@ function playCurrent(){
   selectStation(0);
   return;
  }
- if(isNovaStation(currentStation)){
-  novaRadioFrame.style.display="block";
-  novaRadioPlayer.src=currentStation.url;
-  radioStatus.innerHTML="🟢 NovaStream Player";
-  return;
- }
  radioPlayer.play().then(()=>{
   radioStatus.innerHTML="🟢 Connected";
  }).catch(()=>{
@@ -1138,11 +1104,6 @@ function playCurrent(){
 }
 
 function pauseRadio(){
- if(isNovaStation(currentStation)){
-  novaRadioPlayer.src="";
-  radioStatus.innerHTML="⏸ Paused";
-  return;
- }
  radioPlayer.pause();
  radioStatus.innerHTML="⏸ Paused";
 }
@@ -1152,9 +1113,6 @@ function stopRadio(){
  radioPlayer.pause();
  radioPlayer.removeAttribute("src");
  radioPlayer.load();
- novaRadioPlayer.removeAttribute("src");
- novaRadioFrame.style.display="none";
- radioPlayer.style.display="";
  nowPlaying.innerHTML="Radio stopped";
  radioStatus.innerHTML="⚪ Stopped";
 }
@@ -1169,14 +1127,14 @@ radioPlayer.addEventListener("waiting",()=>{
 });
 
 radioPlayer.addEventListener("error",()=>{
- if(!currentStation || isNovaStation(currentStation))return;
+ if(!currentStation)return;
  radioStatus.innerHTML="🔄 Reconnecting...";
  reconnectRadio();
 });
 
 function reconnectRadio(){
  clearTimeout(reconnectTimer);
- if(!currentStation || isNovaStation(currentStation))return;
+ if(!currentStation)return;
 
  reconnectAttempts++;
 
@@ -2110,7 +2068,7 @@ function updateTVDiagnostics(){
 }
 function stopTVTimers(){clearTimeout(tvRetryTimer);clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);tvRetryTimer=tvDiagnosticsTimer=tvStallTimer=null}
 function destroyTVEngine(){stopTVTimers();if(hls){try{hls.destroy()}catch(_){}hls=null}}
-function cleanupPreviousTV(){destroyTVEngine();try{tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load()}catch(_){};const f=document.getElementById("novaTVFrame"),i=document.getElementById("novaTVPlayer");if(f)f.style.display="none";if(i)i.src="about:blank";tvPlayer.style.display="block"}
+function cleanupPreviousTV(){destroyTVEngine();try{tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load()}catch(_){}}
 function buildTVSources(channel){
  const list=[];if(channel&&channel.url)list.push(channel.url);
  const backups=channel&&(Array.isArray(channel.backupUrls)?channel.backupUrls:Array.isArray(channel.backupStreams)?channel.backupStreams:channel.backupUrl?[channel.backupUrl]:[]);
@@ -2135,7 +2093,6 @@ function configureHLS(){
   manifestLoadingMaxRetryTimeout:8000,levelLoadingMaxRetryTimeout:8000,startFragPrefetch:true,capLevelToPlayerSize:true,
   abrEwmaFastLive:2,abrEwmaSlowLive:5,maxBufferHole:.5};
 }
-function isNovaStreamURL(url){return typeof url==="string" && /(^|\/)embed\.novastream\.et\//i.test(url)}
 function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  const channel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
  currentTV={...channel,url};currentTVIndex=index;tvSourceList=buildTVSources(currentTV);
@@ -2145,7 +2102,6 @@ function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  document.getElementById("tvPlayerTitle").innerHTML="📺 "+escapeHTML(name);tvStatus("🔄 Connecting...");
  tvDiag("diagSource",tvSourceIndex===0?"Primary":"Backup "+tvSourceIndex);if(resetRetry)tvRetryAttempt=0;clearTimeout(tvReconnectTimer);cleanupPreviousTV();
  const source=tvSourceList[tvSourceIndex]||url;if(!source){tvStatus("⚠️ No stream source");return}
- if(isNovaStreamURL(source)){const f=document.getElementById("novaTVFrame"),i=document.getElementById("novaTVPlayer");if(f&&i){tvPlayer.style.display="none";f.style.display="block";i.src=source;tvStatus("🔄 Opening NovaStream TV...");i.onload=()=>tvStatus("🟢 NovaStream player loaded");}startTVDiagnostics();return}
  const isM3U8=/\.m3u8($|\?)/i.test(source);
  if(isM3U8&&window.Hls&&Hls.isSupported()){
   hls=new Hls(configureHLS());hls.attachMedia(tvPlayer);
@@ -2260,10 +2216,6 @@ function stopTV(){
  tvPlayer.pause();
  tvPlayer.removeAttribute("src");
  tvPlayer.load();
- const f=document.getElementById("novaTVFrame"),i=document.getElementById("novaTVPlayer");
- if(f)f.style.display="none";
- if(i)i.src="about:blank";
- tvPlayer.style.display="block";
 
  document.getElementById("tvPlayerTitle").innerHTML="📺 TV stopped";
  document.getElementById("tvConnectionStatus").innerHTML="⚪ Stopped";
