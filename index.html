@@ -773,7 +773,7 @@ audio,video{
 
   <audio id="radioPlayer" controls preload="none"></audio>
   <div id="novaRadioFrame" style="display:none;margin-top:17px;border-radius:12px;overflow:hidden;background:#000;min-height:120px;">
-   <iframe id="novaRadioPlayer" title="NovaStream Radio" style="width:100%;height:180px;border:0;display:block;background:#000;" allow="autoplay; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+   <iframe id="novaRadioPlayer" title="NovaStream Radio" style="width:100%;height:180px;border:0;display:block;background:#000;" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" loading="eager" playsinline referrerpolicy="strict-origin-when-cross-origin"></iframe>
   </div>
 
   <div class="volume-box">
@@ -2141,10 +2141,30 @@ function isNovaStreamURL(url){
  try{
   const u=new URL(raw);
   const host=u.hostname.toLowerCase();
-  return host==="novastream.et"||host.endsWith(".novastream.et");
+  return (host==="novastream.et"||host.endsWith(".novastream.et")) && /\/embed\//i.test(u.pathname);
  }catch(_){
   return /(^|\/)embed\.novastream\.et\//i.test(raw);
  }
+}
+function openNovaTVPlayer(source){
+ const f=document.getElementById("novaTVFrame"),i=document.getElementById("novaTVPlayer");
+ if(!f||!i)return false;
+ tvPlayer.style.display="none";
+ tvPlayer.pause?.();
+ f.style.display="block";
+ i.onload=null;i.onerror=null;i.src="about:blank";
+ const clean=String(source||"").trim();
+ setTimeout(()=>{
+  i.onload=()=>tvStatus("🟢 NovaStream player loaded");
+  i.onerror=()=>tvStatus("⚠️ NovaStream player could not be loaded");
+  i.src=clean;
+ },30);
+ tvStatus("🔄 Opening NovaStream TV...");
+ window.__jonNovaTVTimer&&clearTimeout(window.__jonNovaTVTimer);
+ window.__jonNovaTVTimer=setTimeout(()=>{
+  if(f.style.display==="block")tvStatus("⚠️ NovaStream is not authorizing this embedded player");
+ },10000);
+ return true;
 }
 function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  const channel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
@@ -2155,7 +2175,7 @@ function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  document.getElementById("tvPlayerTitle").innerHTML="📺 "+escapeHTML(name);tvStatus("🔄 Connecting...");
  tvDiag("diagSource",tvSourceIndex===0?"Primary":"Backup "+tvSourceIndex);if(resetRetry)tvRetryAttempt=0;clearTimeout(tvReconnectTimer);cleanupPreviousTV();
  const source=tvSourceList[tvSourceIndex]||url;if(!source){tvStatus("⚠️ No stream source");return}
- if(isNovaStreamURL(source)){const f=document.getElementById("novaTVFrame"),i=document.getElementById("novaTVPlayer");if(f&&i){tvPlayer.style.display="none";f.style.display="block";i.src=source;tvStatus("🔄 Opening NovaStream TV...");i.onload=()=>tvStatus("🟢 NovaStream player loaded");}startTVDiagnostics();return}
+ if(isNovaStreamURL(source)){openNovaTVPlayer(source);startTVDiagnostics();return}
  const isM3U8=/\.m3u8($|\?)/i.test(source);
  if(isM3U8&&window.Hls&&Hls.isSupported()){
   hls=new Hls(configureHLS());hls.attachMedia(tvPlayer);
