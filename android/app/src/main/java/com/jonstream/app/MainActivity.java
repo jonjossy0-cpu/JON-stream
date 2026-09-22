@@ -24,7 +24,7 @@ public class MainActivity extends Activity {
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
     private WebChromeClient chromeClient;
-    private static final String HOME = "https://jonjossy0-cpu.github.io/JON-stream/";
+    private static final String HOME = "file:///android_asset/index.html";
     private final StringBuilder numberBuffer = new StringBuilder();
     private final Handler handler = new Handler();
     private Runnable commitTask;
@@ -133,7 +133,7 @@ public class MainActivity extends Activity {
     }
 
     private void loadHome() {
-        if(isOnline()) webView.loadUrl(HOME);
+        webView.loadUrl(HOME);
         else webView.loadData("<html><body style='text-align:center;padding-top:30%;font-family:sans-serif'><h2>JON Stream</h2><p>No Internet Connection</p><p>Connect to the Internet and try again.</p></body></html>","text/html","UTF-8");
     }
 
