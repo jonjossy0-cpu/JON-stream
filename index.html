@@ -2002,6 +2002,8 @@ function renderTV(list){
     <div class="tv-country">${escapeHTML(channel.country||channel.group||"TV Channel")}</div>
    </div>
 
+   <span class="tv-stream-health testing" data-tv-health="${escapeHTML(channel.url)}" title="Checking TV stream…">●</span>
+
    <button class="tv-play">▶</button>
 
    <button class="tv-channel-lock" type="button" title="${isJonChannelLocked(channel)?"Unlock channel":"Lock channel"}" aria-label="${isJonChannelLocked(channel)?"Unlock channel":"Lock channel"}">${isJonChannelLocked(channel)?"🔒":"🔓"}</button>
@@ -2033,7 +2035,97 @@ function renderTV(list){
   };
 
   box.appendChild(card);
+  scheduleTVHealthCheck(channel);
  });
+}
+
+/* =====================================================
+   TV STREAM HEALTH ICONS - ADDITIVE ONLY
+   Red    = not working / failed
+   Yellow = checking / uncertain
+   Green  = working / responding
+   This system is independent of the TV player controls.
+===================================================== */
+const tvHealthCache = new Map();
+const TV_HEALTH_CACHE_MS = 60000;
+const TV_HEALTH_TIMEOUT_MS = 8000;
+let tvHealthQueue = [];
+let tvHealthActive = 0;
+const TV_HEALTH_CONCURRENCY = 4;
+
+function setTVHealthIcon(url, state, title){
+ const nodes=document.querySelectorAll(".tv-stream-health");
+ nodes.forEach(el=>{
+  if(el.getAttribute("data-tv-health")===url){
+   el.classList.remove("testing","good","bad","unknown");
+   el.classList.add(state);
+   el.textContent="●";
+   el.title=title;
+  }
+ });
+}
+
+function scheduleTVHealthCheck(channel){
+ if(!channel || !channel.url) return;
+ const cached=tvHealthCache.get(channel.url);
+ if(cached && (Date.now()-cached.time)<TV_HEALTH_CACHE_MS){
+  setTVHealthIcon(channel.url,cached.state,cached.title);
+  return;
+ }
+ setTVHealthIcon(channel.url,"testing","Checking TV stream…");
+ if(!tvHealthQueue.some(x=>x.url===channel.url)){
+  tvHealthQueue.push({url:channel.url,name:channel.name||"TV"});
+  runNextTVHealthChecks();
+ }
+}
+
+function runNextTVHealthChecks(){
+ while(tvHealthActive<TV_HEALTH_CONCURRENCY && tvHealthQueue.length){
+  const job=tvHealthQueue.shift();
+  tvHealthActive++;
+  checkTVStreamHealth(job.url,job.name).finally(()=>{
+   tvHealthActive--;
+   runNextTVHealthChecks();
+  });
+ }
+}
+
+async function checkTVStreamHealth(url,name){
+ let state="unknown",title="Stream status uncertain";
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),TV_HEALTH_TIMEOUT_MS);
+ try{
+  const response=await fetch(url,{
+   method:"GET",
+   mode:"cors",
+   cache:"no-store",
+   headers:{"Range":"bytes=0-1023"},
+   signal:controller.signal
+  });
+  if(response.ok || response.status===206){
+   state="good";
+   title="🟢 Working TV stream";
+  }else{
+   state="bad";
+   title="🔴 Stream unavailable (HTTP "+response.status+")";
+  }
+ }catch(error){
+  /*
+    A browser can block a perfectly valid stream because of CORS.
+    That is not treated as a definite failure; yellow means uncertain.
+  */
+  if(error && error.name==="AbortError"){
+   state="unknown";
+   title="🟡 Stream check timed out / uncertain";
+  }else{
+   state="unknown";
+   title="🟡 Could not verify stream in this browser (possibly CORS/network)";
+  }
+ }finally{
+  clearTimeout(timer);
+ }
+ tvHealthCache.set(url,{state,title,time:Date.now()});
+ setTVHealthIcon(url,state,title);
 }
 
 /* TV PLAYER - ADVANCED STABILITY SYSTEM */
@@ -2046,6 +2138,13 @@ function tvStatus(text){
  const e=document.getElementById("tvConnectionStatus");if(e)e.innerHTML=text;
  const d=document.getElementById("diagConnection");if(d)d.textContent=text.replace(/<[^>]*>/g,"");
 }
+function updateCurrentTVHealthFromPlayer(state,title){
+ if(currentTV && currentTV.url){
+  tvHealthCache.set(currentTV.url,{state,title,time:Date.now()});
+  setTVHealthIcon(currentTV.url,state,title);
+ }
+}
+
 function tvDiag(id,value){const e=document.getElementById(id);if(e)e.textContent=String(value)}
 function getTVNetwork(){
  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
@@ -2771,6 +2870,65 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
 <style id="jonChannelLockStyle">
 .tv-channel-lock{width:45px;height:43px;padding:0;flex-shrink:0;background:#263750;font-size:18px}
 @media(max-width:520px){.tv-channel-lock{width:34px;height:34px;font-size:15px}}
+
+
+/* TV STREAM HEALTH INDICATOR - ADDITIVE ONLY */
+.tv-stream-health{
+  width:18px;
+  height:18px;
+  min-width:18px;
+  border-radius:50%;
+  display:inline-flex !important;
+  align-items:center;
+  justify-content:center;
+  margin:0 7px;
+  padding:0 !important;
+  border:2px solid rgba(255,255,255,.85);
+  box-sizing:border-box;
+  font-size:0 !important;
+  line-height:1 !important;
+  flex:0 0 18px;
+  vertical-align:middle;
+  position:relative;
+  z-index:2;
+  background:#aaa;
+  box-shadow:0 0 5px rgba(0,0,0,.35);
+}
+.tv-stream-health::after{
+  content:"";
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#fff;
+  display:block;
+}
+.tv-stream-health.testing,
+.tv-stream-health.unknown{
+  background:#f2c400 !important;
+  border-color:#ffe66b !important;
+}
+.tv-stream-health.good{
+  background:#19b84a !important;
+  border-color:#7dff9c !important;
+}
+.tv-stream-health.bad{
+  background:#e3262e !important;
+  border-color:#ff7b80 !important;
+}
+@media (max-width:600px){
+  .tv-stream-health{
+    width:16px;
+    height:16px;
+    min-width:16px;
+    flex-basis:16px;
+    margin:0 5px;
+  }
+  .tv-stream-health::after{
+    width:6px;
+    height:6px;
+  }
+}
+
 </style>
 <script id="jonProfessionalMediaJS">
 (function(){
