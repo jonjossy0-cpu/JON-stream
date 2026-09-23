@@ -195,7 +195,7 @@ public class MainActivity extends Activity {
         runOnUiThread(()->webView.evaluateJavascript(
             "(function(){try{" +
             "var d='"+d+"';" +
-            "var all=[...document.querySelectorAll('button,a,input,select,[tabindex]:not([tabindex="-1"])')].filter(function(e){" +
+            "var all=[...document.querySelectorAll('button,a,input,select,[tabindex]:not([tabindex=\"-1\"])')].filter(function(e){" +
             " if(e.disabled||e.hidden)return false; var s=getComputedStyle(e),r=e.getBoundingClientRect();" +
             " return s.display!=='none'&&s.visibility!=='hidden'&&r.width>1&&r.height>1;" +
             "});" +
