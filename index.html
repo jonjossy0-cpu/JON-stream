@@ -7,6 +7,8 @@
 <title>JON FM ETHIOPIA</title>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/mpegts.js@latest/dist/mpegts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dashjs@latest/dist/dash.all.min.js"></script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
@@ -2221,7 +2223,7 @@ function updateTVDiagnostics(){
  tvDiag("diagHealth",Math.round(Math.max(0,Math.min(100,100-tvRetryAttempt*8-(buffer<1?15:0)-(buffer<3?8:0))))+"%");
 }
 function stopTVTimers(){clearTimeout(tvRetryTimer);clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);tvRetryTimer=tvDiagnosticsTimer=tvStallTimer=null}
-function destroyTVEngine(){stopTVTimers();if(hls){try{hls.destroy()}catch(_){}hls=null}}
+function destroyTVEngine(){stopTVTimers();if(hls){try{hls.destroy()}catch(_){}hls=null}if(window.jonMpegtsPlayer){try{window.jonMpegtsPlayer.destroy()}catch(_){}window.jonMpegtsPlayer=null}if(window.jonDashPlayer){try{window.jonDashPlayer.reset()}catch(_){}window.jonDashPlayer=null}}
 function cleanupPreviousTV(){destroyTVEngine();try{tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load()}catch(_){}}
 function buildTVSources(channel){
  const list=[];if(channel&&channel.url)list.push(channel.url);
@@ -2247,30 +2249,63 @@ function configureHLS(){
   manifestLoadingMaxRetryTimeout:8000,levelLoadingMaxRetryTimeout:8000,startFragPrefetch:true,capLevelToPlayerSize:true,
   abrEwmaFastLive:2,abrEwmaSlowLive:5,maxBufferHole:.5};
 }
+function jonNormalizeStreamUrl(value){
+ const raw=String(value??"").trim();
+ if(!raw)return "";
+ return raw.replace(/\\/g,"/").replace(/^https?:\/\/(https?:\/\/)/i,"$1");
+}
+function jonStreamKind(source){
+ const s=jonNormalizeStreamUrl(source).toLowerCase();
+ if(/^rtmp:\/\//.test(s))return "rtmp";
+ if(/^rtsp:\/\//.test(s))return "rtsp";
+ if(/^srt:\/\//.test(s))return "srt";
+ if(/\.m3u8(?:$|[?#])/i.test(s))return "hls";
+ if(/\.mpd(?:$|[?#])/i.test(s))return "dash";
+ if(/\.flv(?:$|[?#])/i.test(s))return "flv";
+ if(/\.ts(?:$|[?#])/i.test(s))return "ts";
+ if(/\bwebrtc\b/i.test(s)||/^wss?:\/\//i.test(s))return "webrtc";
+ return "media";
+}
+function jonGatewayForChannel(channel,kind){
+ if(!channel)return "";
+ const candidates=[channel.gatewayUrl,channel.gatewayURL,channel.proxyUrl,channel.proxyURL,channel.hlsGateway,channel.hlsUrl];
+ for(const v of candidates){const u=jonNormalizeStreamUrl(v);if(u)return u}
+ return "";
+}
 function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  const channel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
- currentTV={...channel,url};currentTVIndex=index;tvSourceList=buildTVSources(currentTV);
+ currentTV={...channel,url:jonNormalizeStreamUrl(url)};currentTVIndex=index;tvSourceList=buildTVSources(currentTV).map(jonNormalizeStreamUrl).filter(Boolean);
  tvSourceIndex=Math.max(0,Math.min(sourceIndex,tvSourceList.length-1));
  document.getElementById("tvPlayerBox").style.display="block";
  document.getElementById("tvPlayerBox").classList.add("tv-display-persistent");
  document.getElementById("tvPlayerTitle").innerHTML="📺 "+escapeHTML(name);tvStatus("🔄 Connecting...");
  tvDiag("diagSource",tvSourceIndex===0?"Primary":"Backup "+tvSourceIndex);if(resetRetry)tvRetryAttempt=0;clearTimeout(tvReconnectTimer);cleanupPreviousTV();
- const source=tvSourceList[tvSourceIndex]||url;if(!source){tvStatus("⚠️ No stream source");return}
- const isM3U8=/\.m3u8($|\?)/i.test(source);
+ let source=tvSourceList[tvSourceIndex]||currentTV.url;
+ if(!source){tvStatus("⚠️ No stream source");return}
+ let kind=jonStreamKind(source);
+ if(["rtmp","rtsp","srt"].includes(kind)){
+   const gateway=jonGatewayForChannel(currentTV,kind);
+   if(gateway){source=gateway;kind=jonStreamKind(source);tvStatus("🔄 Using compatible gateway...")}
+   else{tvStatus("⚠️ "+kind.toUpperCase()+" needs an HLS/HTTP gateway on Android/WebView");tvDiag("diagSource",kind.toUpperCase()+" — gateway required");return}
+ }
+ const isM3U8=kind==="hls";
  if(isM3U8&&window.Hls&&Hls.isSupported()){
   hls=new Hls(configureHLS());hls.attachMedia(tvPlayer);
   hls.on(Hls.Events.MEDIA_ATTACHED,()=>{try{hls.loadSource(source)}catch(_){recoverTVStream()}});
   hls.on(Hls.Events.MANIFEST_PARSED,()=>{updateQuality();populateTVQualitySelect();applyTVQuality();try{tvPlayer.play().then(setTVConnected).catch(()=>tvStatus("▶ Tap PLAY"))}catch(_){tvStatus("▶ Tap PLAY")}});
   hls.on(Hls.Events.LEVEL_SWITCHED,()=>{updateQuality();populateTVQualitySelect();updateTVDiagnostics()});
   hls.on(Hls.Events.FRAG_BUFFERED,()=>{tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();setTVConnected()});
-  hls.on(Hls.Events.ERROR,(event,data)=>{
-   if(!data||!data.fatal)return;
-   tvStatus("🔄 Recovering stream...");
-   if(data.type===Hls.ErrorTypes.MEDIA_ERROR){try{hls.recoverMediaError();return}catch(_){}}
-   recoverTVStream();
-  });
+  hls.on(Hls.Events.ERROR,(event,data)=>{if(!data||!data.fatal)return;tvStatus("🔄 Recovering stream...");if(data.type===Hls.ErrorTypes.MEDIA_ERROR){try{hls.recoverMediaError();return}catch(_){} }recoverTVStream()});
  }else if(isM3U8&&tvPlayer.canPlayType("application/vnd.apple.mpegurl")){
   tvPlayer.src=source;tvPlayer.addEventListener("loadedmetadata",()=>{try{tvPlayer.play().then(setTVConnected).catch(()=>tvStatus("▶ Tap PLAY"))}catch(_){}},{once:true});
+ }else if((kind==="flv"||kind==="ts")&&window.mpegts&&mpegts.isSupported()){
+  try{window.jonMpegtsPlayer=mpegts.createPlayer({type:kind==="flv"?"flv":"mpegts",url:source,isLive:true},{enableWorker:true,enableStashBuffer:true,stashInitialSize:384});window.jonMpegtsPlayer.attachMediaElement(tvPlayer);window.jonMpegtsPlayer.on(mpegts.Events.ERROR,()=>recoverTVStream());window.jonMpegtsPlayer.on(mpegts.Events.STATISTICS_INFO,()=>{tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();setTVConnected()});window.jonMpegtsPlayer.load();window.jonMpegtsPlayer.play().catch(()=>tvStatus("▶ Tap PLAY"));}
+  catch(_){tvStatus("⚠️ MPEG-TS/FLV player failed");recoverTVStream()}
+ }else if(kind==="dash"&&window.dashjs){
+  try{window.jonDashPlayer=dashjs.MediaPlayer().create();window.jonDashPlayer.initialize(tvPlayer,source,true);window.jonDashPlayer.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED,()=>{setTVConnected();updateTVDiagnostics()});window.jonDashPlayer.on(dashjs.MediaPlayer.events.ERROR,()=>recoverTVStream());}
+  catch(_){tvStatus("⚠️ DASH player failed");recoverTVStream()}
+ }else if(kind==="webrtc"){
+  tvStatus("⚠️ WebRTC requires a compatible WebRTC player/signaling source");tvDiag("diagSource","WebRTC — player/signaling required");
  }else{
   tvPlayer.src=source;try{tvPlayer.play().then(setTVConnected).catch(()=>tvStatus("▶ Tap PLAY"))}catch(_){tvStatus("▶ Tap PLAY")}
  }
@@ -3146,4 +3181,10 @@ window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
 </script>
 
 </body>
+<script id="jonStreamCompatibilityPatch">
+(function(){
+  "use strict";
+  window.addEventListener("beforeunload",function(){try{if(window.jonMpegtsPlayer)window.jonMpegtsPlayer.destroy();if(window.jonDashPlayer)window.jonDashPlayer.reset()}catch(_){} });
+})();
+</script>
 </html>
