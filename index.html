@@ -717,6 +717,57 @@ audio,video{
 #jonTVRemoteDisplay small{display:block;font-size:10px;letter-spacing:1px;opacity:.72;margin-bottom:2px}
 @media(max-width:600px){#jonTVRemoteDisplay{top:10px;min-width:120px;padding:8px 14px;font-size:19px}}
 </style>
+
+<!-- JON STREAM GATEWAY ADD-ON: GitHub-safe browser gateway helpers.
+     Additive only: existing app/Firebase/Radio/TV code is preserved. -->
+<script>
+(function(){
+  "use strict";
+  window.JON_GATEWAY = window.JON_GATEWAY || {};
+
+  const s = v => String(v ?? "").trim();
+
+  window.JON_GATEWAY.detect = function(url){
+    const u=s(url).toLowerCase().split("?")[0].split("#")[0];
+    if(/\.(m3u8|m3u)$/.test(u)) return "HLS";
+    if(/\.mpd$/.test(u)) return "DASH";
+    if(/\.ism(\/manifest)?$|\.isml(\/manifest)?$|manifest$/.test(u)) return "MSS";
+    if(/\.ts$|mpegts|video\/mp2t/.test(u)) return "MPEG-TS";
+    if(/\.flv$|http-flv|\/flv(?:\?|$)/.test(u)) return "HTTP-FLV";
+    if(/\.mp4$/.test(u)) return "MP4";
+    if(/\.webm$/.test(u)) return "WebM";
+    if(/webrtc:|wss?:.*webrtc|rtc/.test(u)) return "WebRTC";
+    if(/^rtmp(s)?:\/\//.test(u)) return "RTMP";
+    if(/^rtsps?:\/\//.test(u)) return "RTSP";
+    if(/^srt:\/\//.test(u)) return "SRT";
+    return "AUTO";
+  };
+
+  /* Browser-safe gateway endpoint resolver.
+     If Firebase contains gateway/proxy fields, use them; otherwise return
+     the original URL so the existing player remains the fallback. */
+  window.JON_GATEWAY.resolve = async function(channel){
+    const c=channel||{};
+    const original=s(c.url||c.streamUrl||c.source);
+    const gateway=s(c.gatewayUrl||c.gatewayURL||c.proxyUrl||c.proxyURL||c.hlsGateway||c.hlsUrl||"");
+    if(gateway) return gateway;
+    return original;
+  };
+
+  window.JON_GATEWAY.info = function(channel){
+    const url=s(channel?.url||channel?.streamUrl||channel?.source);
+    const format=s(channel?.format||channel?.streamFormat||channel?.mediaFormat||channel?.protocol||channel?.type)||window.JON_GATEWAY.detect(url);
+    return {
+      format:format.toUpperCase(),
+      directBrowserPlayable:/^(HLS|DASH|MPEG-TS|HTTP-FLV|MP4|WebM|CMAF)$/.test(format.toUpperCase()),
+      gatewayRequired:/^(RTMP|RTSP|SRT)$/.test(format.toUpperCase())
+    };
+  };
+
+  window.dispatchEvent(new CustomEvent("jon-gateway-ready"));
+})();
+</script>
+
 </head>
 
 <body>
@@ -3076,5 +3127,23 @@ window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
  document.getElementById('radioModeBtn')?.addEventListener('click',hideShortcut);
 })();
 </script>
+
+<script id="jonGatewayFirebaseBridge">
+(function(){
+  "use strict";
+  function attach(remote){
+    try{
+      if(!remote || !Array.isArray(remote.tv)) return;
+      remote.tv.forEach(ch=>{
+        if(!ch) return;
+        ch.gatewayInfo=window.JON_GATEWAY.info(ch);
+        ch.gatewayUrl=ch.gatewayUrl||ch.gatewayURL||ch.proxyUrl||ch.proxyURL||ch.hlsGateway||ch.hlsUrl||"";
+      });
+    }catch(e){ console.warn("JON Gateway bridge:",e); }
+  }
+  window.addEventListener("jon-firebase-data",e=>attach(e.detail));
+})();
+</script>
+
 </body>
 </html>
