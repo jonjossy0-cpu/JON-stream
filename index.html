@@ -2300,8 +2300,9 @@ function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  let kind=jonStreamKind(source);
  const gateway=jonGatewayForChannel({...currentTV,url:source},kind);
  if(gateway&&gateway!==source){
+   const originalKind=kind;
    source=gateway;
-   kind=jonStreamKind(source);
+   kind=originalKind==="hls"?"hls":jonStreamKind(source);
    tvStatus("🔄 Using JON Stream Gateway...");
  }
  if(["rtmp","rtsp","srt"].includes(kind)){
