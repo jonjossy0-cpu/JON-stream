@@ -497,8 +497,7 @@ audio,video{
  font-size:13px;
 }
 
-.footer-logo{
- width:65px;
+.footer-logo{ width:65px;
  height:65px;
  object-fit:cover;
  border-radius:15px;
@@ -997,8 +996,7 @@ audio,video{
   <button type="button" class="diagnostics-toggle" id="tvDiagnosticsToggle" onclick="toggleDiagnostics('tv')">📊 Hide Live Diagnostics</button>
   <div class="tv-diagnostics" id="tvDiagnostics">
    <div class="advanced-title">📊 Live Diagnostics</div>
-   <div class="tv-diagnostics-grid">
-    <div class="tv-diagnostic"><b>Connection</b><span id="diagConnection">Ready</span></div>
+   <div class="tv-diagnostics-grid">    <div class="tv-diagnostic"><b>Connection</b><span id="diagConnection">Ready</span></div>
     <div class="tv-diagnostic"><b>Buffer</b><span id="diagBuffer">0s</span></div>
     <div class="tv-diagnostic"><b>Bitrate</b><span id="diagBitrate">—</span></div>
     <div class="tv-diagnostic"><b>Latency</b><span id="diagLatency">—</span></div>
@@ -1497,7 +1495,6 @@ function renderStations(list){
   box.innerHTML='<div class="empty">No radio station found.</div>';
   return;
  }
-
  list.forEach(station=>{
   const index=stations.indexOf(station);
   const fav=favorites.includes(index);
@@ -1997,8 +1994,7 @@ function getJonChannelLocks(){
  try{return JSON.parse(localStorage.getItem(JON_CHANNEL_LOCKS_KEY)||"[]")}catch(_){return []}
 }
 function saveJonChannelLocks(list){localStorage.setItem(JON_CHANNEL_LOCKS_KEY,JSON.stringify([...new Set(list)]))}
-function jonChannelLockId(channel){return String((channel&&channel.url)||"").trim()}
-function isJonChannelLocked(channel){const id=jonChannelLockId(channel);return !!id&&getJonChannelLocks().includes(id)}
+function jonChannelLockId(channel){return String((channel&&channel.url)||"").trim()}function isJonChannelLocked(channel){const id=jonChannelLockId(channel);return !!id&&getJonChannelLocks().includes(id)}
 function getJonParentalPin(){return localStorage.getItem(JON_PARENTAL_PIN_KEY)||""}
 function ensureJonParentalPin(){
  let pin=getJonParentalPin();
@@ -2497,8 +2493,7 @@ function toggleDiagnostics(type){
  const hidden=panel.classList.toggle("diagnostics-hidden");
  button.textContent=hidden?"📊 Show Live Diagnostics":"📊 Hide Live Diagnostics";
  try{localStorage.setItem("jonDiagnostics_"+type,hidden?"hidden":"shown")}catch(_){}
-}
-function restoreDiagnosticsVisibility(type){
+}function restoreDiagnosticsVisibility(type){
  const panel=document.getElementById(type==="tv"?"tvDiagnostics":"radioDiagnostics");
  const button=document.getElementById(type==="tv"?"tvDiagnosticsToggle":"radioDiagnosticsToggle");
  if(!panel||!button)return;
@@ -2997,8 +2992,7 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
 
 /* TV STREAM HEALTH INDICATOR - ADDITIVE ONLY */
 .tv-stream-health{
-  width:18px;
-  height:18px;
+  width:18px;  height:18px;
   min-width:18px;
   border-radius:50%;
   display:inline-flex !important;
@@ -3201,6 +3195,43 @@ window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
 })();
 </script>
 
+
+
+<!-- JON TV REMOTE OK LONG-PRESS FULLSCREEN -->
+<script>
+(function(){
+  "use strict";
+  let jonOKTimer=null;
+  let jonOKTriggered=false;
+  function jonToggleTVFullscreen(){
+    const box=document.getElementById("tvPlayerBox");
+    const video=document.getElementById("tvPlayer");
+    if(!box||!video)return;
+    if(document.fullscreenElement){
+      if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+      return;
+    }
+    if(box.requestFullscreen) box.requestFullscreen().catch(()=>{});
+    else if(video.requestFullscreen) video.requestFullscreen().catch(()=>{});
+    else if(video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+  }
+  window.addEventListener("keydown",function(e){
+    if(e.key!=="Enter" || e.repeat)return;
+    if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName))return;
+    jonOKTriggered=false;
+    clearTimeout(jonOKTimer);
+    jonOKTimer=setTimeout(function(){
+      jonOKTriggered=true;
+      jonToggleTVFullscreen();
+    },2000);
+  });
+  window.addEventListener("keyup",function(e){
+    if(e.key!=="Enter")return;
+    clearTimeout(jonOKTimer);
+    jonOKTimer=null;
+  });
+})();
+</script>
 </body>
 <script id="jonStreamCompatibilityPatch">
 (function(){
