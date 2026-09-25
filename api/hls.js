@@ -1,4 +1,4 @@
-const ALLOWED_HOSTS = new Set(["88.212.15.19"]);
+const ALLOWED_HOSTS = new Set(["88.212.15.19","154.58.202.18","5.9.121.178"]);
 
 function corsHeaders() {
   return {
