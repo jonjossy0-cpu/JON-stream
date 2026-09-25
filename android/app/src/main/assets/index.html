@@ -497,8 +497,7 @@ audio,video{
  .container{padding:8px}
  .sections-grid{gap:8px}
  .section-head h2{font-size:18px}
- .mode-switch button{min-height:48px;font-size:14px}
- .time-card .time{font-size:16px}
+ .mode-switch button{min-height:48px;font-size:14px} .time-card .time{font-size:16px}
  .social-grid{grid-template-columns:1fr 1fr}
  .player,.tv-player-box{padding:10px}
  .search input,.tv-search input{padding:11px;font-size:13px}
@@ -997,8 +996,7 @@ let stations=[
  url:"https://stream.zeno.fm/b8skbyqeqeruv"
 },
 {
- name:"TIreta 97.6 FM",
- url:"https://stream.zeno.fm/x751reg18zhvv"
+ name:"TIreta 97.6 FM", url:"https://stream.zeno.fm/x751reg18zhvv"
 },
 {
  name:"SHGER FM 102.1",
@@ -1497,8 +1495,7 @@ function updateTimer(){
   "⏱️ "+String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
 }
 
-function cancelTimer(){
- clearInterval(timerInterval);
+function cancelTimer(){ clearInterval(timerInterval);
  timerEnd=0;
  document.getElementById("timerDisplay").innerHTML="Timer OFF";
 }
@@ -1997,8 +1994,7 @@ function renderTV(list){
   card.innerHTML=`
    <div class="tv-number" title="Channel number">${channelNumber}</div>
    ${logoHTML}
-   <div class="tv-info">
-    <div class="tv-name">${escapeHTML(channel.name)}</div>
+   <div class="tv-info">    <div class="tv-name">${escapeHTML(channel.name)}</div>
     <div class="tv-country">${escapeHTML(channel.country||channel.group||"TV Channel")}</div>
    </div>
 
@@ -2497,8 +2493,7 @@ loadTV();
 <!-- =====================================================
      JON STREAM LIVE DATA: ADS + NOTIFICATIONS
      Additive only: existing UI, TV, Radio and player stay intact.
-===================================================== -->
-<style>
+===================================================== --><style>
 #jonLiveUpdates{display:none;margin:14px 0;gap:10px;flex-direction:column}
 #jonLiveUpdates.jon-bottom-ad{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:9990;width:min(680px,calc(100vw - 24px));max-height:70vh;overflow-x:auto;overflow-y:auto;margin:0;padding:0;gap:8px;box-sizing:border-box;filter:drop-shadow(0 10px 28px rgba(0,0,0,.24));scrollbar-width:thin;touch-action:pan-x pan-y}
 body.jon-ad-visible{padding-bottom:245px}
@@ -2997,8 +2992,7 @@ window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
 <button type="button" id="jonTVDisplayShortcut" aria-label="Go to TV display">📺 DISPLAY</button>
 <div id="jonTVRemoteDisplay" aria-live="polite"><small>TV CHANNEL</small><span id="jonTVRemoteNumber">--</span></div>
 
-<script id="jonTVDisplayShortcutJS">
-(function(){
+<script id="jonTVDisplayShortcutJS">(function(){
  const btn=document.getElementById('jonTVDisplayShortcut');
  const box=document.getElementById('tvPlayerBox');
  const list=document.getElementById('tvChannels');
@@ -3059,6 +3053,43 @@ window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
  /* Keep shortcut state correct when Radio/TV mode changes. */
  document.getElementById('tvModeBtn')?.addEventListener('click',function(){setTimeout(showShortcut,120)});
  document.getElementById('radioModeBtn')?.addEventListener('click',hideShortcut);
+})();
+</script>
+
+
+<!-- JON TV REMOTE OK LONG-PRESS FULLSCREEN -->
+<script>
+(function(){
+  "use strict";
+  let jonOKTimer=null;
+  let jonOKTriggered=false;
+  function jonToggleTVFullscreen(){
+    const box=document.getElementById("tvPlayerBox");
+    const video=document.getElementById("tvPlayer");
+    if(!box||!video)return;
+    if(document.fullscreenElement){
+      if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+      return;
+    }
+    if(box.requestFullscreen) box.requestFullscreen().catch(()=>{});
+    else if(video.requestFullscreen) video.requestFullscreen().catch(()=>{});
+    else if(video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+  }
+  window.addEventListener("keydown",function(e){
+    if(e.key!=="Enter" || e.repeat)return;
+    if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName))return;
+    jonOKTriggered=false;
+    clearTimeout(jonOKTimer);
+    jonOKTimer=setTimeout(function(){
+      jonOKTriggered=true;
+      jonToggleTVFullscreen();
+    },2000);
+  });
+  window.addEventListener("keyup",function(e){
+    if(e.key!=="Enter")return;
+    clearTimeout(jonOKTimer);
+    jonOKTimer=null;
+  });
 })();
 </script>
 </body>
