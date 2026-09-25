@@ -100,6 +100,12 @@ export default async function handler(req, res) {
       redirect: "follow"
     });
 
+    const finalTarget = new URL(upstream.url || target.toString());
+    if (!isAllowed(finalTarget)) {
+      Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
+      return res.status(502).send("Redirected host not allowed");
+    }
+
     const contentType = (upstream.headers.get("content-type") || "").toLowerCase();
     const looksLikePlaylist =
       contentType.includes("mpegurl") ||
@@ -113,7 +119,7 @@ export default async function handler(req, res) {
       const body = await upstream.text();
       res.statusCode = upstream.status;
       if (req.method === "HEAD") return res.end();
-      return res.end(rewritePlaylist(body, target.toString()));
+      return res.end(rewritePlaylist(body, finalTarget.toString()));
     }
 
     const buffer = Buffer.from(await upstream.arrayBuffer());
