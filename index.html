@@ -2276,6 +2276,15 @@ function jonGatewayForChannel(channel,kind){
  if(!channel)return "";
  const candidates=[channel.gatewayUrl,channel.gatewayURL,channel.proxyUrl,channel.proxyURL,channel.hlsGateway,channel.hlsUrl];
  for(const v of candidates){const u=jonNormalizeStreamUrl(v);if(u)return u}
+ const source=jonNormalizeStreamUrl(channel.url||channel.streamUrl||channel.source);
+ if(kind==="hls"&&source){
+   try{
+     const u=new URL(source);
+     if(u.protocol==="http:"&&u.hostname==="88.212.15.19"){
+       return "https://jon-stream.vercel.app/api/hls?url="+encodeURIComponent(source);
+     }
+   }catch(_){}
+ }
  return "";
 }
 function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
@@ -2289,9 +2298,14 @@ function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  let source=tvSourceList[tvSourceIndex]||currentTV.url;
  if(!source){tvStatus("⚠️ No stream source");return}
  let kind=jonStreamKind(source);
+ const gateway=jonGatewayForChannel({...currentTV,url:source},kind);
+ if(gateway&&gateway!==source){
+   source=gateway;
+   kind=jonStreamKind(source);
+   tvStatus("🔄 Using JON Stream Gateway...");
+ }
  if(["rtmp","rtsp","srt"].includes(kind)){
-   const gateway=jonGatewayForChannel(currentTV,kind);
-   if(gateway){source=gateway;kind=jonStreamKind(source);tvStatus("🔄 Using compatible gateway...")}
+   if(gateway&&gateway!==source){/* gateway already applied */}
    else{tvStatus("⚠️ "+kind.toUpperCase()+" needs an HLS/HTTP gateway on Android/WebView");tvDiag("diagSource",kind.toUpperCase()+" — gateway required");return}
  }
  const isM3U8=kind==="hls";
