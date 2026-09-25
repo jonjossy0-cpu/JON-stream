@@ -11,7 +11,8 @@ function corsHeaders() {
 }
 
 function isAllowed(url) {
-  return url.protocol === "http:" && ALLOWED_HOSTS.has(url.hostname);
+  return (url.protocol === "http:" || url.protocol === "https:") &&
+    ALLOWED_HOSTS.has(url.hostname);
 }
 
 function absolutize(value, base) {
@@ -23,7 +24,7 @@ function absolutize(value, base) {
 }
 
 function gatewayUrl(target) {
-  return "/api/hls?url=" + encodeURIComponent(target);
+  return "https://jon-stream.vercel.app/api/hls?url=" + encodeURIComponent(target);
 }
 
 function rewriteUriAttributes(line, baseUrl) {
@@ -113,7 +114,7 @@ export default async function handler(req, res) {
       target.pathname.toLowerCase().endsWith(".m3u8");
 
     Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
-    if (contentType) res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Type", looksLikePlaylist ? "application/vnd.apple.mpegurl" : (contentType || "application/octet-stream"));
 
     if (looksLikePlaylist) {
       const body = await upstream.text();
