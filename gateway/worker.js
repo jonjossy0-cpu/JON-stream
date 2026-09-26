@@ -7,6 +7,8 @@ const ALLOWED_HOSTS = new Set([
   "appletree-mytimeuk-rakuten.amagi.tv"
 ]);
 
+const MAX_REDIRECTS = 3;
+
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
@@ -19,6 +21,8 @@ function corsHeaders() {
 
 function isAllowed(url) {
   return (url.protocol === "http:" || url.protocol === "https:") &&
+    (url.port === "" || url.port === "80" || url.port === "443") &&
+    !url.username && !url.password &&
     ALLOWED_HOSTS.has(url.hostname);
 }
 
@@ -85,11 +89,46 @@ function rewritePlaylist(body, base) {
   }).join("\n");
 }
 
+async function fetchAllowed(target, request) {
+  let current = target;
+
+  for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount++) {
+    const response = await fetch(current.toString(), {
+      method: request.method,
+      headers: upstreamHeaders(request, current),
+      redirect: "manual"
+    });
+
+    if (response.status < 300 || response.status >= 400) {
+      return { response, finalUrl: current.toString() };
+    }
+
+    const location = response.headers.get("Location");
+    if (!location) return { response, finalUrl: current.toString() };
+
+    const next = new URL(location, current);
+    if (!isAllowed(next)) {
+      return { blockedRedirect: true };
+    }
+
+    current = next;
+  }
+
+  return { tooManyRedirects: true };
+}
+
 async function handle(request) {
   const incoming = new URL(request.url);
 
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders() });
+  }
+
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return new Response("Method not allowed", {
+      status: 405,
+      headers: { "Allow": "GET,HEAD,OPTIONS", ...corsHeaders() }
+    });
   }
 
   if (incoming.pathname !== "/hls") {
@@ -118,13 +157,9 @@ async function handle(request) {
     return new Response("Host not allowed", { status: 403, headers: corsHeaders() });
   }
 
-  let upstream;
+  let result;
   try {
-    upstream = await fetch(target.toString(), {
-      method: request.method,
-      headers: upstreamHeaders(request, target),
-      redirect: "follow"
-    });
+    result = await fetchAllowed(target, request);
   } catch (_) {
     return new Response("Upstream connection failed", {
       status: 502,
@@ -132,8 +167,23 @@ async function handle(request) {
     });
   }
 
+  if (result.blockedRedirect) {
+    return new Response("Upstream redirect host not allowed", {
+      status: 403,
+      headers: corsHeaders()
+    });
+  }
+
+  if (result.tooManyRedirects) {
+    return new Response("Too many upstream redirects", {
+      status: 508,
+      headers: corsHeaders()
+    });
+  }
+
+  const upstream = result.response;
   const contentType = (upstream.headers.get("Content-Type") || "").toLowerCase();
-  const finalUrl = upstream.url || target.toString();
+  const finalUrl = result.finalUrl;
   const isPlaylist =
     contentType.includes("mpegurl") ||
     target.pathname.toLowerCase().endsWith(".m3u8") ||
