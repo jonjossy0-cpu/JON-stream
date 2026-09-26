@@ -21,7 +21,8 @@ function corsHeaders() {
 }
 
 function isAllowed(url) {
-  return url.protocol === "http:" && ALLOWED_HOSTS.has(url.hostname);
+  return (url.protocol === "http:" || url.protocol === "https:") &&
+    ALLOWED_HOSTS.has(url.hostname);
 }
 
 function absolutize(value, base) {
