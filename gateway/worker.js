@@ -34,6 +34,22 @@ function proxiedUrl(target) {
   return "/hls?url=" + encodeURIComponent(target);
 }
 
+function upstreamHeaders(request, target) {
+  const headers = {
+    "User-Agent": request.headers.get("User-Agent") || "JON-Stream-Gateway",
+    "Accept": request.headers.get("Accept") || "*/*"
+  };
+
+  const range = request.headers.get("Range");
+  if (range) headers["Range"] = range;
+
+  // Some public HLS servers require a normal browser-like origin/referrer.
+  headers["Referer"] = target.origin + "/";
+  headers["Origin"] = target.origin;
+
+  return headers;
+}
+
 async function handle(request) {
   const incoming = new URL(request.url);
 
@@ -71,11 +87,7 @@ async function handle(request) {
   try {
     upstream = await fetch(target.toString(), {
       method: request.method,
-      headers: {
-        "User-Agent": request.headers.get("User-Agent") || "JON-Stream-Gateway",
-        "Accept": request.headers.get("Accept") || "*/*",
-        ...(request.headers.get("Range") ? { "Range": request.headers.get("Range") } : {})
-      },
+      headers: upstreamHeaders(request, target),
       redirect: "follow"
     });
   } catch (_) {
@@ -85,26 +97,42 @@ async function handle(request) {
     });
   }
 
+  if (!upstream.ok && request.method !== "HEAD") {
+    const body = await upstream.text();
+    return new Response(body || ("Upstream HTTP " + upstream.status), {
+      status: upstream.status,
+      headers: {
+        "Content-Type": upstream.headers.get("Content-Type") || "text/plain; charset=utf-8",
+        ...corsHeaders()
+      }
+    });
+  }
+
   const contentType = (upstream.headers.get("Content-Type") || "").toLowerCase();
   const isPlaylist =
     contentType.includes("mpegurl") ||
-    target.pathname.toLowerCase().endsWith(".m3u8");
+    target.pathname.toLowerCase().endsWith(".m3u8") ||
+    (upstream.url && new URL(upstream.url).pathname.toLowerCase().endsWith(".m3u8"));
 
   if (isPlaylist) {
     const body = await upstream.text();
+
+    // Use the final URL after redirects so relative HLS references resolve correctly.
+    const playlistBase = upstream.url || target.toString();
 
     const rewritten = body.split(/\r?\n/).map(line => {
       const trimmed = line.trim();
       if (!trimmed) return line;
 
-      // Rewrite URI attributes such as EXT-X-MEDIA/EXT-X-KEY when present.
       if (trimmed.startsWith("#")) {
         return line.replace(/URI="([^"]+)"/g, (match, value) => {
-          const absolute = absolutize(value, target);
+          const absolute = absolutize(value, playlistBase);
           if (!absolute) return match;
+
           try {
-            return isAllowed(new URL(absolute))
-              ? 'URI="' + proxiedUrl(absolute) + '"'
+            const url = new URL(absolute);
+            return isAllowed(url)
+              ? 'URI="' + proxiedUrl(url.toString()) + '"'
               : match;
           } catch (_) {
             return match;
@@ -112,12 +140,13 @@ async function handle(request) {
         });
       }
 
-      const absolute = absolutize(trimmed, target);
+      const absolute = absolutize(trimmed, playlistBase);
       if (!absolute) return line;
 
       try {
-        return isAllowed(new URL(absolute))
-          ? proxiedUrl(absolute)
+        const url = new URL(absolute);
+        return isAllowed(url)
+          ? proxiedUrl(url.toString())
           : line;
       } catch (_) {
         return line;
