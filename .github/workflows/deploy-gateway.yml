@@ -1,0 +1,24 @@
+name: Deploy JON Stream Gateway
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "gateway/**"
+      - ".github/workflows/deploy-gateway.yml"
+    branches:
+      - mainv
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy Gateway to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: gateway
