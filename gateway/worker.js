@@ -1,5 +1,13 @@
 const ALLOWED_HOSTS = new Set([
-  "88.212.15.19"
+  // Existing Gateway source
+  "88.212.15.19",
+
+  // JON Stream Gateway candidates
+  "23.237.104.106",
+  "45.166.93.156",
+  "stitcher-ipv4.pluto.tv",
+  "amg00627-amg00627c29-rakuten-it-3989.playouts.now.amagi.tv",
+  "appletree-mytimeuk-rakuten.amagi.tv"
 ]);
 
 function corsHeaders() {
