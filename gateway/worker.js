@@ -8,6 +8,9 @@ const ALLOWED_HOSTS = new Set([
 ]);
 
 const MAX_REDIRECTS = 3;
+const RATE_WINDOW_MS = 60_000;
+const MAX_REQUESTS_PER_WINDOW = 300;
+const requestBuckets = new Map();
 
 function corsHeaders() {
   return {
@@ -24,6 +27,42 @@ function isAllowed(url) {
     (url.port === "" || url.port === "80" || url.port === "443") &&
     !url.username && !url.password &&
     ALLOWED_HOSTS.has(url.hostname);
+}
+
+function checkRateLimit(request) {
+  const now = Date.now();
+  const client = request.headers.get("CF-Connecting-IP") || "unknown";
+  const current = requestBuckets.get(client);
+
+  if (!current || now - current.startedAt >= RATE_WINDOW_MS) {
+    requestBuckets.set(client, { startedAt: now, count: 1 });
+    if (requestBuckets.size > 10_000) {
+      for (const [key, bucket] of requestBuckets) {
+        if (now - bucket.startedAt >= RATE_WINDOW_MS) requestBuckets.delete(key);
+      }
+    }
+    return { allowed: true, retryAfter: 0 };
+  }
+
+  current.count += 1;
+  if (current.count > MAX_REQUESTS_PER_WINDOW) {
+    return {
+      allowed: false,
+      retryAfter: Math.max(1, Math.ceil((RATE_WINDOW_MS - (now - current.startedAt)) / 1000))
+    };
+  }
+
+  return { allowed: true, retryAfter: 0 };
+}
+
+function rateLimitResponse(retryAfter) {
+  return new Response("Rate limit exceeded", {
+    status: 429,
+    headers: {
+      "Retry-After": String(retryAfter),
+      ...corsHeaders()
+    }
+  });
 }
 
 function absolutize(value, base) {
@@ -140,6 +179,9 @@ async function handle(request) {
       }
     });
   }
+
+  const rate = checkRateLimit(request);
+  if (!rate.allowed) return rateLimitResponse(rate.retryAfter);
 
   const raw = incoming.searchParams.get("url");
   if (!raw) {
