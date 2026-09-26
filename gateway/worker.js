@@ -1,8 +1,5 @@
 const ALLOWED_HOSTS = new Set([
-  // Existing Gateway source
   "88.212.15.19",
-
-  // JON Stream Gateway candidates
   "23.237.104.106",
   "45.166.93.156",
   "stitcher-ipv4.pluto.tv",
@@ -29,24 +26,28 @@ function absolutize(value, base) {
   try {
     return new URL(value, base).toString();
   } catch (_) {
-    return value;
+    return null;
   }
 }
 
 function proxiedUrl(target) {
-  return new URL("/hls?url=" + encodeURIComponent(target), "https://" + self.location.hostname).toString();
+  return "/hls?url=" + encodeURIComponent(target);
 }
 
 async function handle(request) {
+  const incoming = new URL(request.url);
+
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders() });
   }
 
-  const incoming = new URL(request.url);
   if (incoming.pathname !== "/hls") {
-    return new Response("JON Stream HLS Gateway", {
+    return new Response("JON Stream HLS Gateway - ONLINE", {
       status: 200,
-      headers: { "Content-Type": "text/plain; charset=utf-8", ...corsHeaders() }
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        ...corsHeaders()
+      }
     });
   }
 
@@ -66,40 +67,74 @@ async function handle(request) {
     return new Response("Host not allowed", { status: 403, headers: corsHeaders() });
   }
 
-  const upstream = await fetch(target.toString(), {
-    method: request.method,
-    headers: {
-      "User-Agent": request.headers.get("User-Agent") || "JON-Stream-Gateway",
-      "Accept": request.headers.get("Accept") || "*/*",
-      "Range": request.headers.get("Range") || ""
-    },
-    redirect: "follow"
-  });
+  let upstream;
+  try {
+    upstream = await fetch(target.toString(), {
+      method: request.method,
+      headers: {
+        "User-Agent": request.headers.get("User-Agent") || "JON-Stream-Gateway",
+        "Accept": request.headers.get("Accept") || "*/*",
+        ...(request.headers.get("Range") ? { "Range": request.headers.get("Range") } : {})
+      },
+      redirect: "follow"
+    });
+  } catch (_) {
+    return new Response("Upstream connection failed", {
+      status: 502,
+      headers: corsHeaders()
+    });
+  }
 
   const contentType = (upstream.headers.get("Content-Type") || "").toLowerCase();
+  const isPlaylist =
+    contentType.includes("mpegurl") ||
+    target.pathname.toLowerCase().endsWith(".m3u8");
 
-  // Rewrite HLS playlists so every segment/sub-playlist also stays inside
-  // the HTTPS gateway. This is necessary for live HLS, not just the .m3u8 file.
-  if (contentType.includes("mpegurl") || target.pathname.toLowerCase().endsWith(".m3u8")) {
+  if (isPlaylist) {
     const body = await upstream.text();
+
     const rewritten = body.split(/\r?\n/).map(line => {
       const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) return line;
+      if (!trimmed) return line;
+
+      // Rewrite URI attributes such as EXT-X-MEDIA/EXT-X-KEY when present.
+      if (trimmed.startsWith("#")) {
+        return line.replace(/URI="([^"]+)"/g, (match, value) => {
+          const absolute = absolutize(value, target);
+          if (!absolute) return match;
+          try {
+            return isAllowed(new URL(absolute))
+              ? 'URI="' + proxiedUrl(absolute) + '"'
+              : match;
+          } catch (_) {
+            return match;
+          }
+        });
+      }
+
       const absolute = absolutize(trimmed, target);
-      return isAllowed(new URL(absolute)) ? proxiedUrl(absolute) : line;
+      if (!absolute) return line;
+
+      try {
+        return isAllowed(new URL(absolute))
+          ? proxiedUrl(absolute)
+          : line;
+      } catch (_) {
+        return line;
+      }
     }).join("\n");
 
     return new Response(rewritten, {
       status: upstream.status,
       headers: {
-        "Content-Type": "application/vnd.apple.mpegurl",
+        "Content-Type": "application/vnd.apple.mpegurl; charset=utf-8",
         ...corsHeaders()
       }
     });
   }
 
   const headers = new Headers(upstream.headers);
-  Object.entries(corsHeaders()).forEach(([k, v]) => headers.set(k, v));
+  Object.entries(corsHeaders()).forEach(([key, value]) => headers.set(key, value));
 
   return new Response(upstream.body, {
     status: upstream.status,
@@ -108,6 +143,4 @@ async function handle(request) {
   });
 }
 
-export default {
-  fetch: handle
-};
+export default { fetch: handle };
