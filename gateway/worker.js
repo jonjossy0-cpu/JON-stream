@@ -36,18 +36,53 @@ function proxiedUrl(target) {
 
 function upstreamHeaders(request, target) {
   const headers = {
-    "User-Agent": request.headers.get("User-Agent") || "JON-Stream-Gateway",
-    "Accept": request.headers.get("Accept") || "*/*"
+    "User-Agent": request.headers.get("User-Agent") ||
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131 Safari/537.36",
+    "Accept": request.headers.get("Accept") || "*/*",
+    "Referer": target.origin + "/"
   };
 
   const range = request.headers.get("Range");
   if (range) headers["Range"] = range;
 
-  // Some public HLS servers require a normal browser-like origin/referrer.
-  headers["Referer"] = target.origin + "/";
-  headers["Origin"] = target.origin;
-
   return headers;
+}
+
+function rewriteUriAttributes(line, base) {
+  return line.replace(/URI="([^"]+)"/g, (match, value) => {
+    const absolute = absolutize(value, base);
+    if (!absolute) return match;
+
+    try {
+      const url = new URL(absolute);
+      return isAllowed(url)
+        ? 'URI="' + proxiedUrl(url.toString()) + '"'
+        : match;
+    } catch (_) {
+      return match;
+    }
+  });
+}
+
+function rewritePlaylist(body, base) {
+  return body.split(/\r?\n/).map(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return line;
+
+    if (trimmed.startsWith("#")) {
+      return rewriteUriAttributes(line, base);
+    }
+
+    const absolute = absolutize(trimmed, base);
+    if (!absolute) return line;
+
+    try {
+      const url = new URL(absolute);
+      return isAllowed(url) ? proxiedUrl(url.toString()) : line;
+    } catch (_) {
+      return line;
+    }
+  }).join("\n");
 }
 
 async function handle(request) {
@@ -97,66 +132,32 @@ async function handle(request) {
     });
   }
 
-  if (!upstream.ok && request.method !== "HEAD") {
-    const body = await upstream.text();
-    return new Response(body || ("Upstream HTTP " + upstream.status), {
-      status: upstream.status,
-      headers: {
-        "Content-Type": upstream.headers.get("Content-Type") || "text/plain; charset=utf-8",
-        ...corsHeaders()
-      }
-    });
-  }
-
   const contentType = (upstream.headers.get("Content-Type") || "").toLowerCase();
+  const finalUrl = upstream.url || target.toString();
   const isPlaylist =
     contentType.includes("mpegurl") ||
     target.pathname.toLowerCase().endsWith(".m3u8") ||
-    (upstream.url && new URL(upstream.url).pathname.toLowerCase().endsWith(".m3u8"));
+    finalUrl.toLowerCase().split("?")[0].endsWith(".m3u8");
 
-  if (isPlaylist) {
+  if (isPlaylist && upstream.ok) {
     const body = await upstream.text();
-
-    // Use the final URL after redirects so relative HLS references resolve correctly.
-    const playlistBase = upstream.url || target.toString();
-
-    const rewritten = body.split(/\r?\n/).map(line => {
-      const trimmed = line.trim();
-      if (!trimmed) return line;
-
-      if (trimmed.startsWith("#")) {
-        return line.replace(/URI="([^"]+)"/g, (match, value) => {
-          const absolute = absolutize(value, playlistBase);
-          if (!absolute) return match;
-
-          try {
-            const url = new URL(absolute);
-            return isAllowed(url)
-              ? 'URI="' + proxiedUrl(url.toString()) + '"'
-              : match;
-          } catch (_) {
-            return match;
-          }
-        });
-      }
-
-      const absolute = absolutize(trimmed, playlistBase);
-      if (!absolute) return line;
-
-      try {
-        const url = new URL(absolute);
-        return isAllowed(url)
-          ? proxiedUrl(url.toString())
-          : line;
-      } catch (_) {
-        return line;
-      }
-    }).join("\n");
+    const rewritten = rewritePlaylist(body, finalUrl);
 
     return new Response(rewritten, {
       status: upstream.status,
       headers: {
         "Content-Type": "application/vnd.apple.mpegurl; charset=utf-8",
+        ...corsHeaders()
+      }
+    });
+  }
+
+  if (!upstream.ok) {
+    const body = request.method === "HEAD" ? "" : await upstream.text();
+    return new Response(body || ("Upstream HTTP " + upstream.status), {
+      status: upstream.status,
+      headers: {
+        "Content-Type": upstream.headers.get("Content-Type") || "text/plain; charset=utf-8",
         ...corsHeaders()
       }
     });
