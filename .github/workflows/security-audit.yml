@@ -1,0 +1,71 @@
+name: JON Stream Security Audit
+
+on:
+  pull_request:
+    branches:
+      - mainv
+  push:
+    branches:
+      - mainv
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  codeql:
+    name: CodeQL analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d596a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+
+  secret-scan:
+    name: Secret pattern scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d596a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Scan repository history and working tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          patterns='-----BEGIN (RSA|OPENSSH|EC|DSA|PGP) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{30,}'
+          if git grep -nE "$patterns" -- . ':!*.md'; then
+            echo "Potential hard-coded credential detected. Review and remove it before merging."
+            exit 1
+          fi
+
+  dependency-policy:
+    name: Dependency policy check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d596a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Reject floating CDN dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git grep -nE 'https://cdn\.jsdelivr\.net/npm/[^"'"']+@(latest|next|beta|alpha)(/|"|<)' -- '*.html' '*.js'; then
+            echo "Floating CDN dependency detected. Pin an exact version before merging."
+            exit 1
+          fi
