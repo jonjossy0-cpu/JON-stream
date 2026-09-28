@@ -8,6 +8,8 @@ const ALLOWED_HOSTS = new Set([
 ]);
 
 const MAX_REDIRECTS = 3;
+const MAX_URL_LENGTH = 4096;
+const MAX_PLAYLIST_BYTES = 1_000_000;
 const RATE_WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 300;
 const requestBuckets = new Map();
@@ -16,8 +18,8 @@ function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET,HEAD,OPTIONS",
-    "Access-Control-Allow-Headers": "*",
-    "Access-Control-Expose-Headers": "*",
+    "Access-Control-Allow-Headers": "Range,Content-Type",
+    "Access-Control-Expose-Headers": "Content-Length,Content-Range,Accept-Ranges,Content-Type",
     "Cache-Control": "no-store"
   };
 }
@@ -187,6 +189,9 @@ async function handle(request) {
   if (!raw) {
     return new Response("Missing url", { status: 400, headers: corsHeaders() });
   }
+  if (raw.length > MAX_URL_LENGTH) {
+    return new Response("URL too long", { status: 414, headers: corsHeaders() });
+  }
 
   let target;
   try {
@@ -232,7 +237,16 @@ async function handle(request) {
     finalUrl.toLowerCase().split("?")[0].endsWith(".m3u8");
 
   if (isPlaylist && upstream.ok) {
+    const lengthHeader = Number(upstream.headers.get("Content-Length") || 0);
+    if (lengthHeader > MAX_PLAYLIST_BYTES) {
+      return new Response("Playlist too large", { status: 413, headers: corsHeaders() });
+    }
+
     const body = await upstream.text();
+    if (new TextEncoder().encode(body).byteLength > MAX_PLAYLIST_BYTES) {
+      return new Response("Playlist too large", { status: 413, headers: corsHeaders() });
+    }
+
     const rewritten = rewritePlaylist(body, finalUrl);
 
     return new Response(rewritten, {
