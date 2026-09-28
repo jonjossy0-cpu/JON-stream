@@ -11,13 +11,15 @@ on:
 
 permissions:
   contents: read
-  security-events: write
-  actions: read
 
 jobs:
   codeql:
     name: CodeQL analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -35,6 +37,9 @@ jobs:
   secret-scan:
     name: Secret pattern scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -46,7 +51,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          patterns='-----BEGIN (RSA|OPENSSH|EC|DSA|PGP) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}'
+          patterns='-----BEGIN (RSA|OPENSSH|EC|DSA|PGP) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN PRIVATE KEY-----|"private_key"[[:space:]]*:[[:space:]]*"-----BEGIN'
           if git grep -nE "$patterns" -- . ':!*.md'; then
             echo "Potential hard-coded credential detected. Remove it before merging."
             exit 1
@@ -55,6 +60,9 @@ jobs:
   dependency-policy:
     name: Dependency policy check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -65,7 +73,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if git grep -nE 'https://cdn\.jsdelivr\.net/npm/[^"'"']+@(latest|next|beta|alpha)(/|"|<)' -- '*.html' '*.js'; then
-            echo "Floating CDN dependency detected. Pin an exact version before merging."
+          if git grep -nE "https://cdn\.jsdelivr\.net/npm/[^\"']+@(latest|next|beta|alpha)(/|\"|<)" -- '*.html' '*.js'; then
+            echo "Floating jsDelivr dependency detected. Pin an exact version before merging."
+            exit 1
+          fi
+
+          if git grep -nE "https://unpkg\.com/[^@/\"' ]+/" -- '*.html' '*.js'; then
+            echo "Unpinned unpkg dependency detected. Pin an exact package version before merging."
+            exit 1
+          fi
+
+      - name: Reject floating GitHub Actions refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git grep -nE '^[[:space:]]*uses:[[:space:]]*[^#[:space:]]+@(main|master|latest)([[:space:]]|$)' -- '.github/workflows/*.yml' '.github/workflows/*.yaml'; then
+            echo "Floating GitHub Actions ref detected. Pin the action to a stable tag or commit SHA."
             exit 1
           fi
