@@ -3204,16 +3204,8 @@ window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
   let jonOKTimer=null;
   let jonOKTriggered=false;
   function jonToggleTVFullscreen(){
-    const box=document.getElementById("tvPlayerBox");
-    const video=document.getElementById("tvPlayer");
-    if(!box||!video)return;
-    if(document.fullscreenElement){
-      if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
-      return;
-    }
-    if(box.requestFullscreen) box.requestFullscreen().catch(()=>{});
-    else if(video.requestFullscreen) video.requestFullscreen().catch(()=>{});
-    else if(video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+    const btn=document.querySelector("button.fullscreen");
+    if(btn) btn.click();
   }
   window.addEventListener("keydown",function(e){
     if(e.key!=="Enter" || e.repeat)return;
