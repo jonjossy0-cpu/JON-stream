@@ -3204,8 +3204,13 @@ window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
   let jonOKTimer=null;
   let jonOKTriggered=false;
   function jonToggleTVFullscreen(){
-    const btn=document.querySelector("button.fullscreen");
-    if(btn) btn.click();
+    if(document.fullscreenElement||document.webkitFullscreenElement){
+      if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+      else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }else{
+      const btn=document.querySelector("button.fullscreen");
+      if(btn) btn.click();
+    }
   }
   window.addEventListener("keydown",function(e){
     if(e.key!=="Enter" || e.repeat)return;
