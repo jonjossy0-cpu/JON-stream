@@ -3218,8 +3218,18 @@ window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
     clearTimeout(jonOKTimer);
     jonOKTimer=setTimeout(function(){
       jonOKLongPress=true;
-      const btn=document.querySelector("button.fullscreen");
-      if(btn) btn.click();
+      const v=document.getElementById("tvPlayer");
+      const fs=document.fullscreenElement||document.webkitFullscreenElement;
+      if(!v)return;
+      try{
+        if(fs){
+          if(document.exitFullscreen)document.exitFullscreen();
+          else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
+        }else{
+          if(v.requestFullscreen)v.requestFullscreen();
+          else if(v.webkitRequestFullscreen)v.webkitRequestFullscreen();
+        }
+      }catch(_){}
     },2000);
   });
   window.addEventListener("keyup",function(e){
