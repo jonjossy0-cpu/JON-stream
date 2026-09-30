@@ -2344,7 +2344,7 @@ function nextTV(){if(!filteredTV.length)return;let n=currentTVIndex<0?0:currentT
 function previousTV(){if(!filteredTV.length)return;let n=currentTVIndex<=0?filteredTV.length-1:currentTVIndex-1;const c=filteredTV[n];playTVStream(c.url,c.name,n)}
 function toggleTVMute(){tvPlayer.muted=!tvPlayer.muted}
 function stopTV(){clearTimeout(tvReconnectTimer);currentTV=null;tvSourceList=[];destroyTVEngine();tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load();document.getElementById("tvPlayerTitle").innerHTML="📺 TV stopped";tvStatus("⚪ Stopped");tvDiag("diagSource","None");tvDiag("diagBuffer","0s")}
-let jonTVFullscreenActive=false;async function fullscreenTV(){const box=document.getElementById("tvPlayerBox");const fs=document.fullscreenElement||document.webkitFullscreenElement;if(fs||jonTVFullscreenActive){try{if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)document.webkitExitFullscreen();jonTVFullscreenActive=false}catch(_){}}else{try{if(box.requestFullscreen)await box.requestFullscreen();else if(tvPlayer.requestFullscreen)await tvPlayer.requestFullscreen();else if(tvPlayer.webkitRequestFullscreen)tvPlayer.webkitRequestFullscreen();jonTVFullscreenActive=true}catch(_){} }}
+async function fullscreenTV(){const v=document.getElementById("tvPlayer");const fs=document.fullscreenElement||document.webkitFullscreenElement;if(!v)return;if(fs){try{if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)await document.webkitExitFullscreen()}catch(_){}}else{try{if(v.requestFullscreen)await v.requestFullscreen();else if(v.webkitRequestFullscreen)await v.webkitRequestFullscreen()}catch(_){}}}
 
 /* TV QUALITY */
 function updateQuality(){
@@ -3218,8 +3218,18 @@ window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
     clearTimeout(jonOKTimer);
     jonOKTimer=setTimeout(function(){
       jonOKLongPress=true;
-      const btn=document.querySelector("button.fullscreen");
-      if(btn) btn.click();
+      const v=document.getElementById("tvPlayer");
+      const fs=document.fullscreenElement||document.webkitFullscreenElement;
+      if(!v)return;
+      try{
+        if(fs){
+          if(document.exitFullscreen)document.exitFullscreen();
+          else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
+        }else{
+          if(v.requestFullscreen)v.requestFullscreen();
+          else if(v.webkitRequestFullscreen)v.webkitRequestFullscreen();
+        }
+      }catch(_){}
     },2000);
   });
   window.addEventListener("keyup",function(e){
