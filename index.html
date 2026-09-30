@@ -3210,7 +3210,13 @@ window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
     clearTimeout(jonOKTimer);
     jonOKTimer=setTimeout(function(){
       jonOKLongPress=true;
-      if(typeof fullscreenTV==="function") fullscreenTV();
+      if(document.fullscreenElement||document.webkitFullscreenElement){
+        if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+        else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+      }else{
+        const btn=document.querySelector("button.fullscreen");
+        if(btn) btn.click();
+      }
     },2000);
   });
   window.addEventListener("keyup",function(e){
