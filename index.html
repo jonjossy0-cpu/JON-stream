@@ -3202,19 +3202,15 @@ window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
 (function(){
   "use strict";
   let jonOKTimer=null;
-  let jonOKTriggered=false;
-  function jonToggleTVFullscreen(){
-    const btn=document.querySelector("button.fullscreen");
-    if(btn) btn.click();
-  }
+  let jonOKLongPress=false;
   window.addEventListener("keydown",function(e){
     if(e.key!=="Enter" || e.repeat)return;
     if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName))return;
-    jonOKTriggered=false;
+    jonOKLongPress=false;
     clearTimeout(jonOKTimer);
     jonOKTimer=setTimeout(function(){
-      jonOKTriggered=true;
-      jonToggleTVFullscreen();
+      jonOKLongPress=true;
+      if(typeof fullscreenTV==="function") fullscreenTV();
     },2000);
   });
   window.addEventListener("keyup",function(e){
