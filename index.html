@@ -2440,20 +2440,17 @@ function reconnectTV(){
 
 /* TV FULLSCREEN */
 async function fullscreenTV(){
- const box=document.getElementById("tvPlayerBox");
+ const v=document.getElementById("tvPlayer");
  const fs=document.fullscreenElement||document.webkitFullscreenElement;
- if(fs||jonTVFullscreenActive){
+ if(fs){
   try{
    if(document.exitFullscreen)await document.exitFullscreen();
    else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
-   jonTVFullscreenActive=false;
   }catch(_){}
  }else{
   try{
-   if(box.requestFullscreen)await box.requestFullscreen();
-   else if(tvPlayer.requestFullscreen)await tvPlayer.requestFullscreen();
-   else if(tvPlayer.webkitRequestFullscreen)await tvPlayer.webkitRequestFullscreen();
-   jonTVFullscreenActive=true;
+   if(v.requestFullscreen)await v.requestFullscreen();
+   else if(v.webkitRequestFullscreen)await v.webkitRequestFullscreen();
   }catch(_){}
  }
 }
