@@ -4,7 +4,11 @@ const ALLOWED_HOSTS = new Set([
   "45.166.93.156",
   "stitcher-ipv4.pluto.tv",
   "amg00627-amg00627c29-rakuten-it-3989.playouts.now.amagi.tv",
-  "appletree-mytimeuk-rakuten.amagi.tv"
+  "appletree-mytimeuk-rakuten.amagi.tv",
+  "63.141.239.226",
+  "stream8.cinerama.uz",
+  "38.252.238.18",
+  "45.162.64.114"
 ]);
 
 const MAX_REDIRECTS = 3;
@@ -24,11 +28,28 @@ function corsHeaders() {
   };
 }
 
+function endpointKey(url) {
+  return `${url.hostname}:${url.port || (url.protocol === "https:" ? "443" : "80")}`;
+}
+
+const ALLOWED_ENDPOINTS = new Set([
+  "88.212.15.19:80", "88.212.15.19:443",
+  "23.237.104.106:80", "23.237.104.106:443",
+  "45.166.93.156:80", "45.166.93.156:443", "45.166.93.156:9999",
+  "stitcher-ipv4.pluto.tv:443",
+  "amg00627-amg00627c29-rakuten-it-3989.playouts.now.amagi.tv:443",
+  "appletree-mytimeuk-rakuten.amagi.tv:443",
+  "63.141.239.226:81",
+  "stream8.cinerama.uz:443",
+  "38.252.238.18:8000",
+  "45.162.64.114:80"
+]);
+
 function isAllowed(url) {
   return (url.protocol === "http:" || url.protocol === "https:") &&
-    (url.port === "" || url.port === "80" || url.port === "443") &&
     !url.username && !url.password &&
-    ALLOWED_HOSTS.has(url.hostname);
+    ALLOWED_HOSTS.has(url.hostname) &&
+    ALLOWED_ENDPOINTS.has(endpointKey(url));
 }
 
 function checkRateLimit(request) {
@@ -201,7 +222,7 @@ async function handle(request) {
   }
 
   if (!isAllowed(target)) {
-    return new Response("Host not allowed", { status: 403, headers: corsHeaders() });
+    return new Response("Host or port not allowed", { status: 403, headers: corsHeaders() });
   }
 
   let result;
@@ -215,7 +236,7 @@ async function handle(request) {
   }
 
   if (result.blockedRedirect) {
-    return new Response("Upstream redirect host not allowed", {
+    return new Response("Upstream redirect host or port not allowed", {
       status: 403,
       headers: corsHeaders()
     });
