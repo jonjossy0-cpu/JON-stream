@@ -18,7 +18,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
-public class MainActivity extends Activity {
+public class MainActivity {
     private WebView webView;
     private FrameLayout root;
     private View customView;
@@ -159,8 +159,8 @@ public class MainActivity extends Activity {
             }
 
             // TV channel rocker.
-            if(k==KeyEvent.KEYCODE_CHANNEL_UP) { channelStep(1); return true; }
-            if(k==KeyEvent.KEYCODE_CHANNEL_DOWN) { channelStep(-1); return true; }
+            if(k==KeyEvent.KEYCODE_CHANNEL_UP || k==KeyEvent.KEYCODE_PAGE_UP) { channelStep(1); return true; }
+            if(k==KeyEvent.KEYCODE_CHANNEL_DOWN || k==KeyEvent.KEYCODE_PAGE_DOWN) { channelStep(-1); return true; }
 
             // OK/Enter: activate the currently focused TV control.
             if(k==KeyEvent.KEYCODE_ENTER || k==KeyEvent.KEYCODE_DPAD_CENTER) {
@@ -195,7 +195,7 @@ public class MainActivity extends Activity {
         runOnUiThread(()->webView.evaluateJavascript(
             "(function(){try{" +
             "var d='"+d+"';" +
-            "var all=[...document.querySelectorAll('button,a,input,select,[tabindex]:not([tabindex=\"-1\"])')].filter(function(e){" +
+            "var all=[...document.querySelectorAll('button,a,input,select,[tabindex]:not([tabindex="-1"])')].filter(function(e){" +
             " if(e.disabled||e.hidden)return false; var s=getComputedStyle(e),r=e.getBoundingClientRect();" +
             " return s.display!=='none'&&s.visibility!=='hidden'&&r.width>1&&r.height>1;" +
             "});" +
