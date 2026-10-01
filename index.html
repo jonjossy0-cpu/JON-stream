@@ -1788,7 +1788,7 @@ window.addEventListener("keydown",e=>{
  if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName))return;
  const k=e.key;
  /* Computer keyboard channel rocker: Page Up = CH+, Page Down = CH-.
-    Prevent browser scrolling so these keys act only as channel controls. */
+    Arrow keys remain unchanged; Page Up/Page Down act only as channel controls. */
  if(k==="PageUp" || k==="PageDown"){
   e.preventDefault();
   const direction=k==="PageUp"?1:-1;
