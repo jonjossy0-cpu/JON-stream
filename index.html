@@ -1793,9 +1793,7 @@ window.addEventListener("keydown",e=>{
   e.preventDefault();
   const direction=k==="PageUp"?1:-1;
   if(!Array.isArray(tvChannels)||!tvChannels.length)return;
-  const currentUrl=window.JON_CURRENT_TV_URL||null;
-  let currentIndex=tvChannels.findIndex(ch=>ch.url===currentUrl);
-  if(currentIndex<0) currentIndex=0;
+  let currentIndex=(typeof currentTVIndex==="number"&&currentTVIndex>=0)?currentTVIndex:0;
   const nextIndex=(currentIndex+direction+tvChannels.length)%tvChannels.length;
   const channel=tvChannels[nextIndex];
   if(!channel||!jonAllowsChannel(channel))return;
