@@ -1787,6 +1787,19 @@ function updateTVRemoteDisplay(value){
 window.addEventListener("keydown",e=>{
  if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName))return;
  const k=e.key;
+ /* Computer keyboard channel rocker: Page Up = CH+, Page Down = CH-.
+    Arrow keys remain unchanged; Page Up/Page Down act only as channel controls. */
+ if(k==="PageUp" || k==="PageDown"){
+  e.preventDefault();
+  const direction=k==="PageUp"?1:-1;
+  if(!Array.isArray(tvChannels)||!tvChannels.length)return;
+  let currentIndex=(typeof currentTVIndex==="number"&&currentTVIndex>=0)?currentTVIndex:0;
+  const nextIndex=(currentIndex+direction+tvChannels.length)%tvChannels.length;
+  const channel=tvChannels[nextIndex];
+  if(!channel||!jonAllowsChannel(channel))return;
+  playTVStream(channel.url,channel.name,nextIndex);
+  return;
+ }
  if(!/^\d$/.test(k))return;
  jonTVRemoteNumberBuffer+=k;
  updateTVRemoteDisplay(jonTVRemoteNumberBuffer);
