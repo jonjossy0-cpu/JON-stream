@@ -48,12 +48,37 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build Debug APK
-        working-directory: android
-        run: gradle :app:assembleDebug
+      - name: Prepare release signing keystore
+        shell: bash
+        env:
+          JON_RELEASE_KEYSTORE_B64: ${{ secrets.JON_RELEASE_KEYSTORE_B64 }}
+        run: |
+          set -euo pipefail
+          test -n "${JON_RELEASE_KEYSTORE_B64}" || {
+            echo "Missing GitHub secret: JON_RELEASE_KEYSTORE_B64"
+            exit 1
+          }
+          umask 077
+          printf '%s' "${JON_RELEASE_KEYSTORE_B64}" | base64 --decode > "${RUNNER_TEMP}/jon-stream-release.jks"
+          test -s "${RUNNER_TEMP}/jon-stream-release.jks"
 
-      - name: Upload APK
+      - name: Build signed Release APK
+        working-directory: android
+        env:
+          JON_RELEASE_STORE_FILE: ${{ runner.temp }}/jon-stream-release.jks
+          JON_RELEASE_STORE_PASSWORD: ${{ secrets.JON_RELEASE_STORE_PASSWORD }}
+          JON_RELEASE_KEY_ALIAS: ${{ secrets.JON_RELEASE_KEY_ALIAS }}
+          JON_RELEASE_KEY_PASSWORD: ${{ secrets.JON_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "${JON_RELEASE_STORE_PASSWORD}" || { echo "Missing JON_RELEASE_STORE_PASSWORD"; exit 1; }
+          test -n "${JON_RELEASE_KEY_ALIAS}" || { echo "Missing JON_RELEASE_KEY_ALIAS"; exit 1; }
+          test -n "${JON_RELEASE_KEY_PASSWORD}" || { echo "Missing JON_RELEASE_KEY_PASSWORD"; exit 1; }
+          gradle :app:assembleRelease
+
+      - name: Upload signed Release APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: JON-Stream-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: JON-Stream-Release-APK
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
