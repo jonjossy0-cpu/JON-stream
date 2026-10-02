@@ -62,20 +62,43 @@ jobs:
           printf '%s' "${JON_RELEASE_KEYSTORE_B64}" | base64 --decode > "${RUNNER_TEMP}/jon-stream-release.jks"
           test -s "${RUNNER_TEMP}/jon-stream-release.jks"
 
-      - name: Build signed Release APK
-        working-directory: android
+      - name: Normalize release signing keystore for Android Gradle Plugin
+        shell: bash
         env:
-          JON_RELEASE_STORE_FILE: ${{ runner.temp }}/jon-stream-release.jks
           JON_RELEASE_STORE_PASSWORD: ${{ secrets.JON_RELEASE_STORE_PASSWORD }}
           JON_RELEASE_KEY_ALIAS: ${{ secrets.JON_RELEASE_KEY_ALIAS }}
-          JON_RELEASE_KEY_PASSWORD: ${{ secrets.JON_RELEASE_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           test -n "${JON_RELEASE_STORE_PASSWORD}" || { echo "Missing JON_RELEASE_STORE_PASSWORD"; exit 1; }
           test -n "${JON_RELEASE_KEY_ALIAS}" || { echo "Missing JON_RELEASE_KEY_ALIAS"; exit 1; }
-          test -n "${JON_RELEASE_KEY_PASSWORD}" || { echo "Missing JON_RELEASE_KEY_PASSWORD"; exit 1; }
-          gradle :app:assembleRelease
+          keytool -importkeystore -noprompt \
+            -srckeystore "${RUNNER_TEMP}/jon-stream-release.jks" \
+            -srcstoretype PKCS12 \
+            -srcstorepass "${JON_RELEASE_STORE_PASSWORD}" \
+            -srcalias "${JON_RELEASE_KEY_ALIAS}" \
+            -srckeypass "${JON_RELEASE_STORE_PASSWORD}" \
+            -destkeystore "${RUNNER_TEMP}/jon-stream-release-android.jks" \
+            -deststoretype JKS \
+            -deststorepass "${JON_RELEASE_STORE_PASSWORD}" \
+            -destkeypass "${JON_RELEASE_STORE_PASSWORD}" \
+            -destalias "${JON_RELEASE_KEY_ALIAS}"
+          keytool -list -keystore "${RUNNER_TEMP}/jon-stream-release-android.jks" \
+            -storepass "${JON_RELEASE_STORE_PASSWORD}" \
+            -alias "${JON_RELEASE_KEY_ALIAS}" >/dev/null
+          test -s "${RUNNER_TEMP}/jon-stream-release-android.jks"
 
+      - name: Build signed Release APK
+        working-directory: android
+        env:
+          JON_RELEASE_STORE_FILE: ${{ runner.temp }}/jon-stream-release-android.jks
+          JON_RELEASE_STORE_PASSWORD: ${{ secrets.JON_RELEASE_STORE_PASSWORD }}
+          JON_RELEASE_KEY_ALIAS: ${{ secrets.JON_RELEASE_KEY_ALIAS }}
+          JON_RELEASE_KEY_PASSWORD: ${{ secrets.JON_RELEASE_STORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "${JON_RELEASE_STORE_PASSWORD}" || { echo "Missing JON_RELEASE_STORE_PASSWORD"; exit 1; }
+          test -n "${JON_RELEASE_KEY_ALIAS}" || { echo "Missing JON_RELEASE_KEY_ALIAS"; exit 1; }
+          gradle :app:assembleRelease
       - name: Upload signed Release APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
