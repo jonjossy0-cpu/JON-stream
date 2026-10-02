@@ -27,12 +27,12 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3
         with:
           languages: javascript
 
       - name: Analyze
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3
 
   secret-scan:
     name: Secret pattern scan
@@ -83,11 +83,11 @@ jobs:
             exit 1
           fi
 
-      - name: Reject floating GitHub Actions refs
+      - name: Reject non-SHA GitHub Actions refs
         shell: bash
         run: |
           set -euo pipefail
-          if git grep -nE '^[[:space:]]*uses:[[:space:]]*[^#[:space:]]+@(main|master|latest)([[:space:]]|$)' -- '.github/workflows/*.yml' '.github/workflows/*.yaml'; then
-            echo "Floating GitHub Actions ref detected. Pin the action to a stable tag or commit SHA."
+          if git grep -nE '^[[:space:]]*uses:[[:space:]]*[^#[:space:]]+@[^#[:space:]]*[^0-9a-fA-F][^#[:space:]]*([[:space:]]|$)' -- '.github/workflows/*.yml' '.github/workflows/*.yaml'; then
+            echo "Non-SHA GitHub Actions reference detected. Pin the action to a full commit SHA before merging."
             exit 1
           fi
