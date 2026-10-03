@@ -2,6 +2,9 @@ name: Build JON Stream APK
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - mainv
   push:
     branches:
       - mainv
@@ -53,13 +56,35 @@ jobs:
         env:
           JON_RELEASE_KEYSTORE_B64_PART1: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART1 }}
           JON_RELEASE_KEYSTORE_B64_PART2: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART2 }}
+          JON_RELEASE_KEYSTORE_B64_PART3: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART3 }}
+          JON_RELEASE_KEYSTORE_B64_PART4: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART4 }}
         run: |
           set -euo pipefail
-          test -n "${JON_RELEASE_KEYSTORE_B64_PART1}" || { echo "Missing GitHub secret: JON_RELEASE_KEYSTORE_B64_PART1"; exit 1; }
-          test -n "${JON_RELEASE_KEYSTORE_B64_PART2}" || { echo "Missing GitHub secret: JON_RELEASE_KEYSTORE_B64_PART2"; exit 1; }
+          for name in JON_RELEASE_KEYSTORE_B64_PART1 JON_RELEASE_KEYSTORE_B64_PART2 JON_RELEASE_KEYSTORE_B64_PART3 JON_RELEASE_KEYSTORE_B64_PART4; do
+            test -n "${!name}" || { echo "Missing GitHub secret: ${name}"; exit 1; }
+          done
           umask 077
-          printf '%s%s' "${JON_RELEASE_KEYSTORE_B64_PART1}" "${JON_RELEASE_KEYSTORE_B64_PART2}" | base64 --decode > "${RUNNER_TEMP}/jon-stream-release.jks"
+          part1="$(printf '%s' "${JON_RELEASE_KEYSTORE_B64_PART1}" | tr -d '[:space:]')"
+          part2="$(printf '%s' "${JON_RELEASE_KEYSTORE_B64_PART2}" | tr -d '[:space:]')"
+          part3="$(printf '%s' "${JON_RELEASE_KEYSTORE_B64_PART3}" | tr -d '[:space:]')"
+          part4="$(printf '%s' "${JON_RELEASE_KEYSTORE_B64_PART4}" | tr -d '[:space:]')"
+          combined="${part1}${part2}${part3}${part4}"
+          echo "Keystore Base64 lengths: ${#part1} + ${#part2} + ${#part3} + ${#part4} = ${#combined}"
+          if (( ${#part1} != 934 || ${#part2} != 934 || ${#part3} != 934 || ${#part4} != 934 )); then
+            echo "Unexpected Base64 part length. Expected 934 characters per part."
+            exit 1
+          fi
+          if (( ${#combined} % 4 != 0 )); then
+            echo "Combined Base64 length is not divisible by 4."
+            exit 1
+          fi
+          if [[ ! "${combined}" =~ ^[A-Za-z0-9+/]*={0,2}$ ]]; then
+            echo "Release keystore secret contains invalid Base64 characters."
+            exit 1
+          fi
+          printf '%s' "${combined}" | base64 --decode > "${RUNNER_TEMP}/jon-stream-release.jks"
           test -s "${RUNNER_TEMP}/jon-stream-release.jks"
+          echo "Release keystore Base64 decoded successfully."
 
       - name: Build signed Release APK
         working-directory: android
