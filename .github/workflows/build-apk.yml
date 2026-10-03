@@ -12,18 +12,33 @@ permissions:
 jobs:
   security-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          fetch-depth: 0
 
-      - name: Check for obvious committed secrets
+      - name: Check current tree and Git history for obvious committed secrets
         shell: bash
         run: |
           set -euo pipefail
-          if git grep -nE '-----BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}' -- . ':!*.md'; then
-            echo "Potential hard-coded secret detected. Remove it before building."
+          patterns='-----BEGIN (RSA|OPENSSH|EC|DSA|PGP) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN PRIVATE KEY-----|"private_key"[[:space:]]*:[[:space:]]*"-----BEGIN|npm_[A-Za-z0-9]{20,}|pypi-[A-Za-z0-9_-]{20,}'
+
+          found=0
+          if git grep -nE "$patterns" -- . ':!*.md'; then
+            found=1
+          fi
+
+          while IFS= read -r commit; do
+            if git grep -nE "$patterns" "$commit" -- . ':!*.md'; then
+              found=1
+            fi
+          done < <(git rev-list --all)
+
+          if [ "$found" -ne 0 ]; then
+            echo "Potential hard-coded secret detected in the current tree or Git history. Remove/revoke it before building."
             exit 1
           fi
 
