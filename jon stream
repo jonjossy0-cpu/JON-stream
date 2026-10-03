@@ -770,11 +770,6 @@ Powered by JON Media Service
 const stations = [
 
 {
-name:"FUTURE RADIO",
-url:"https://jon-radio-platform.onrender.com/jonfm",
-logo:"https://imglink.cc/cdn/dQZZtFKCS8.png"
-},
-{
 name:"JON FM ETHIOPIA",
 url:"https://jon-radio-platform.onrender.com/jonfm",
 logo:"https://imglink.cc/cdn/dQZZtFKCS8.png"
