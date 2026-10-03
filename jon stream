@@ -771,7 +771,8 @@ const stations = [
 
 {
 name:"JON FM ETHIOPIA",
-url:"https://jonmediaservice.volticast.net/primary.aac"
+url:"https://jon-radio-platform.onrender.com/jonfm",
+logo:"https://imglink.cc/cdn/dQZZtFKCS8.png"
 },
 
 {
