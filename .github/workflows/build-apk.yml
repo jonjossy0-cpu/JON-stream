@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@11d5960a326750d1f99cc633dbcf757c94c7933a # v4.4.3
         with:
           persist-credentials: false
 
@@ -51,14 +51,15 @@ jobs:
       - name: Prepare release signing keystore
         shell: bash
         env:
-          JON_RELEASE_KEYSTORE_B64_PART1: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART1 }}
-          JON_RELEASE_KEYSTORE_B64_PART2: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART2 }}
+          JON_RELEASE_KEYSTORE_B64: ${{ secrets.JON_RELEASE_KEYSTORE_B64 }}
         run: |
           set -euo pipefail
-          test -n "${JON_RELEASE_KEYSTORE_B64_PART1}" || { echo "Missing GitHub secret: JON_RELEASE_KEYSTORE_B64_PART1"; exit 1; }
-          test -n "${JON_RELEASE_KEYSTORE_B64_PART2}" || { echo "Missing GitHub secret: JON_RELEASE_KEYSTORE_B64_PART2"; exit 1; }
+          test -n "${JON_RELEASE_KEYSTORE_B64}" || {
+            echo "Missing GitHub secret: JON_RELEASE_KEYSTORE_B64"
+            exit 1
+          }
           umask 077
-          printf '%s%s' "${JON_RELEASE_KEYSTORE_B64_PART1}" "${JON_RELEASE_KEYSTORE_B64_PART2}" | base64 --decode > "${RUNNER_TEMP}/jon-stream-release.jks"
+          printf '%s' "${JON_RELEASE_KEYSTORE_B64}" | base64 --decode > "${RUNNER_TEMP}/jon-stream-release.jks"
           test -s "${RUNNER_TEMP}/jon-stream-release.jks"
 
       - name: Build signed Release APK
