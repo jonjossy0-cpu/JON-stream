@@ -51,15 +51,18 @@ jobs:
       - name: Prepare release signing keystore
         shell: bash
         env:
-          JON_RELEASE_KEYSTORE_B64: ${{ secrets.JON_RELEASE_KEYSTORE_B64 }}
+          JON_RELEASE_KEYSTORE_B64_PART1: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART1 }}
+          JON_RELEASE_KEYSTORE_B64_PART2: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART2 }}
+          JON_RELEASE_KEYSTORE_B64_PART3: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART3 }}
+          JON_RELEASE_KEYSTORE_B64_PART4: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART4 }}
         run: |
           set -euo pipefail
-          test -n "${JON_RELEASE_KEYSTORE_B64}" || {
-            echo "Missing GitHub secret: JON_RELEASE_KEYSTORE_B64"
-            exit 1
-          }
+          test -n "${JON_RELEASE_KEYSTORE_B64_PART1}" || { echo "Missing GitHub secret: JON_RELEASE_KEYSTORE_B64_PART1"; exit 1; }
+          test -n "${JON_RELEASE_KEYSTORE_B64_PART2}" || { echo "Missing GitHub secret: JON_RELEASE_KEYSTORE_B64_PART2"; exit 1; }
+          test -n "${JON_RELEASE_KEYSTORE_B64_PART3}" || { echo "Missing GitHub secret: JON_RELEASE_KEYSTORE_B64_PART3"; exit 1; }
+          test -n "${JON_RELEASE_KEYSTORE_B64_PART4}" || { echo "Missing GitHub secret: JON_RELEASE_KEYSTORE_B64_PART4"; exit 1; }
           umask 077
-          printf '%s' "${JON_RELEASE_KEYSTORE_B64}" | base64 --decode > "${RUNNER_TEMP}/jon-stream-release.jks"
+          printf '%s%s%s%s' "${JON_RELEASE_KEYSTORE_B64_PART1}" "${JON_RELEASE_KEYSTORE_B64_PART2}" "${JON_RELEASE_KEYSTORE_B64_PART3}" "${JON_RELEASE_KEYSTORE_B64_PART4}" | base64 --decode > "${RUNNER_TEMP}/jon-stream-release.jks"
           test -s "${RUNNER_TEMP}/jon-stream-release.jks"
 
       - name: Build signed Release APK
