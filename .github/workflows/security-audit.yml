@@ -27,12 +27,12 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@87ef0dc97def48aa960fbf026a2563ee9dbdb470 # v3
         with:
           languages: javascript
 
       - name: Analyze
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@87ef0dc97def48aa960fbf026a2563ee9dbdb470 # v3
 
   secret-scan:
     name: Secret pattern scan
@@ -41,19 +41,25 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Checkout
+      - name: Checkout full history
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Scan tracked files for obvious secrets
+      - name: Scan tracked files and Git history for obvious secrets
         shell: bash
         run: |
           set -euo pipefail
           patterns='-----BEGIN (RSA|OPENSSH|EC|DSA|PGP) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN PRIVATE KEY-----|"private_key"[[:space:]]*:[[:space:]]*"-----BEGIN'
+
           if git grep -nE "$patterns" -- . ':!*.md'; then
-            echo "Potential hard-coded credential detected. Remove it before merging."
+            echo "Potential hard-coded credential detected in the current tree."
+            exit 1
+          fi
+
+          if git log --all -G "$patterns" --format= -- . ':!*.md' | grep -q .; then
+            echo "Potential hard-coded credential detected in Git history. Rotate/revoke it before merging."
             exit 1
           fi
 
