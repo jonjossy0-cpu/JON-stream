@@ -1,6 +1,7 @@
 package com.jonstream.app;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.Network;
@@ -17,6 +18,12 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.os.AsyncTask;
+import org.json.JSONObject;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 public class MainActivity extends Activity {
     private WebView webView;
@@ -25,6 +32,8 @@ public class MainActivity extends Activity {
     private WebChromeClient.CustomViewCallback customViewCallback;
     private WebChromeClient chromeClient;
     private static final String HOME = "file:///android_asset/index.html";
+    private static final int CURRENT_VERSION_CODE = 6;
+    private static final String UPDATE_URL = "https://raw.githubusercontent.com/jonjossy0-cpu/JON-stream/mainv/android/update.json";
     private final StringBuilder numberBuffer = new StringBuilder();
     private final Handler handler = new Handler();
     private Runnable commitTask;
@@ -118,6 +127,51 @@ public class MainActivity extends Activity {
         } else {
             loadHome();
         }
+        checkForUpdate();
+    }
+
+    private void checkForUpdate() {
+        AsyncTask.execute(() -> {
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL(UPDATE_URL);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
+                connection.setRequestMethod("GET");
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) return;
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder body = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) body.append(line);
+                reader.close();
+                JSONObject update = new JSONObject(body.toString());
+                int latestCode = update.optInt("latestVersionCode", CURRENT_VERSION_CODE);
+                String latestName = update.optString("latestVersionName", "");
+                String downloadUrl = update.optString("downloadUrl", "https://github.com/jonjossy0-cpu/JON-stream/releases/latest");
+                if (latestCode <= CURRENT_VERSION_CODE || isFinishing()) return;
+                runOnUiThread(() -> showUpdateDialog(latestName, downloadUrl));
+            } catch (Exception ignored) {
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        });
+    }
+
+    private void showUpdateDialog(String versionName, String downloadUrl) {
+        if (isFinishing()) return;
+        new AlertDialog.Builder(this)
+            .setTitle("JON Stream Update Available")
+            .setMessage("A new version of JON Stream is available: " + versionName + "\\n\\nUpdate now to get the latest improvements.")
+            .setNegativeButton("LATER", null)
+            .setPositiveButton("UPDATE NOW", (dialog, which) -> {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl)));
+                } catch (Exception ignored) {
+                }
+            })
+            .setCancelable(true)
+            .show();
     }
 
     private void enterImmersive() {
