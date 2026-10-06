@@ -19,13 +19,12 @@ android {
             def storeFilePath = System.getenv("JON_RELEASE_STORE_FILE")
             def storePasswordValue = System.getenv("JON_RELEASE_STORE_PASSWORD")
             def keyAliasValue = System.getenv("JON_RELEASE_KEY_ALIAS")
-            if (storeFilePath && storePasswordValue && keyAliasValue) {
+            def keyPasswordValue = System.getenv("JON_RELEASE_KEY_PASSWORD")
+            if (storeFilePath && storePasswordValue && keyAliasValue && keyPasswordValue) {
                 storeFile file(storeFilePath)
                 storePassword storePasswordValue
                 keyAlias keyAliasValue
-                // The verified working JON Stream PKCS12 keystore uses
-                // the same password for the keystore and private key.
-                keyPassword storePasswordValue
+                keyPassword keyPasswordValue
             }
         }
     }
