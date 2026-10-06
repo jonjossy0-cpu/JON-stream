@@ -82,7 +82,7 @@ public class MainActivity extends Activity {
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
         webView.getSettings().setAllowFileAccess(false);
-        webView.getSettings().setAllowContentAccess(false);
+        webView.getSettings().setAllowContentAccess(true);
         webView.getSettings().setSupportZoom(false);
 
         chromeClient = new WebChromeClient() {
