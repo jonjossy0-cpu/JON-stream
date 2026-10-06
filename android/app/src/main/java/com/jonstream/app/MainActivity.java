@@ -17,6 +17,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import androidx.webkit.WebViewAssetLoader;
 import android.widget.FrameLayout;
 import android.os.AsyncTask;
 import org.json.JSONObject;
@@ -31,7 +32,8 @@ public class MainActivity extends Activity {
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
     private WebChromeClient chromeClient;
-    private static final String HOME = "file:///android_asset/index.html";
+    private static final String HOME = "https://appassets.androidplatform.net/assets/index.html";
+    private WebViewAssetLoader assetLoader;
     private static final int CURRENT_VERSION_CODE = 6;
     private static final String UPDATE_URL = "https://raw.githubusercontent.com/jonjossy0-cpu/JON-stream/mainv/android/update.json";
     private final StringBuilder numberBuffer = new StringBuilder();
@@ -80,7 +82,7 @@ public class MainActivity extends Activity {
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
         webView.getSettings().setAllowFileAccess(false);
-        webView.getSettings().setAllowContentAccess(false);
+        webView.getSettings().setAllowContentAccess(true);
         webView.getSettings().setSupportZoom(false);
 
         chromeClient = new WebChromeClient() {
@@ -111,7 +113,15 @@ public class MainActivity extends Activity {
         };
         webView.setWebChromeClient(chromeClient);
 
+        assetLoader = new WebViewAssetLoader.Builder()
+            .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
+            .build();
+
         webView.setWebViewClient(new WebViewClient() {
+            @Override public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
+
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri=request.getUrl();
                 String url=uri.toString();
