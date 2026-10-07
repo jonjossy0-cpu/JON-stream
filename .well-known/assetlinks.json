@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.jonstream.app",
+      "sha256_cert_fingerprints": [
+        "11:90:7D:26:E1:BC:D2:00:2A:12:D0:C2:19:48:AB:7F:E5:EC:B7:21:B2:41:55:93:41:AE:BD:76:5C:69:CE:E7"
+      ]
+    }
+  }
+]

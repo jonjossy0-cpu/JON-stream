@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - mainv
+  pull_request:
+    branches:
+      - mainv
 
 permissions:
   contents: read
@@ -64,6 +67,16 @@ jobs:
           umask 077
           printf '%s%s%s%s' "${JON_RELEASE_KEYSTORE_B64_PART1}" "${JON_RELEASE_KEYSTORE_B64_PART2}" "${JON_RELEASE_KEYSTORE_B64_PART3}" "${JON_RELEASE_KEYSTORE_B64_PART4}" | base64 --decode > "${RUNNER_TEMP}/jon-stream-release.jks"
           test -s "${RUNNER_TEMP}/jon-stream-release.jks"
+
+      - name: Verify release certificate fingerprint
+        shell: bash
+        env:
+          JON_RELEASE_STORE_FILE: ${{ runner.temp }}/jon-stream-release.jks
+          JON_RELEASE_STORE_PASSWORD: ${{ secrets.JON_RELEASE_STORE_PASSWORD }}
+          JON_RELEASE_KEY_ALIAS: ${{ secrets.JON_RELEASE_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          keytool -list -v -keystore "${JON_RELEASE_STORE_FILE}" -storepass "${JON_RELEASE_STORE_PASSWORD}" -alias "${JON_RELEASE_KEY_ALIAS}" | grep -E "Owner:|SHA256:" | sed 's/^[[:space:]]*//'
 
       - name: Build signed Release APK
         working-directory: android

@@ -20,7 +20,7 @@
         android:usesCleartextTraffic="false">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".LauncherActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|uiMode"
             android:screenOrientation="fullSensor">
@@ -32,6 +32,20 @@
             </intent-filter>
 
         </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|uiMode"
+            android:screenOrientation="fullSensor" />
+
+        <service
+            android:name="androidx.browser.trusted.TrustedWebActivityService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.browser.trusted.TRUSTED_WEB_ACTIVITY_SERVICE" />
+            </intent-filter>
+        </service>
 
         <service
             android:name=".BackgroundPlaybackService"
