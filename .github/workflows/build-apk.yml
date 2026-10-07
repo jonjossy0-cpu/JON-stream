@@ -77,11 +77,13 @@ jobs:
           test -n "${JON_RELEASE_STORE_PASSWORD}" || { echo "Missing JON_RELEASE_STORE_PASSWORD"; exit 1; }
           test -n "${JON_RELEASE_KEY_ALIAS}" || { echo "Missing JON_RELEASE_KEY_ALIAS"; exit 1; }
           test -n "${JON_RELEASE_KEY_PASSWORD}" || { echo "Missing JON_RELEASE_KEY_PASSWORD"; exit 1; }
-          gradle :app:assembleRelease
+          gradle :app:assembleMobileRelease :app:assembleTvRelease
 
       - name: Upload signed Release APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: JON-Stream-Release-APK
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: |
+            android/app/build/outputs/apk/mobile/release/app-mobile-release.apk
+            android/app/build/outputs/apk/tv/release/app-tv-release.apk
           if-no-files-found: error
