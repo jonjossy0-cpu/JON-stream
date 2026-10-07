@@ -49,11 +49,7 @@ public class TVOverlayLauncherActivity extends Activity {
         twaLaunched = true;
 
         Intent overlay = new Intent(this, TVChromeOverlayService.class);
-        if (android.os.Build.VERSION.SDK_INT >= 26) {
-            startForegroundService(overlay);
-        } else {
-            startService(overlay);
-        }
+        startService(overlay);
 
         Intent twa = new Intent(this, com.google.androidbrowserhelper.trusted.LauncherActivity.class);
         twa.setAction(Intent.ACTION_MAIN);
