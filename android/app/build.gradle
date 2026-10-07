@@ -10,8 +10,25 @@ android {
         applicationId 'com.jonstream.app'
         minSdk 23
         targetSdk 35
-        versionCode 7
-        versionName '7.0'
+        versionCode 6
+        versionName '6.0'
+    }
+
+    flavorDimensions += "device"
+
+    productFlavors {
+        mobile {
+            dimension "device"
+            applicationId "com.jonstream.app"
+            versionCode 6
+            versionName "6.0"
+        }
+        tv {
+            dimension "device"
+            applicationId "com.jonstream.tv"
+            versionCode 8
+            versionName "8.0"
+        }
     }
 
     signingConfigs {
@@ -50,4 +67,6 @@ tasks.named("preBuild").configure {
 
 dependencies {
     implementation 'androidx.webkit:webkit:1.14.0'
+    tvImplementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+    tvImplementation 'androidx.browser:browser:1.8.0'
 }
