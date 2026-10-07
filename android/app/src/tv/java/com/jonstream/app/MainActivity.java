@@ -150,10 +150,12 @@ public class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri=request.getUrl();
                 String url=uri.toString();
+                // Keep the TV experience inside the JON Stream app. Do not hand
+                // navigation to Chrome or another external browser, and do not
+                // expose hosting/repository URLs or browser UI to viewers.
                 if(url.startsWith(HOME)) return false;
                 if(url.contains("github.com") || url.contains("raw.githubusercontent.com") || url.contains("githubusercontent.com")) return true;
-                try { startActivity(new Intent(Intent.ACTION_VIEW,uri)); return true; }
-                catch(Exception ignored) { return true; }
+                return true;
             }
         });
 
@@ -201,10 +203,9 @@ public class MainActivity extends Activity {
             .setMessage("A new version of JON Stream is available: " + versionName + "\\n\\nUpdate now to get the latest improvements.")
             .setNegativeButton("LATER", null)
             .setPositiveButton("UPDATE NOW", (dialog, which) -> {
-                try {
-                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl)));
-                } catch (Exception ignored) {
-                }
+                // Do not open Chrome or expose the repository/hosting URL from
+                // the TV APK. Updates remain an internal app concern.
+                dialog.dismiss();
             })
             .setCancelable(true)
             .show();
