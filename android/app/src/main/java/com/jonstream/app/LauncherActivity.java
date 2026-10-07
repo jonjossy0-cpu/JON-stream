@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.Window;
 import android.view.WindowManager;
+import androidx.browser.trusted.TrustedWebActivityIntentBuilder;
 import androidx.browser.customtabs.CustomTabsIntent;
 
 public class LauncherActivity extends Activity {
@@ -18,17 +19,24 @@ public class LauncherActivity extends Activity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        openBrowser();
+        openTwa();
     }
 
-    private void openBrowser() {
+    private void openTwa() {
         Uri uri = Uri.parse(HOME);
+        try {
+            new TrustedWebActivityIntentBuilder(uri)
+                    .build()
+                    .launchTrustedWebActivity(this);
+            finish();
+            return;
+        } catch (Exception ignored) {
+        }
+
         try {
             CustomTabsIntent intent = new CustomTabsIntent.Builder()
                     .setShowTitle(false)
                     .build();
-            intent.intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             intent.launchUrl(this, uri);
             finish();
             return;
@@ -40,13 +48,14 @@ public class LauncherActivity extends Activity {
             browser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(browser);
             finish();
+            return;
         } catch (Exception ignored) {
-            // If no browser is installed, fall back to the existing native WebView activity.
-            try {
-                startActivity(new Intent(this, MainActivity.class));
-            } catch (Exception ignoredAgain) {
-            }
-            finish();
         }
+
+        try {
+            startActivity(new Intent(this, MainActivity.class));
+        } catch (Exception ignored) {
+        }
+        finish();
     }
 }
