@@ -1,0 +1,87 @@
+name: Build JON Stream Android TV APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - android-tv-fullscreen
+
+permissions:
+  contents: read
+
+jobs:
+  security-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Check for obvious committed secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git grep -nE '-----BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}' -- . ':!*.md'; then
+            echo "Potential hard-coded secret detected. Remove it before building."
+            exit 1
+          fi
+
+  build:
+    needs: security-check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+        with:
+          gradle-version: '8.9'
+
+      - name: Prepare release signing keystore
+        shell: bash
+        env:
+          JON_RELEASE_KEYSTORE_B64_PART1: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART1 }}
+          JON_RELEASE_KEYSTORE_B64_PART2: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART2 }}
+          JON_RELEASE_KEYSTORE_B64_PART3: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART3 }}
+          JON_RELEASE_KEYSTORE_B64_PART4: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART4 }}
+        run: |
+          set -euo pipefail
+          test -n "${JON_RELEASE_KEYSTORE_B64_PART1}" || { echo "Missing GitHub secret: JON_RELEASE_KEYSTORE_B64_PART1"; exit 1; }
+          test -n "${JON_RELEASE_KEYSTORE_B64_PART2}" || { echo "Missing GitHub secret: JON_RELEASE_KEYSTORE_B64_PART2"; exit 1; }
+          test -n "${JON_RELEASE_KEYSTORE_B64_PART3}" || { echo "Missing GitHub secret: JON_RELEASE_KEYSTORE_B64_PART3"; exit 1; }
+          test -n "${JON_RELEASE_KEYSTORE_B64_PART4}" || { echo "Missing GitHub secret: JON_RELEASE_KEYSTORE_B64_PART4"; exit 1; }
+          umask 077
+          printf '%s%s%s%s' "${JON_RELEASE_KEYSTORE_B64_PART1}" "${JON_RELEASE_KEYSTORE_B64_PART2}" "${JON_RELEASE_KEYSTORE_B64_PART3}" "${JON_RELEASE_KEYSTORE_B64_PART4}" | base64 --decode > "${RUNNER_TEMP}/jon-stream-release.jks"
+          test -s "${RUNNER_TEMP}/jon-stream-release.jks"
+
+      - name: Build signed Android TV Release APK
+        working-directory: ANDROID-TV-APK
+        env:
+          JON_RELEASE_STORE_FILE: ${{ runner.temp }}/jon-stream-release.jks
+          JON_RELEASE_STORE_PASSWORD: ${{ secrets.JON_RELEASE_STORE_PASSWORD }}
+          JON_RELEASE_KEY_ALIAS: ${{ secrets.JON_RELEASE_KEY_ALIAS }}
+          JON_RELEASE_KEY_PASSWORD: ${{ secrets.JON_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "${JON_RELEASE_STORE_PASSWORD}" || { echo "Missing JON_RELEASE_STORE_PASSWORD"; exit 1; }
+          test -n "${JON_RELEASE_KEY_ALIAS}" || { echo "Missing JON_RELEASE_KEY_ALIAS"; exit 1; }
+          test -n "${JON_RELEASE_KEY_PASSWORD}" || { echo "Missing JON_RELEASE_KEY_PASSWORD"; exit 1; }
+          gradle :app:assembleRelease
+
+      - name: Upload signed Release APK
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: JON-Stream-Android-TV-Release-APK
+          path: ANDROID-TV-APK/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error

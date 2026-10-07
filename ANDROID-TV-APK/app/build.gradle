@@ -1,0 +1,53 @@
+plugins {
+    id 'com.android.application' version '8.7.3'
+}
+
+android {
+    namespace 'com.jonstream.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.jonstream.tv'
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName '1.0-TV'
+    }
+
+    signingConfigs {
+        release {
+            def storeFilePath = System.getenv("JON_RELEASE_STORE_FILE")
+            def storePasswordValue = System.getenv("JON_RELEASE_STORE_PASSWORD")
+            def keyAliasValue = System.getenv("JON_RELEASE_KEY_ALIAS")
+            def keyPasswordValue = System.getenv("JON_RELEASE_KEY_PASSWORD")
+            if (storeFilePath && storePasswordValue && keyAliasValue && keyPasswordValue) {
+                storeFile file(storeFilePath)
+                storePassword storePasswordValue
+                keyAlias keyAliasValue
+                keyPassword keyPasswordValue
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            signingConfig signingConfigs.release
+        }
+    }
+}
+
+def copyJonLogo = tasks.register("copyJonLogo", Copy) {
+    from(rootProject.projectDir.parentFile.toPath().resolve("logo.png").toFile())
+    into(layout.projectDirectory.dir("src/main/res/drawable"))
+    rename { "jon_logo.png" }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn(copyJonLogo)
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.14.0'
+}
