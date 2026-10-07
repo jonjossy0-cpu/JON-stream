@@ -32,7 +32,10 @@ public class TVChromeOverlayService extends Service {
 
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
-        int height = dp(68);
+        // Opaque full-width mask for the complete Chrome toolbar area.
+        // Nothing from Chrome can show through this region.
+        final int height = dp(104);
+
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
@@ -45,7 +48,7 @@ public class TVChromeOverlayService extends Service {
         ImageView logo = new ImageView(this);
         logo.setImageDrawable(getApplicationInfo().loadIcon(getPackageManager()));
         logo.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        header.addView(logo, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        header.addView(logo, new LinearLayout.LayoutParams(dp(52), dp(52)));
 
         TextView title = new TextView(this);
         title.setText("JON Stream");
@@ -54,7 +57,8 @@ public class TVChromeOverlayService extends Service {
         title.setGravity(Gravity.CENTER_VERTICAL);
         title.setTypeface(null, android.graphics.Typeface.BOLD);
         LinearLayout.LayoutParams titleParams =
-                new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, height);
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT, height);
         titleParams.leftMargin = dp(14);
         header.addView(title, titleParams);
 
@@ -65,7 +69,8 @@ public class TVChromeOverlayService extends Service {
         tv.setGravity(Gravity.CENTER_VERTICAL);
         tv.setTypeface(null, android.graphics.Typeface.BOLD);
         LinearLayout.LayoutParams tvParams =
-                new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, height);
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT, height);
         tvParams.leftMargin = dp(12);
         header.addView(tv, tvParams);
 
@@ -81,7 +86,7 @@ public class TVChromeOverlayService extends Service {
                 height,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 flags,
-                android.graphics.PixelFormat.TRANSLUCENT);
+                android.graphics.PixelFormat.OPAQUE);
         params.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
         params.y = 0;
 
