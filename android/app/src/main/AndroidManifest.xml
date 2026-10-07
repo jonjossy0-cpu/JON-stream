@@ -12,7 +12,7 @@
 
     <application
         android:allowBackup="false"
-        android:label="JON Stream"
+        android:label="@string/app_name"
         android:icon="@drawable/jon_logo"
         android:roundIcon="@drawable/jon_logo"
         android:supportsRtl="true"
