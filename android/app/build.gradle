@@ -68,5 +68,7 @@ tasks.named("preBuild").configure {
 dependencies {
     implementation 'androidx.webkit:webkit:1.14.0'
     tvImplementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.6.2'
-    tvImplementation 'androidx.browser:browser:1.8.0'
+    tvImplementation('androidx.browser:browser:1.8.0') {
+        force = true
+    }
 }
