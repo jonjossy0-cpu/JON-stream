@@ -13,6 +13,7 @@ public class TVOverlayLauncherActivity extends Activity {
     private static final int REQUEST_OVERLAY = 7107;
     private boolean settingsOpened = false;
     private boolean twaLaunched = false;
+    private boolean sawTwaFocusLoss = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,6 +80,17 @@ public class TVOverlayLauncherActivity extends Activity {
             } else {
                 finish();
             }
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (twaLaunched && !hasFocus) {
+            sawTwaFocusLoss = true;
+        } else if (twaLaunched && sawTwaFocusLoss && hasFocus) {
+            stopService(new Intent(this, TVChromeOverlayService.class));
+            finish();
         }
     }
 
