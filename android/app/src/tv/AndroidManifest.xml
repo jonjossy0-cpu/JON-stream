@@ -28,6 +28,9 @@
             android:exported="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:screenOrientation="landscape"
+            android:launchMode="singleTask"
+            android:alwaysRetainTaskState="true"
+            android:finishOnTaskLaunch="false"
             tools:replace="android:screenOrientation">
 
             <meta-data
