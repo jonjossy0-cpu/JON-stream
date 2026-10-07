@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - mainv
+  pull_request:
+    branches:
+      - mainv
 
 permissions:
   contents: read
@@ -46,7 +49,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
         with:
-          gradle-version: '8.9'
+          gradle-version: '8.11.1'
 
       - name: Prepare release signing keystore
         shell: bash
@@ -77,11 +80,13 @@ jobs:
           test -n "${JON_RELEASE_STORE_PASSWORD}" || { echo "Missing JON_RELEASE_STORE_PASSWORD"; exit 1; }
           test -n "${JON_RELEASE_KEY_ALIAS}" || { echo "Missing JON_RELEASE_KEY_ALIAS"; exit 1; }
           test -n "${JON_RELEASE_KEY_PASSWORD}" || { echo "Missing JON_RELEASE_KEY_PASSWORD"; exit 1; }
-          gradle :app:assembleRelease
+          gradle :app:assembleMobileRelease :app:assembleTvRelease
 
-      - name: Upload signed Release APK
+      - name: Upload signed Release APKs
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: JON-Stream-Release-APK
-          path: android/app/build/outputs/apk/release/app-release.apk
+          name: JON-Stream-Mobile-and-TV-APKs
+          path: |
+            android/app/build/outputs/apk/mobile/release/*.apk
+            android/app/build/outputs/apk/tv/release/*.apk
           if-no-files-found: error
