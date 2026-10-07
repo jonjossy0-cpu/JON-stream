@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="theme-color" content="#07111f">
-<title>JON FM ETHIOPIA</title>
+<title>FUTURE RADIO</title>
 
 <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1.7.3"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/mpegts.js@1.8.2/dist/mpegts.min.js"></script>
@@ -797,7 +797,7 @@ audio,video{
 
 <div class="brand">
  <img data-logo class="logo" alt="JON FM ETHIOPIA">
- <h1>JON FM ETHIOPIA</h1>
+ <h1>FUTURE RADIO</h1>
  <p>🇪🇹 Ethiopian Digital Radio & TV</p>
 </div>
 
@@ -806,7 +806,7 @@ audio,video{
   <img data-logo class="featured-logo" alt="JON FM">
   <div>
    <div class="featured-title">⭐ FEATURED</div>
-   <div class="featured-name">JON FM ETHIOPIA</div>
+   <div class="featured-name">FUTURE RADIO</div>
   </div>
  </div>
  <p>🔴 Live Ethiopian Digital Radio</p>
@@ -1029,7 +1029,7 @@ audio,video{
  <br><br>
  🇪🇹 Ethiopian Radio & TV
  <br><br>
- <strong>JON FM ETHIOPIA</strong>
+ <strong>FUTURE RADIO</strong>
 </div>
 
 </div>
@@ -2900,7 +2900,9 @@ body.jon-ad-visible{padding-bottom:85px}
       const st=document.getElementById('tvStatus'); if(st) st.innerHTML='📺 '+tvChannels.length+' TV channels available';
     }
     if(Array.isArray(remote.radio)){
-      const incoming=remote.radio.filter(x=>x&&x.enabled!==false&&x.name&&x.url).map(x=>({name:x.name,url:x.url,logo:x.logo||''}));
+      const incoming=remote.radio.filter(x=>x&&x.enabled!==false&&x.name&&x.url)
+      .filter(x=>x.name!=="JON FM ETHIOPIA" && x.url!=="https://jonmediaservice.volticast.net/primary.aac")
+      .map(x=>({name:x.name,url:x.url,logo:x.logo||''}));
       const merged=[...stations,...incoming];
       const seen=new Set();
       stations=merged.filter(x=>{const k=String(x.url||'').trim(); if(!k||seen.has(k)) return false; seen.add(k); return true;});
