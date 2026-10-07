@@ -34,6 +34,14 @@
         </activity>
 
         <service
+            android:name="androidx.browser.trusted.TrustedWebActivityService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.browser.trusted.TRUSTED_WEB_ACTIVITY_SERVICE" />
+            </intent-filter>
+        </service>
+
+        <service
             android:name=".BackgroundPlaybackService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
