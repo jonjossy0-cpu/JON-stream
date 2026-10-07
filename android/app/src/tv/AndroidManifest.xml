@@ -95,10 +95,6 @@
         </service>
 
         <service
-            android:name=".TVChromeOverlayService"
-            android:exported="false" />
-
-        <service
             android:name=".BackgroundPlaybackService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
