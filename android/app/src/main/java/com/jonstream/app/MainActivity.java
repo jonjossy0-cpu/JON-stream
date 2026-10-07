@@ -17,6 +17,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebSettings;
 import androidx.webkit.WebViewAssetLoader;
 import android.widget.FrameLayout;
 import android.os.AsyncTask;
@@ -34,7 +35,7 @@ public class MainActivity extends Activity {
     private WebChromeClient chromeClient;
     private static final String HOME = "https://appassets.androidplatform.net/assets/index.html";
     private WebViewAssetLoader assetLoader;
-    private static final int CURRENT_VERSION_CODE = 6;
+    private static final int CURRENT_VERSION_CODE = 7;
     private static final String UPDATE_URL = "https://raw.githubusercontent.com/jonjossy0-cpu/JON-stream/mainv/android/update.json";
     private final StringBuilder numberBuffer = new StringBuilder();
     private final Handler handler = new Handler();
@@ -78,12 +79,22 @@ public class MainActivity extends Activity {
         root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
 
         WebView.setWebContentsDebuggingEnabled(false);
-        webView.getSettings().setJavaScriptEnabled(true);
-        webView.getSettings().setDomStorageEnabled(true);
-        webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
-        webView.getSettings().setAllowFileAccess(false);
-        webView.getSettings().setAllowContentAccess(true);
-        webView.getSettings().setSupportZoom(false);
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
+        settings.setMediaPlaybackRequiresUserGesture(false);
+        settings.setAllowFileAccess(false);
+        settings.setAllowContentAccess(true);
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
+        settings.setDisplayZoomControls(false);
+        settings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        }
 
         chromeClient = new WebChromeClient() {
             @Override public void onShowCustomView(View view, CustomViewCallback callback) {
@@ -122,12 +133,37 @@ public class MainActivity extends Activity {
                 return assetLoader.shouldInterceptRequest(request.getUrl());
             }
 
+            @Override public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                view.evaluateJavascript(
+                    "(function(){try{var embedded=(typeof EMBEDDED_LOGO!=='undefined')?EMBEDDED_LOGO:'';" +
+                    "if(embedded){document.querySelectorAll('img[data-logo]').forEach(function(i){i.src=embedded;});}" +
+                    "}catch(e){}})();", null);
+                view.evaluateJavascript(
+                    "(function(){try{function c(){var n=new Date();" +
+                    "function f(tz){try{return n.toLocaleTimeString('en-US',{timeZone:tz,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});}" +
+                    "catch(e){return n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});}}" +
+                    "var et=f('Africa/Addis_Ababa'),ut=f('UTC');" +
+                    "var a=document.getElementById('ethiopiaTime'),b=document.getElementById('utcTime'),d=document.getElementById('clock');" +
+                    "if(a)a.textContent=et;if(b)b.textContent=ut;if(d)d.textContent=et;}" +
+                    "c();if(!window.__jonNativeClock)window.__jonNativeClock=setInterval(c,1000);" +
+                    "}catch(e){}})();", null);
+            }
+
+            @Override public void onReceivedError(WebView view, WebResourceRequest request, android.webkit.WebResourceError error) {
+                super.onReceivedError(view, request, error);
+                if (request.isForMainFrame() && isOnline()) {
+                    handler.postDelayed(() -> view.reload(), 1200);
+                }
+            }
+
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri=request.getUrl();
                 String url=uri.toString();
-                if(url.startsWith(HOME)) return false;
+                if(url.startsWith(HOME) || url.startsWith("https://appassets.androidplatform.net/")) return false;
+                if(url.contains("github.com") || url.contains("raw.githubusercontent.com") || url.contains("githubusercontent.com")) return true;
                 try { startActivity(new Intent(Intent.ACTION_VIEW,uri)); return true; }
-                catch(Exception ignored) { return false; }
+                catch(Exception ignored) { return true; }
             }
         });
 
