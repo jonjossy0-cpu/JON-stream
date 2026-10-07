@@ -18,7 +18,6 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebSettings;
-import androidx.webkit.WebViewAssetLoader;
 import android.widget.FrameLayout;
 import android.os.AsyncTask;
 import org.json.JSONObject;
@@ -33,8 +32,7 @@ public class MainActivity extends Activity {
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
     private WebChromeClient chromeClient;
-    private static final String HOME = "https://appassets.androidplatform.net/assets/index.html";
-    private WebViewAssetLoader assetLoader;
+    private static final String HOME = "https://jonjossy0-cpu.github.io/JON-stream/";
     private static final int CURRENT_VERSION_CODE = 7;
     private static final String UPDATE_URL = "https://raw.githubusercontent.com/jonjossy0-cpu/JON-stream/mainv/android/update.json";
     private final StringBuilder numberBuffer = new StringBuilder();
@@ -85,7 +83,7 @@ public class MainActivity extends Activity {
         settings.setDatabaseEnabled(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setAllowFileAccess(false);
-        settings.setAllowContentAccess(true);
+        settings.setAllowContentAccess(false);
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
@@ -124,15 +122,7 @@ public class MainActivity extends Activity {
         };
         webView.setWebChromeClient(chromeClient);
 
-        assetLoader = new WebViewAssetLoader.Builder()
-            .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
-            .build();
-
         webView.setWebViewClient(new WebViewClient() {
-            @Override public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                return assetLoader.shouldInterceptRequest(request.getUrl());
-            }
-
             @Override public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 view.evaluateJavascript(
@@ -160,7 +150,7 @@ public class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri=request.getUrl();
                 String url=uri.toString();
-                if(url.startsWith(HOME) || url.startsWith("https://appassets.androidplatform.net/")) return false;
+                if(url.startsWith(HOME)) return false;
                 if(url.contains("github.com") || url.contains("raw.githubusercontent.com") || url.contains("githubusercontent.com")) return true;
                 try { startActivity(new Intent(Intent.ACTION_VIEW,uri)); return true; }
                 catch(Exception ignored) { return true; }
