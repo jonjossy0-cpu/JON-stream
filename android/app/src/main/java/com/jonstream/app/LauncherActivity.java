@@ -26,7 +26,7 @@ public class LauncherActivity extends Activity {
         Uri uri = Uri.parse(HOME);
         try {
             new TrustedWebActivityIntentBuilder(uri)
-                    .build()
+                    .build(null)
                     .launchTrustedWebActivity(this);
             finish();
             return;
