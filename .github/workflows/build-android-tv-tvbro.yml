@@ -38,8 +38,11 @@ jobs:
           # for selecting the daemon JVM. CI's installed Temurin JDK 21 is used.
           rm -f "${RUNNER_TEMP}/tv-bro/gradle/gradle-daemon-jvm.properties"
 
+      - name: Install PNG icon tooling
+        run: python3 -m pip install --user Pillow
+
       - name: Apply JON Stream TV-only customization
-        run: python3 ANDROID-TV-APK/patch_tvbro.py "${RUNNER_TEMP}/tv-bro"
+        run: python3 ANDROID-TV-APK/patch_tvbro.py "${RUNNER_TEMP}/tv-bro" "${GITHUB_WORKSPACE}/Logo.png"
 
       - name: Build installable debug APK
         working-directory: ${{ runner.temp }}/tv-bro
