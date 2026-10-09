@@ -22,9 +22,10 @@ replace_once("app/build.gradle.kts", "versionCode = 69", "versionCode = 10", "ve
 replace_once("app/build.gradle.kts", 'versionName = "2.1.6"', 'versionName = "10.0"', "version name")
 replace_once("app/src/main/res/values/strings.xml", '<string name="app_name">TV Bro: TV Web Browser</string>', '<string name="app_name">JON Stream TV</string>', "app label")
 replace_once("app/src/main/res/values/strings.xml", '<string name="app_name_short" translatable="false">TV Bro</string>', '<string name="app_name_short" translatable="false">JON Stream TV</string>', "short app label")
+replace_once("app/src/main/res/layout/activity_main.xml", 'android:fitsSystemWindows="true"', 'android:fitsSystemWindows="false" android:padding="0dp"', "edge-to-edge root layout")
 activity = "app/src/main/java/com/phlox/tvwebbrowser/activity/main/MainActivity.kt"
 replace_once(activity, '    companion object {\n        private val TAG = MainActivity::class.java.simpleName', '    companion object {\n        private const val JON_STREAM_URL = "https://jonjossy0-cpu.github.io/JON-stream/"\n        private val TAG = MainActivity::class.java.simpleName', "JON Stream URL")
-replace_once(activity, '        setContentView(vb.root)\n', '        setContentView(vb.root)\n        vb.vActionBar.visibility = View.GONE\n        vb.vTabs.visibility = View.GONE\n        vb.rlActionBar.visibility = View.GONE\n        vb.progressBar.visibility = View.GONE\n        applyJonFullscreen()\n', "hide address bar and fullscreen activation")
+replace_once(activity, '        setContentView(vb.root)\n', '        setContentView(vb.root)\n        vb.root.fitsSystemWindows = false\n        vb.root.setPadding(0, 0, 0, 0)\n        vb.root.clipToPadding = false\n        vb.flWebViewContainer.setPadding(0, 0, 0, 0)\n        vb.flWebViewContainer.clipToPadding = false\n        vb.vActionBar.visibility = View.GONE\n        vb.vTabs.visibility = View.GONE\n        vb.rlActionBar.visibility = View.GONE\n        vb.progressBar.visibility = View.GONE\n        applyJonFullscreen()\n', "hide address bar and fullscreen activation")
 replace_once(activity, '                    vb.vActionBar.catchFocus()', '                    tabsModel.currentTab.value?.webEngine?.getView()?.requestFocus()', "preserve remote focus without address bar")
 replace_once(activity, '            vb.progressBar.visibility = View.VISIBLE', '            vb.progressBar.visibility = View.GONE', "hide loading progress bar")
 replace_once(activity, '        vb.rlActionBar.visibility = View.VISIBLE', '        vb.rlActionBar.visibility = View.GONE', "hide top action bar overlay")
@@ -65,4 +66,4 @@ replace_once(activity, '''        val currentTab = tabsModel.currentTab.value
 
         val currentTab = tabsModel.currentTab.value
         if (currentTab == null || currentTab.url == settingsModel.homePage) {''', "startup URL")
-print("TV Bro customized: isolated package com.jonstream.tvbro, JON Stream startup, hidden address bar, preserved tabs/remote controls, fullscreen and keep-screen-on.")
+print("TV Bro customized: isolated package com.jonstream.tvbro, JON Stream startup, hidden browser bars, zero root/WebView insets, edge-to-edge fullscreen, preserved remote controls, and keep-screen-on.")
