@@ -25,7 +25,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if git grep -nE '-----BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}' -- . ':!*.md'; then
+          if git grep -nE -- '-----BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}' -- . ':!*.md'; then
             echo "Potential hard-coded secret detected. Remove it before building."
             exit 1
           fi
@@ -57,7 +57,7 @@ jobs:
         run: gradle :app:assembleMobileDebug :app:assembleTvDebug
 
       - name: Prepare release signing keystore
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/mainv'
         shell: bash
         env:
           JON_RELEASE_KEYSTORE_B64_PART1: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART1 }}
