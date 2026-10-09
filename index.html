@@ -775,6 +775,22 @@ audio,video{
 })();
 </script>
 
+
+<style id="jonAdFullImageNoBlackBarsFix">
+/* JON ad image fix: preserve the entire image without black side bars.
+   Let each image keep its natural aspect ratio on portrait and landscape.
+   The ad container remains scrollable when a tall portrait image is used. */
+#jonLiveUpdates img.jon-ad-media,
+img.jon-ad-media{
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  max-height:none!important;
+  object-fit:contain!important;
+  background:transparent!important;
+}
+</style>
+
 </head>
 
 <body>
