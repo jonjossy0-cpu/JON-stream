@@ -76,12 +76,9 @@ replace_once(activity, '    private var progressBarHideRunnable: Runnable = Runn
     private var progressBarHideRunnable: Runnable = Runnable {''', "fullscreen helper")
 replace_once(activity, '''        val currentTab = tabsModel.currentTab.value
         if (currentTab == null || currentTab.url == settingsModel.homePage) {''', '''        if (intent.data == null) {
-            val tab = tabsModel.currentTab.value
-            if (tab == null) {
-                openInNewTab(JON_STREAM_URL, 0, needToHideMenuOverlay = true, navigateImmediately = true)
-            } else if (tab.url != JON_STREAM_URL) {
-                navigate(JON_STREAM_URL)
-            }
+            // Always open JON Stream on a normal launcher start, even if TV Bro
+            // restored a previous tab or its saved homepage setting is different.
+            navigate(JON_STREAM_URL)
         }
 
         val currentTab = tabsModel.currentTab.value
