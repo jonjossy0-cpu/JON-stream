@@ -33,7 +33,6 @@ jobs:
   build:
     needs: security-check
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -49,9 +48,16 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
         with:
-          gradle-version: '8.9'
+          gradle-version: '8.14.4'
+
+      # Pull requests build debug variants only; release signing secrets are never loaded.
+      - name: Build Mobile and TV debug APKs (pull requests)
+        if: github.event_name == 'pull_request'
+        working-directory: android
+        run: gradle :app:assembleMobileDebug :app:assembleTvDebug
 
       - name: Prepare release signing keystore
+        if: github.event_name != 'pull_request'
         shell: bash
         env:
           JON_RELEASE_KEYSTORE_B64_PART1: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART1 }}
@@ -68,7 +74,8 @@ jobs:
           printf '%s%s%s%s' "${JON_RELEASE_KEYSTORE_B64_PART1}" "${JON_RELEASE_KEYSTORE_B64_PART2}" "${JON_RELEASE_KEYSTORE_B64_PART3}" "${JON_RELEASE_KEYSTORE_B64_PART4}" | base64 --decode > "${RUNNER_TEMP}/jon-stream-release.jks"
           test -s "${RUNNER_TEMP}/jon-stream-release.jks"
 
-      - name: Build signed Release APK
+      - name: Build signed Release APKs
+        if: github.event_name != 'pull_request'
         working-directory: android
         env:
           JON_RELEASE_STORE_FILE: ${{ runner.temp }}/jon-stream-release.jks
@@ -82,11 +89,22 @@ jobs:
           test -n "${JON_RELEASE_KEY_PASSWORD}" || { echo "Missing JON_RELEASE_KEY_PASSWORD"; exit 1; }
           gradle :app:assembleMobileRelease :app:assembleTvRelease
 
-      - name: Upload signed Release APK
+      - name: Upload signed Release APKs
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: JON-Stream-Mobile-and-TV-APKs
           path: |
             android/app/build/outputs/apk/mobile/release/*.apk
             android/app/build/outputs/apk/tv/release/*.apk
+          if-no-files-found: error
+
+      - name: Upload pull-request debug APKs
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: JON-Stream-PR-Debug-APKs
+          path: |
+            android/app/build/outputs/apk/mobile/debug/*.apk
+            android/app/build/outputs/apk/tv/debug/*.apk
           if-no-files-found: error
