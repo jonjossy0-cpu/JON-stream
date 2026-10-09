@@ -24,11 +24,19 @@ replace_once("app/src/main/res/values/strings.xml", '<string name="app_name">TV 
 replace_once("app/src/main/res/values/strings.xml", '<string name="app_name_short" translatable="false">TV Bro</string>', '<string name="app_name_short" translatable="false">JON Stream TV</string>', "short app label")
 activity = "app/src/main/java/com/phlox/tvwebbrowser/activity/main/MainActivity.kt"
 replace_once(activity, '    companion object {\n        private val TAG = MainActivity::class.java.simpleName', '    companion object {\n        private const val JON_STREAM_URL = "https://jonjossy0-cpu.github.io/JON-stream/"\n        private val TAG = MainActivity::class.java.simpleName', "JON Stream URL")
-replace_once(activity, '        setContentView(vb.root)\n', '        setContentView(vb.root)\n        vb.vActionBar.visibility = View.GONE\n        applyJonFullscreen()\n', "hide address bar and fullscreen activation")
-replace_once(activity, '                    vb.vActionBar.catchFocus()', '                    vb.vTabs.requestFocus()', "preserve remote focus without address bar")
-replace_once(activity, '    private var progressBarHideRunnable: Runnable = Runnable {', '''    @Suppress("DEPRECATION")
+replace_once(activity, '        setContentView(vb.root)\n', '        setContentView(vb.root)\\n        vb.vActionBar.visibility = View.GONE\\n        vb.vTabs.visibility = View.GONE\\n        vb.rlActionBar.visibility = View.GONE\\n        vb.progressBar.visibility = View.GONE\\n        applyJonFullscreen()\\n', "hide address bar and fullscreen activation")
+replace_once(activity, '                    vb.vActionBar.catchFocus()', '                    tabsModel.currentTab.value?.webEngine?.getView()?.requestFocus()', "preserve remote focus without address bar")
+replace_once(activity, '            vb.progressBar.visibility = View.VISIBLE', '            vb.progressBar.visibility = View.GONE', "hide loading progress bar")
+replace_once(activity, '        vb.rlActionBar.visibility = View.VISIBLE', '        vb.rlActionBar.visibility = View.GONE', "hide top action bar overlay")
+replace_once(activity, '    private var progressBarHideRunnable: Runnable = Runnable { '''    @Suppress("DEPRECATION")
     private fun applyJonFullscreen() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (::vb.isInitialized) {
+            vb.vActionBar.visibility = View.GONE
+            vb.vTabs.visibility = View.GONE
+            vb.rlActionBar.visibility = View.GONE
+            vb.progressBar.visibility = View.GONE
+        }
         window.decorView.systemUiVisibility = (
             View.SYSTEM_UI_FLAG_FULLSCREEN
                 or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
