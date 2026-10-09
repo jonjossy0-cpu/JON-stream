@@ -777,20 +777,29 @@ audio,video{
 
 
 <style id="jonAdFullImageNoBlackBarsFix">
-/* Responsive ad image: fill the available width when aspect ratio allows,
-   keep the whole photo visible, and cap tall images without cropping. */
+/* Compact ad card with a wide, short image frame. Show the whole photo inside it. */
+#jonLiveUpdates.jon-bottom-ad{
+  max-height:58vh!important;
+}
+#jonLiveUpdates .jon-ad-card{
+  padding:7px 9px!important;
+}
+#jonLiveUpdates .jon-ad-card h3{
+  margin:0 0 5px!important;
+  font-size:13px!important;
+}
 #jonLiveUpdates img.jon-ad-media,
 img.jon-ad-media{
   display:block!important;
   width:100%!important;
-  height:auto!important;
+  height:min(18vh, 150px)!important;
   max-width:100%!important;
-  max-height:min(18vh, 160px)!important;
+  max-height:150px!important;
   object-fit:contain!important;
   object-position:center!important;
   background:transparent!important;
-  margin-left:auto!important;
-  margin-right:auto!important;
+  border-radius:8px!important;
+  margin:0 auto!important;
 }
 </style>
 
