@@ -13,5 +13,6 @@ patches it for JON Stream, and builds an installable debug APK with package ID
 - Uses the WebView engine variant for initial compatibility testing.
 - Does not build or modify the Mobile APK.
 
+Build output is expected as the `JON-Stream-Android-TV-TV-Bro` workflow artifact.
 The APK is not considered verified until the workflow passes and the app is tested
 on the RK3228A TV box. This is a debug build for testing, not the final signed release.
