@@ -2686,16 +2686,16 @@ body.jon-ad-visible{padding-bottom:245px}
 .jon-ad-more{background:var(--red);color:#fff}
 .jon-ad-card,.jon-notify-card{background:var(--card);border:1px solid var(--border);border-radius:17px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
 .jon-ad-card h3,.jon-notify-card h3{margin:0 0 7px;font-size:16px}
-.jon-ad-media{width:100%;height:auto;max-height:360px;object-fit:contain;border-radius:12px;background:#000;display:block}
+.jon-ad-media{width:100%;height:80px;max-height:80px;object-fit:fill;border-radius:12px;background:#000;display:block}
 #jonLiveUpdates .jon-ad-card{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:15px;backdrop-filter:blur(8px);position:relative;flex:0 0 100%;min-width:100%;max-width:100%}
-#jonLiveUpdates .jon-ad-media{height:auto;max-height:125px;object-fit:contain;border-radius:10px}
+#jonLiveUpdates .jon-ad-media{width:100%;height:80px;max-height:80px;object-fit:fill;border-radius:10px}
 #jonLiveUpdates.jon-horizontal-ad-scroll{display:flex!important;flex-direction:row;flex-wrap:nowrap;gap:10px;overflow-x:auto;overflow-y:hidden;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 /* Compact advertisement layout for landscape rotation and Smart TV */
 @media (orientation:landscape) and (max-height:700px){
-#jonLiveUpdates.jon-bottom-ad{bottom:8px;width:min(520px,calc(100vw - 20px));max-height:70vh;overflow-x:auto;overflow-y:auto}
+#jonLiveUpdates.jon-bottom-ad{bottom:8px;width:min(760px,calc(100vw - 16px));max-height:55vh;overflow-x:auto;overflow-y:auto}
 #jonLiveUpdates .jon-ad-card{padding:7px 9px;border-radius:11px}
 #jonLiveUpdates .jon-ad-card h3{margin:0 0 4px;font-size:12px}
-#jonLiveUpdates .jon-ad-media{max-height:58px;border-radius:7px}
+#jonLiveUpdates .jon-ad-media{height:58px;max-height:58px;border-radius:7px}
 #jonLiveUpdates .jon-ad-desc,#jonLiveUpdates .jon-ad-actions{display:block!important}
 #jonLiveUpdates .jon-ad-countdown{top:5px;right:5px;padding:3px 6px;font-size:9px}
 #jonLiveUpdates .jon-ad-close{top:5px;left:5px;width:22px;height:22px;font-size:14px;line-height:22px}
@@ -2706,10 +2706,10 @@ body.jon-ad-visible{padding-bottom:95px}
 @media (orientation:landscape) and (min-width:900px){
 .container{max-width:1600px;padding:18px 28px}.logo{width:105px;height:105px}.brand{padding:4px 0 12px}
 .brand h1{font-size:23px;margin:8px 0 3px}.time-panel,.mode-switch{max-width:900px;margin-left:auto;margin-right:auto}
-#jonLiveUpdates.jon-bottom-ad{width:min(460px,34vw);max-height:70vh;bottom:12px}
+#jonLiveUpdates.jon-bottom-ad{width:min(760px,72vw);max-height:55vh;bottom:12px}
 #jonLiveUpdates .jon-ad-card{padding:7px 9px;border-radius:11px}
 #jonLiveUpdates .jon-ad-card h3{font-size:12px;margin-bottom:4px}
-#jonLiveUpdates .jon-ad-media{max-height:60px}
+#jonLiveUpdates .jon-ad-media{height:60px;max-height:60px}
 #jonLiveUpdates .jon-ad-desc,#jonLiveUpdates .jon-ad-actions{display:block!important}
 body.jon-ad-visible{padding-bottom:85px}
 }
@@ -2723,7 +2723,7 @@ body.jon-ad-visible{padding-bottom:85px}
 #jonLiveUpdates .jon-ad-desc.is-expanded{display:block !important;-webkit-line-clamp:unset;overflow:visible}
 .jon-ad-desc,.jon-notify-msg{font-size:13px;color:var(--muted);margin:8px 0}
 .jon-ad-btn{display:inline-block;text-decoration:none;background:var(--red);color:#fff;border-radius:10px;padding:9px 13px;font-weight:800;font-size:13px}
-@media(max-width:600px){#jonLiveUpdates.jon-bottom-ad{bottom:8px;width:calc(100vw - 16px);max-height:70vh;overflow-x:auto;overflow-y:auto}#jonLiveUpdates .jon-ad-media{max-height:95px}body.jon-ad-visible{padding-bottom:225px}}
+@media(max-width:600px){#jonLiveUpdates.jon-bottom-ad{bottom:8px;width:calc(100vw - 12px);max-height:55vh;overflow-x:auto;overflow-y:auto}#jonLiveUpdates .jon-ad-media{width:100%;height:72px;max-height:72px;object-fit:fill}body.jon-ad-visible{padding-bottom:150px}}
 #jonNotificationBell{position:fixed;right:14px;bottom:235px;z-index:9998;border:0;border-radius:999px;width:52px;height:52px;background:var(--red);color:#fff;font-size:22px;box-shadow:0 8px 24px rgba(0,0,0,.25);cursor:pointer}
 #jonNotificationPanel{display:none;position:fixed;right:14px;bottom:297px;z-index:9999;width:min(360px,calc(100vw - 28px));max-height:65vh;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:17px;padding:12px;box-shadow:0 15px 40px rgba(0,0,0,.3)}
 </style>
