@@ -28,7 +28,7 @@ replace_once(activity, '        setContentView(vb.root)\n', '        setContentV
 replace_once(activity, '                    vb.vActionBar.catchFocus()', '                    tabsModel.currentTab.value?.webEngine?.getView()?.requestFocus()', "preserve remote focus without address bar")
 replace_once(activity, '            vb.progressBar.visibility = View.VISIBLE', '            vb.progressBar.visibility = View.GONE', "hide loading progress bar")
 replace_once(activity, '        vb.rlActionBar.visibility = View.VISIBLE', '        vb.rlActionBar.visibility = View.GONE', "hide top action bar overlay")
-replace_once(activity, '    private var progressBarHideRunnable: Runnable = Runnable { '''    @Suppress("DEPRECATION")
+replace_once(activity, '    private var progressBarHideRunnable: Runnable = Runnable {', '''    @Suppress("DEPRECATION")
     private fun applyJonFullscreen() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         if (::vb.isInitialized) {
