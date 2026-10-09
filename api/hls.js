@@ -41,6 +41,37 @@ function rewriteUriAttributes(line, baseUrl) {
   });
 }
 
+async function readTextLimited(response, maxBytes) {
+  if (!response.body) return "";
+
+  const reader = response.body.getReader();
+  const chunks = [];
+  let total = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        throw new Error("Upstream playlist too large");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder("utf-8").decode(bytes);
+}
+
 function rewritePlaylist(body, baseUrl) {
   return body.split(/\r?\n/).map(line => {
     const trimmed = line.trim();
@@ -154,10 +185,7 @@ export default async function handler(req, res) {
     res.setHeader("Content-Type", looksLikePlaylist ? "application/vnd.apple.mpegurl" : (contentType || "application/octet-stream"));
 
     if (looksLikePlaylist) {
-      const body = await upstream.text();
-      if (Buffer.byteLength(body, "utf8") > 2 * 1024 * 1024) {
-        return res.status(502).send("Upstream playlist too large");
-      }
+      const body = await readTextLimited(upstream, 2 * 1024 * 1024);
       res.statusCode = upstream.status;
       if (req.method === "HEAD") return res.end();
       return res.end(rewritePlaylist(body, finalTarget.toString()));
