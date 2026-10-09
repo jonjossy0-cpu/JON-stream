@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Customize a pinned TV Bro checkout for the JON Stream Android TV APK."""
+"""Customize a pinned TV Bro checkout for the isolated JON Stream Android TV APK."""
 from pathlib import Path
 import sys
 
@@ -15,7 +15,9 @@ def replace_once(relative_path: str, old: str, new: str, label: str) -> None:
         raise SystemExit(f"Expected exactly one {label} match in {relative_path}; found {count}.")
     path.write_text(content.replace(old, new, 1), encoding="utf-8")
 
-replace_once("app/build.gradle.kts", 'applicationId = "com.phlox.tvwebbrowser"', 'applicationId = "com.jonstream.tv"', "application id")
+# A distinct package prevents the earlier WebView-shell APK from being mistaken
+# for or silently reused as the real TV Bro browser app.
+replace_once("app/build.gradle.kts", 'applicationId = "com.phlox.tvwebbrowser"', 'applicationId = "com.jonstream.tvbro"', "isolated TV Bro application id")
 replace_once("app/build.gradle.kts", "versionCode = 69", "versionCode = 10", "version code")
 replace_once("app/build.gradle.kts", 'versionName = "2.1.6"', 'versionName = "10.0"', "version name")
 replace_once("app/src/main/res/values/strings.xml", '<string name="app_name">TV Bro: TV Web Browser</string>', '<string name="app_name">JON Stream TV</string>', "app label")
@@ -48,11 +50,11 @@ replace_once(activity, '''        val currentTab = tabsModel.currentTab.value
             val tab = tabsModel.currentTab.value
             if (tab == null) {
                 openInNewTab(JON_STREAM_URL, 0, needToHideMenuOverlay = true, navigateImmediately = true)
-            } else {
+            } else if (tab.url != JON_STREAM_URL) {
                 navigate(JON_STREAM_URL)
             }
         }
 
         val currentTab = tabsModel.currentTab.value
         if (currentTab == null || currentTab.url == settingsModel.homePage) {''', "startup URL")
-print("TV Bro customized for JON Stream TV: app ID, label, startup URL, hidden address bar, preserved tabs/remote controls, fullscreen and keep-screen-on.")
+print("TV Bro customized: isolated package com.jonstream.tvbro, JON Stream startup, hidden address bar, preserved tabs/remote controls, fullscreen and keep-screen-on.")
