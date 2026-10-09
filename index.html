@@ -777,7 +777,7 @@ audio,video{
 
 
 <style id="jonAdFullImageNoBlackBarsFix">
-/* Full-width compact ad image: all edges remain visible, no cropping or side bars. */
+/* Compact ad card; use a wider, shorter frame in landscape without cropping edges. */
 #jonLiveUpdates.jon-bottom-ad{
   max-height:58vh!important;
 }
@@ -800,6 +800,25 @@ img.jon-ad-media{
   background:transparent!important;
   border-radius:8px!important;
   margin:0!important;
+}
+@media (orientation:landscape){
+  #jonLiveUpdates.jon-bottom-ad{
+    max-height:76vh!important;
+  }
+  #jonLiveUpdates img.jon-ad-media,
+  img.jon-ad-media{
+    width:100%!important;
+    height:min(30vh, 180px)!important;
+    max-height:180px!important;
+    object-fit:fill!important;
+  }
+  #jonLiveUpdates .jon-ad-card{
+    padding:5px 8px!important;
+  }
+  #jonLiveUpdates .jon-ad-card h3{
+    margin:0 0 4px!important;
+    font-size:12px!important;
+  }
 }
 </style>
 
