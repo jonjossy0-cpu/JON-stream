@@ -2,10 +2,12 @@
 """Customize a pinned TV Bro checkout for the isolated JON Stream Android TV APK."""
 from pathlib import Path
 import sys
+from PIL import Image
 
-if len(sys.argv) != 2:
-    raise SystemExit("Usage: patch_tvbro.py <tv-bro-checkout>")
+if len(sys.argv) != 3:
+    raise SystemExit("Usage: patch_tvbro.py <tv-bro-checkout> <jon-stream-logo.png>")
 root = Path(sys.argv[1])
+logo_path = Path(sys.argv[2])
 
 def replace_once(relative_path: str, old: str, new: str, label: str) -> None:
     path = root / relative_path
@@ -14,6 +16,24 @@ def replace_once(relative_path: str, old: str, new: str, label: str) -> None:
     if count != 1:
         raise SystemExit(f"Expected exactly one {label} match in {relative_path}; found {count}.")
     path.write_text(content.replace(old, new, 1), encoding="utf-8")
+
+# Use the existing JON Stream PNG from the repository for every launcher density.
+# Keep the whole logo visible on a transparent square canvas rather than cropping it.
+try:
+    with Image.open(logo_path) as source:
+        logo = source.convert("RGBA")
+        if logo.width < 1 or logo.height < 1:
+            raise SystemExit("JON Stream logo PNG is empty.")
+        for density, size in (("mdpi", 48), ("hdpi", 72), ("xhdpi", 96), ("xxhdpi", 144), ("xxxhdpi", 192)):
+            canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+            fitted = logo.copy()
+            fitted.thumbnail((round(size * 0.86), round(size * 0.86)), Image.Resampling.LANCZOS)
+            canvas.alpha_composite(fitted, ((size - fitted.width) // 2, (size - fitted.height) // 2))
+            output = root / f"app/src/main/res/drawable-{density}/ic_launcher.png"
+            output.parent.mkdir(parents=True, exist_ok=True)
+            canvas.save(output, format="PNG", optimize=True)
+except Exception as exc:
+    raise SystemExit(f"Failed to create JON Stream launcher icons from {logo_path}: {exc}") from exc
 
 # A distinct package prevents the earlier WebView-shell APK from being mistaken
 # for or silently reused as the real TV Bro browser app.
@@ -66,4 +86,4 @@ replace_once(activity, '''        val currentTab = tabsModel.currentTab.value
 
         val currentTab = tabsModel.currentTab.value
         if (currentTab == null || currentTab.url == settingsModel.homePage) {''', "startup URL")
-print("TV Bro customized: isolated package com.jonstream.tvbro, JON Stream startup, hidden browser bars, zero root/WebView insets, edge-to-edge fullscreen, preserved remote controls, and keep-screen-on.")
+print("TV Bro customized: JON Stream app icon from repository Logo.png, isolated package, JON Stream startup, hidden browser bars, zero root/WebView insets, edge-to-edge fullscreen, preserved remote controls, and keep-screen-on.")
