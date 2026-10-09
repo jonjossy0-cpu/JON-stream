@@ -8,7 +8,8 @@ patches it for JON Stream, and builds an installable debug APK with package ID
 
 - Starts at https://jonjossy0-cpu.github.io/JON-stream/ on normal app launches.
 - Retains the actual TV Bro browser code and TV remote handling.
-- Requests immersive fullscreen and keeps the display awake.
+- Hides the browser address/navigation bar while retaining the TV Bro tabs and remote-control behavior.
+- Requests immersive fullscreen (including system status/navigation bars) and keeps the display awake.
 - Uses the WebView engine variant for initial compatibility testing.
 - Does not build or modify the Mobile APK.
 
