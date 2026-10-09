@@ -777,14 +777,15 @@ audio,video{
 
 
 <style id="jonAdFullImageNoBlackBarsFix">
-/* Shorter, full-width ad area: fit the entire photo without cropping. */
+/* Responsive ad image: fill the available width when aspect ratio allows,
+   keep the whole photo visible, and cap tall images without cropping. */
 #jonLiveUpdates img.jon-ad-media,
 img.jon-ad-media{
   display:block!important;
   width:100%!important;
-  height:min(18vh, 160px)!important;
+  height:auto!important;
   max-width:100%!important;
-  max-height:160px!important;
+  max-height:min(18vh, 160px)!important;
   object-fit:contain!important;
   object-position:center!important;
   background:transparent!important;
