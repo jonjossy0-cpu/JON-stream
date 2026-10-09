@@ -11,6 +11,7 @@ patches it for JON Stream, and builds an installable debug APK with package ID
 - Hides the browser address/navigation bar while retaining the TV Bro tabs and remote-control behavior.
 - Requests immersive fullscreen (including system status/navigation bars) and keeps the display awake.
 - Uses the WebView engine variant for initial compatibility testing.
+- Builds with JDK 21 and removes the upstream daemon JVM URL pin from the temporary CI checkout to avoid the failing Foojay redirect.
 - Does not build or modify the Mobile APK.
 
 Build output is expected as the `JON-Stream-Android-TV-TV-Bro` workflow artifact.
