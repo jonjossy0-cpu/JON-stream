@@ -75,7 +75,7 @@ jobs:
           test -s "${RUNNER_TEMP}/jon-stream-release.jks"
 
       - name: Build signed Release APKs
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/mainv'
         working-directory: android
         env:
           JON_RELEASE_STORE_FILE: ${{ runner.temp }}/jon-stream-release.jks
@@ -90,7 +90,7 @@ jobs:
           gradle :app:assembleMobileRelease :app:assembleTvRelease
 
       - name: Upload signed Release APKs
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/mainv'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: JON-Stream-Mobile-and-TV-APKs
