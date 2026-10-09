@@ -22,7 +22,8 @@ replace_once("app/src/main/res/values/strings.xml", '<string name="app_name">TV 
 replace_once("app/src/main/res/values/strings.xml", '<string name="app_name_short" translatable="false">TV Bro</string>', '<string name="app_name_short" translatable="false">JON Stream TV</string>', "short app label")
 activity = "app/src/main/java/com/phlox/tvwebbrowser/activity/main/MainActivity.kt"
 replace_once(activity, '    companion object {\n        private val TAG = MainActivity::class.java.simpleName', '    companion object {\n        private const val JON_STREAM_URL = "https://jonjossy0-cpu.github.io/JON-stream/"\n        private val TAG = MainActivity::class.java.simpleName', "JON Stream URL")
-replace_once(activity, '        setContentView(vb.root)\n', '        setContentView(vb.root)\n        applyJonFullscreen()\n', "fullscreen activation")
+replace_once(activity, '        setContentView(vb.root)\n', '        setContentView(vb.root)\n        vb.vActionBar.visibility = View.GONE\n        applyJonFullscreen()\n', "hide address bar and fullscreen activation")
+replace_once(activity, '                    vb.vActionBar.catchFocus()', '                    vb.vTabs.requestFocus()', "preserve remote focus without address bar")
 replace_once(activity, '    private var progressBarHideRunnable: Runnable = Runnable {', '''    @Suppress("DEPRECATION")
     private fun applyJonFullscreen() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -54,4 +55,4 @@ replace_once(activity, '''        val currentTab = tabsModel.currentTab.value
 
         val currentTab = tabsModel.currentTab.value
         if (currentTab == null || currentTab.url == settingsModel.homePage) {''', "startup URL")
-print("TV Bro customized for JON Stream TV: app ID, label, startup URL, fullscreen and keep-screen-on.")
+print("TV Bro customized for JON Stream TV: app ID, label, startup URL, hidden address bar, preserved tabs/remote controls, fullscreen and keep-screen-on.")
