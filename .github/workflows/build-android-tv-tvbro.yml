@@ -33,6 +33,11 @@ jobs:
           set -euo pipefail
           git clone https://github.com/truefedex/tv-bro.git "${RUNNER_TEMP}/tv-bro"
           git -C "${RUNNER_TEMP}/tv-bro" checkout --detach 6cb4b7c9be1bc2a231cc2590c184faa2be9c4ff3
+          # The pinned upstream daemon-JVM file requests a JetBrains JDK 21
+          # via a Foojay URL that currently fails in CI. Gradle can run on the
+          # configured JDK 17; remove this machine-specific daemon pin only
+          # from the temporary checkout so the build uses JAVA_HOME.
+          rm -f "${RUNNER_TEMP}/tv-bro/gradle/gradle-daemon-jvm.properties"
 
       - name: Apply JON Stream TV-only customization
         run: python3 ANDROID-TV-APK/patch_tvbro.py "${RUNNER_TEMP}/tv-bro"
