@@ -2,6 +2,7 @@ package com.jonstream.tv;
 
 import android.app.Activity;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
@@ -37,7 +38,9 @@ public final class MainActivity extends Activity {
             s.setBuiltInZoomControls(false);
             s.setDisplayZoomControls(false);
             s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-            s.setSafeBrowsingEnabled(true);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                s.setSafeBrowsingEnabled(true);
+            }
             webView.setWebViewClient(new WebViewClient());
             webView.setWebChromeClient(new WebChromeClient());
             root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
