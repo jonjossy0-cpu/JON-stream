@@ -1183,8 +1183,11 @@ let previousVolume=.8;
 let favorites=JSON.parse(localStorage.getItem("jonRadioFavorites")||"[]");
 
 function selectStation(index){
+ clearTimeout(radioAdvancedRetryTimer);
+ radioAdvancedRetryTimer=null;
+ radioAdvancedRetryAttempts=0;
  currentStation=stations[index];
-  updateRadioMediaSession();
+ updateRadioMediaSession();
  clearTimeout(reconnectTimer);
 
  radioPlayer.src=currentStation.url;
