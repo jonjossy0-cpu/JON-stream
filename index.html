@@ -2255,7 +2255,7 @@ async function checkTVStreamHealth(url,name){
 
 /* TV PLAYER - ADVANCED STABILITY SYSTEM */
 let tvRetryAttempt=0,tvRetryTimer=null,tvStallTimer=null,tvDiagnosticsTimer=null,tvStartupTimer=null,tvPlayAttemptId=0;
-let tvSourceIndex=0,tvSourceList=[],tvLastProgress=0,tvLastProgressAt=0;
+let tvSourceIndex=0,tvSourceList=[],tvLastProgress=0,tvLastProgressAt=0,tvAbrCapTimer=null;
 let tvManualQuality=-1,tvLatencyMode="balanced",tvLowData=false;
 const TV_RETRY_DELAYS=[3000,15000,30000,3000],TV_MAX_RETRIES=4,TV_STALL_LIMIT_MS=12000;
 
@@ -2291,7 +2291,7 @@ function updateTVDiagnostics(){
  tvDiag("diagBitrate",bitrate);tvDiag("diagLatency",latency);
  tvDiag("diagHealth",Math.round(Math.max(0,Math.min(100,100-tvRetryAttempt*8-(buffer<1?15:0)-(buffer<3?8:0))))+"%");
 }
-function stopTVTimers(){clearTimeout(tvRetryTimer);clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);tvRetryTimer=tvDiagnosticsTimer=tvStallTimer=null}
+function stopTVTimers(){clearTimeout(tvRetryTimer);clearTimeout(tvAbrCapTimer);clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);tvRetryTimer=tvDiagnosticsTimer=tvStallTimer=tvAbrCapTimer=null}
 function destroyTVEngine(){stopTVTimers();if(hls){try{hls.destroy()}catch(_){}hls=null}if(window.jonMpegtsPlayer){try{window.jonMpegtsPlayer.destroy()}catch(_){}window.jonMpegtsPlayer=null}if(window.jonDashPlayer){try{window.jonDashPlayer.reset()}catch(_){}window.jonDashPlayer=null}}
 function cleanupPreviousTV(){destroyTVEngine();try{tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load()}catch(_){}}
 function buildTVSources(channel){
@@ -2571,14 +2571,25 @@ function setTVSpeed(value){tvPlayer.playbackRate=Number(value)}
 async function pictureInPictureTV(){try{if(document.pictureInPictureElement)await document.exitPictureInPicture();else if(document.pictureInPictureEnabled&&tvPlayer.readyState>0)await tvPlayer.requestPictureInPicture()}catch(e){}}
 function setTVLatencyMode(mode){tvLatencyMode=mode;tvLowData=mode==="data";if(currentTV){const playing=!tvPlayer.paused,idx=currentTVIndex,u=currentTV.url,n=currentTV.name;tvRetryAttempt=0;playTVStream(u,n,idx,tvSourceIndex);if(!playing)tvPlayer.pause()}}
 function populateTVQualitySelect(){const s=document.getElementById("tvQualitySelect");if(!s)return;const old=tvManualQuality;s.innerHTML='<option value="-1">Auto</option>';if(hls&&hls.levels)hls.levels.forEach((l,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=(l.height?l.height+"p":"Level "+(i+1))+(l.bitrate?" • "+(l.bitrate/1000000).toFixed(1)+"Mbps":"");s.appendChild(o)});s.value=String(old)}
-function setTVManualQuality(value){tvManualQuality=Number(value);applyTVQuality()}
-function applyTVQuality(){if(!hls)return;if(tvManualQuality>=0&&tvManualQuality<hls.levels.length)hls.currentLevel=tvManualQuality;else hls.currentLevel=-1}
+function setTVManualQuality(value){tvManualQuality=Number(value);if(hls&&tvManualQuality<0)hls.autoLevelCapping=-1;clearTimeout(tvAbrCapTimer);tvAbrCapTimer=null;applyTVQuality()}
+function applyTVQuality(){if(!hls)return;if(tvManualQuality>=0&&tvManualQuality<hls.levels.length)hls.currentLevel=tvManualQuality;else{hls.autoLevelCapping=-1;hls.currentLevel=-1}}
+function lowerTVAutoQualityOnBuffer(){
+ if(!hls||tvManualQuality>=0||!hls.levels||hls.levels.length<2)return;
+ clearTimeout(tvAbrCapTimer);tvAbrCapTimer=null;
+ const cap=typeof hls.autoLevelCapping==="number"&&hls.autoLevelCapping>=0?hls.autoLevelCapping:hls.levels.length-1;
+ hls.autoLevelCapping=Math.max(0,cap-1);
+}
+function scheduleTVAutoQualityRestore(){
+ if(!hls||tvManualQuality>=0||typeof hls.autoLevelCapping!=="number"||hls.autoLevelCapping<0)return;
+ clearTimeout(tvAbrCapTimer);
+ tvAbrCapTimer=setTimeout(()=>{tvAbrCapTimer=null;if(hls&&currentTV&&tvManualQuality<0)hls.autoLevelCapping=-1},30000);
+}
 tvPlayer.addEventListener("play",()=>{const b=document.getElementById("tvPlayPauseBtn");if(b)b.textContent="⏸ PAUSE"});
 tvPlayer.addEventListener("pause",()=>{const b=document.getElementById("tvPlayPauseBtn");if(b)b.textContent="▶ PLAY"});
 /* TV EVENTS - recovery, never delete a channel */
-tvPlayer.addEventListener("playing",()=>{clearTimeout(tvStartupTimer);tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();setTVConnected()});
+tvPlayer.addEventListener("playing",()=>{clearTimeout(tvStartupTimer);scheduleTVAutoQualityRestore();tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();setTVConnected()});
 tvPlayer.addEventListener("progress",()=>{tvLastProgressAt=Date.now()});
-tvPlayer.addEventListener("waiting",()=>{if(currentTV)tvStatus("⏳ Buffering...")});
+tvPlayer.addEventListener("waiting",()=>{if(currentTV){lowerTVAutoQualityOnBuffer();tvStatus("⏳ Buffering...")}});
 tvPlayer.addEventListener("stalled",()=>{if(currentTV){tvStatus("⏳ Stalled — recovering...");recoverTVStream()}});
 tvPlayer.addEventListener("error",()=>{if(currentTV){tvStatus("⚠️ Stream error — recovering...");recoverTVStream()}});
 const tvNetworkConnection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
