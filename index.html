@@ -2100,6 +2100,12 @@ function toggleJonChannelLock(channel){
 function renderTV(list){
  const box=document.getElementById("tvChannels");
  box.innerHTML="";
+ // Drop queued health checks for channels no longer shown after search/filter changes.
+ // In-flight checks remain bounded by the existing concurrency and timeout limits.
+ if(Array.isArray(tvHealthQueue)){
+  const visibleHealthUrls=new Set((list||[]).slice(0,500).filter(channel=>channel&&channel.url).map(channel=>channel.url));
+  tvHealthQueue=tvHealthQueue.filter(job=>visibleHealthUrls.has(job.url));
+ }
 
  if(!list.length){
   box.innerHTML='<div class="empty">No TV channel found.</div>';
