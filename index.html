@@ -2418,18 +2418,19 @@ function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  startTVDiagnostics();
 }
 function recoverTVStream(){
- if(!currentTV)return;clearTimeout(tvRetryTimer);
+ // Prevent overlapping retries when stalled/error/startup events fire together.
+ if(!currentTV||tvRetryTimer)return;
  if(tvRetryAttempt>=TV_MAX_RETRIES){
   if(tvSourceIndex+1<tvSourceList.length){tvSourceIndex++;tvRetryAttempt=0;tvStatus("🔀 Switching to backup source...");playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex);return}
   const nextSourceIndex=tvSourceList.length>1?0:tvSourceIndex;
   tvRetryAttempt=0;
   tvStatus("⚠️ Stream unavailable — retrying in 30s...");
-  tvRetryTimer=setTimeout(()=>{if(currentTV)playTVStream(currentTV.url,currentTV.name,currentTVIndex,nextSourceIndex,false)},30000);
+  tvRetryTimer=setTimeout(()=>{tvRetryTimer=null;if(currentTV)playTVStream(currentTV.url,currentTV.name,currentTVIndex,nextSourceIndex,false)},30000);
   return;
  }
  const delay=TV_RETRY_DELAYS[Math.min(tvRetryAttempt,TV_RETRY_DELAYS.length-1)];tvRetryAttempt++;tvDiag("diagReconnects",tvRetryAttempt);
  tvStatus("🔄 Reconnecting in "+Math.round(delay/1000)+"s...");
- tvRetryTimer=setTimeout(()=>{if(currentTV)playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex,false)},delay);
+ tvRetryTimer=setTimeout(()=>{tvRetryTimer=null;if(currentTV)playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex,false)},delay);
 }
 function reconnectTV(){recoverTVStream()}
 function setTVConnected(){clearTimeout(tvStartupTimer);tvRetryAttempt=0;tvStatus("🟢 Connected");updateTVDiagnostics()}
