@@ -3329,17 +3329,6 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
  };
  window.addEventListener("jon-firebase-data",render); setTimeout(render,300);
 })();
-</script><script id="jonTVFavoriteRestoreJS2">
-(function(){
-const b=document.getElementById("jonTVFavoriteIcon"),p=document.getElementById("jonTVFavoritePanel"),it=document.getElementById("jonTVFavoriteItems"),c=document.getElementById("jonTVFavoriteCount");
-if(!b||!p||!it)return;
-const get=()=>{try{return [...new Set(JSON.parse(localStorage.getItem("jonTVFavorites")||"[]"))]}catch(e){return[]}};
-const esc=x=>String(x).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
-function render(){let f=get(),a=typeof tvChannels!=="undefined"?tvChannels:[];c.textContent=f.length;it.innerHTML=f.length?f.map(u=>{let i=a.findIndex(x=>x?.url===u),n=i>=0?a[i].name:u;return `<div style="display:flex;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)"><span style="flex:1;font-weight:800">📺 ${esc(n)}</span>${i>=0?`<button data-p="${i}">▶</button>`:""}<button data-r="${encodeURIComponent(u)}">✕</button></div>`}).join(""):'<div style="padding:12px;text-align:center;opacity:.7">No favorite TV channels yet.</div>'}
-b.onclick=()=>{render();p.hidden=!p.hidden};document.getElementById("jonTVFavoriteClose")?.addEventListener("click",()=>p.hidden=true);
-it.onclick=e=>{let x=e.target.closest("[data-p]"),r=e.target.closest("[data-r]");if(x&&typeof playTVStream==="function"){let i=+x.dataset.p;playTVStream(tvChannels[i].url,tvChannels[i].name,i);p.hidden=true}if(r){localStorage.setItem("jonTVFavorites",JSON.stringify(get().filter(u=>u!==decodeURIComponent(r.dataset.r))));render();if(typeof renderTV==="function"&&typeof filteredTV!=="undefined")renderTV(filteredTV)}};
-window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
-})();
 </script>
 <button type="button" id="jonTVDisplayShortcut" aria-label="Go to TV display">📺 DISPLAY</button>
 <div id="jonTVRemoteDisplay" aria-live="polite"><small>TV CHANNEL</small><span id="jonTVRemoteNumber">--</span></div>
