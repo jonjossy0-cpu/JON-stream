@@ -2509,18 +2509,21 @@ function toggleTVMute(){
 /* TV STOP */
 function stopTV(){
  clearTimeout(tvReconnectTimer);
-
- if(hls){
-  hls.destroy();
-  hls=null;
- }
-
- tvPlayer.pause();
- tvPlayer.removeAttribute("src");
- tvPlayer.load();
-
+ clearTimeout(tvStartupTimer);
+ clearTimeout(tvRetryTimer);
+ tvPlayAttemptId++;
+ currentTV=null;
+ tvSourceList=[];
+ destroyTVEngine();
+ try{
+  tvPlayer.pause();
+  tvPlayer.removeAttribute("src");
+  tvPlayer.load();
+ }catch(_){}
  document.getElementById("tvPlayerTitle").innerHTML="📺 TV stopped";
- document.getElementById("tvConnectionStatus").innerHTML="⚪ Stopped";
+ tvStatus("⚪ Stopped");
+ tvDiag("diagSource","None");
+ tvDiag("diagBuffer","0s");
 }
 
 /* TV AUTO RECONNECT */
