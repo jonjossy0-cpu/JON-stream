@@ -1,0 +1,31 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.jonstream.tv'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.jonstream.tv'
+        minSdk 23
+        targetSdk 32
+        versionCode 1
+        versionName '1.0.0-tv-test'
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.test'
+            versionNameSuffix '-test'
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
