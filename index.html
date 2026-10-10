@@ -3062,10 +3062,31 @@ body.jon-ad-visible{padding-bottom:85px}
     resolveAndRenderAds(remote.ads);
     renderNotifications(remote.notifications);
 
+    /* Accept only well-formed HTTP(S) stream URLs and normalize optional
+       text fields before remote records reach search/filter/player code. */
+    const isHttpUrl=value=>{
+      if(typeof value!=='string'||!value.trim()) return false;
+      try{
+        const parsed=new URL(value.trim());
+        return (parsed.protocol==='http:'||parsed.protocol==='https:')&&!!parsed.hostname;
+      }catch(_){return false}
+    };
+    const cleanStreamUrl=value=>isHttpUrl(value)?value.trim():'';
+
     /* Safe additive TV/Radio sync: Firestore items are merged into the original
        lists. Nothing already in this file is removed or replaced. */
     if(Array.isArray(remote.tv)){
-      const incoming=remote.tv.filter(x=>x&&x.enabled!==false&&x.name&&x.url).map(x=>({name:x.name,url:x.url,logo:x.logo||'',country:x.country||'',group:x.category||x.group||'TV Channel',id:x.id,backupUrl:x.backupUrl||'',backupUrls:Array.isArray(x.backupUrls)?x.backupUrls:[],backupStreams:Array.isArray(x.backupStreams)?x.backupStreams:[]}));
+      const incoming=remote.tv.filter(x=>x&&x.enabled!==false&&typeof x.name==='string'&&x.name.trim()&&isHttpUrl(x.url)).map(x=>({
+        name:x.name.trim(),
+        url:x.url.trim(),
+        logo:typeof x.logo==='string'?x.logo:'',
+        country:typeof x.country==='string'?x.country:'',
+        group:typeof x.category==='string'&&x.category.trim()?x.category.trim():(typeof x.group==='string'&&x.group.trim()?x.group.trim():'TV Channel'),
+        id:x.id==null?'':String(x.id),
+        backupUrl:cleanStreamUrl(x.backupUrl),
+        backupUrls:Array.isArray(x.backupUrls)?x.backupUrls.filter(isHttpUrl).map(u=>u.trim()):[],
+        backupStreams:Array.isArray(x.backupStreams)?x.backupStreams.filter(isHttpUrl).map(u=>u.trim()):[]
+      }));
       const merged=[...tvChannels,...incoming];
       const seen=new Set();
       tvChannels=merged.filter(x=>{const k=String(x.url||'').trim(); if(!k||seen.has(k)) return false; seen.add(k); return true;});
@@ -3077,7 +3098,11 @@ body.jon-ad-visible{padding-bottom:85px}
       const st=document.getElementById('tvStatus'); if(st) st.innerHTML='📺 '+tvChannels.length+' TV channels available';
     }
     if(Array.isArray(remote.radio)){
-      const incoming=remote.radio.filter(x=>x&&x.enabled!==false&&x.name&&x.url).map(x=>({name:x.name,url:x.url,logo:x.logo||''}));
+      const incoming=remote.radio.filter(x=>x&&x.enabled!==false&&typeof x.name==='string'&&x.name.trim()&&isHttpUrl(x.url)).map(x=>({
+        name:x.name.trim(),
+        url:x.url.trim(),
+        logo:typeof x.logo==='string'?x.logo:''
+      }));
       const merged=[...stations,...incoming];
       const seen=new Set();
       stations=merged.filter(x=>{const k=String(x.url||'').trim(); if(!k||seen.has(k)) return false; seen.add(k); return true;});
