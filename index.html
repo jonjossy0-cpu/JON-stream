@@ -2629,7 +2629,7 @@ tvPlayer.addEventListener("pause",()=>{const b=document.getElementById("tvPlayPa
 /* TV EVENTS - recovery, never delete a channel */
 tvPlayer.addEventListener("playing",()=>{clearTimeout(tvStartupTimer);if(tvPerfStartedAt&&!tvPerfFirstPlayingAt)tvPerfFirstPlayingAt=Date.now();if(tvPerfBufferingStartedAt){tvPerfBufferingMs+=Date.now()-tvPerfBufferingStartedAt;tvPerfBufferingStartedAt=0}updateTVPerformance();scheduleTVAutoQualityRestore();tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();setTVConnected()});
 tvPlayer.addEventListener("progress",()=>{tvLastProgressAt=Date.now()});
-tvPlayer.addEventListener("waiting",()=>{if(currentTV){if(!tvPerfBufferingStartedAt)tvPerfBufferingStartedAt=Date.now();if(tvPerfFirstPlayingAt)tvPerfBufferCount++;updateTVPerformance();lowerTVAutoQualityOnBuffer();tvStatus("⏳ Buffering...")}});
+tvPlayer.addEventListener("waiting",()=>{if(currentTV){if(tvPerfFirstPlayingAt&&!tvPerfBufferingStartedAt){tvPerfBufferingStartedAt=Date.now();tvPerfBufferCount++}updateTVPerformance();lowerTVAutoQualityOnBuffer();tvStatus("⏳ Buffering...")}});
 tvPlayer.addEventListener("stalled",()=>{if(currentTV){tvStatus("⏳ Stalled — recovering...");recoverTVStream()}});
 tvPlayer.addEventListener("error",()=>{if(currentTV){tvStatus("⚠️ Stream error — recovering...");recoverTVStream()}});
 const tvNetworkConnection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
