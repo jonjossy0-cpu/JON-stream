@@ -2440,6 +2440,9 @@ function jonGatewayForChannel(channel,kind){
 }
 function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  clearTimeout(tvStartupTimer);
+ // A new playback attempt must not inherit a delayed retry from the previous channel/source.
+ clearTimeout(tvRetryTimer);
+ tvRetryTimer=null;
  const startupAttemptId=++tvPlayAttemptId;
  const channel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
  const perfKey=String(channel.name||name||"TV")+"|"+String(channel.url||url||"");
