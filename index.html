@@ -1194,7 +1194,7 @@ function selectStation(index){
  radioAdvancedRetryAttempts=0;
  currentStation=stations[index];
  const perfKey=String(currentStation.name||"Radio")+"|"+String(currentStation.url||"");
- if(perfKey!==radioPerfStationKey)resetRadioPerformance(perfKey);
+ resetRadioPerformance(perfKey);
  updateRadioMediaSession();
  clearTimeout(reconnectTimer);
 
@@ -2440,7 +2440,7 @@ function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  const startupAttemptId=++tvPlayAttemptId;
  const channel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
  const perfKey=String(channel.name||name||"TV")+"|"+String(channel.url||url||"");
- if(perfKey!==tvPerfChannelKey)resetTVPerformance(perfKey);
+ if(perfKey!==tvPerfChannelKey||(resetRetry&&sourceIndex===0))resetTVPerformance(perfKey);
  currentTV={...channel,url:jonNormalizeStreamUrl(url)};currentTVIndex=index;tvSourceList=buildTVSources(currentTV).map(jonNormalizeStreamUrl).filter(Boolean);
  tvSourceIndex=Math.max(0,Math.min(sourceIndex,tvSourceList.length-1));
  document.getElementById("tvPlayerBox").style.display="block";
