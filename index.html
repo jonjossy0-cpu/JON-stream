@@ -925,6 +925,9 @@ img.jon-ad-media{
     <div class="radio-diagnostic"><b>Reconnects</b><span id="radioDiagReconnects">0</span></div>
     <div class="radio-diagnostic"><b>Health</b><span id="radioDiagHealth">100%</span></div>
     <div class="radio-diagnostic"><b>Stream</b><span id="radioDiagStream">—</span></div>
+    <div class="radio-diagnostic"><b>Startup</b><span id="radioDiagStartup">—</span></div>
+    <div class="radio-diagnostic"><b>Buffer Events</b><span id="radioDiagBufferEvents">0</span></div>
+    <div class="radio-diagnostic"><b>Buffer Time</b><span id="radioDiagBufferTime">0s</span></div>
    </div>
   </div>
 
@@ -1190,6 +1193,8 @@ function selectStation(index){
  radioAdvancedRetryTimer=null;
  radioAdvancedRetryAttempts=0;
  currentStation=stations[index];
+ const perfKey=String(currentStation.name||"Radio")+"|"+String(currentStation.url||"");
+ if(perfKey!==radioPerfStationKey)resetRadioPerformance(perfKey);
  updateRadioMediaSession();
  clearTimeout(reconnectTimer);
 
@@ -1272,6 +1277,18 @@ let radioAdvancedRetryTimer=null;
 let radioAdvancedStallTimer=null;
 let radioAdvancedDiagnosticsTimer=null;
 let radioAdvancedRetryAttempts=0;
+let radioPerfStationKey="",radioPerfStartedAt=0,radioPerfFirstPlayingAt=0,radioPerfBufferCount=0,radioPerfBufferingStartedAt=0,radioPerfBufferingMs=0;
+function resetRadioPerformance(key){
+ radioPerfStationKey=key;radioPerfStartedAt=key?Date.now():0;radioPerfFirstPlayingAt=0;radioPerfBufferCount=0;radioPerfBufferingStartedAt=0;radioPerfBufferingMs=0;
+ radioDiag("radioDiagStartup","—");radioDiag("radioDiagBufferEvents","0");radioDiag("radioDiagBufferTime","0s");
+}
+function updateRadioPerformance(){
+ if(!radioPerfStartedAt)return;
+ const activeBuffer=radioPerfBufferingStartedAt?Date.now()-radioPerfBufferingStartedAt:0;
+ radioDiag("radioDiagBufferEvents",radioPerfBufferCount);
+ radioDiag("radioDiagBufferTime",((radioPerfBufferingMs+activeBuffer)/1000).toFixed(1)+"s");
+ if(radioPerfFirstPlayingAt)radioDiag("radioDiagStartup",((radioPerfFirstPlayingAt-radioPerfStartedAt)/1000).toFixed(1)+"s");
+}
 let radioAdvancedLastTime=0;
 let radioAdvancedLastTimeAt=Date.now();
 const RADIO_RETRY_DELAYS=[10000,15000,20000,30000];
@@ -1308,6 +1325,7 @@ function updateRadioDiagnostics(){
   100-radioAdvancedRetryAttempts*8-(buffer<1?12:0)-(buffer<3?5:0)
  ));
  radioDiag("radioDiagHealth",Math.round(health)+"%");
+ updateRadioPerformance();
 }
 function setRadioAdvancedStatus(text){
  if(typeof radioStatus!=="undefined"&&radioStatus)radioStatus.innerHTML=text;
@@ -1410,13 +1428,20 @@ radioPlayer.addEventListener("playing",()=>{
  clearTimeout(radioAdvancedRetryTimer);
  radioAdvancedRetryTimer=null;
  radioAdvancedRetryAttempts=0;
+ if(radioPerfStartedAt&&!radioPerfFirstPlayingAt)radioPerfFirstPlayingAt=Date.now();
+ if(radioPerfBufferingStartedAt){radioPerfBufferingMs+=Date.now()-radioPerfBufferingStartedAt;radioPerfBufferingStartedAt=0}
+ updateRadioPerformance();
  radioAdvancedLastTime=radioPlayer.currentTime||0;
  radioAdvancedLastTimeAt=Date.now();
  setRadioAdvancedStatus("🟢 Connected");
  startRadioAdvancedMonitoring();
 });
 radioPlayer.addEventListener("waiting",()=>{
- if(currentStation)setRadioAdvancedStatus("⏳ Buffering...");
+ if(currentStation){
+  if(radioPerfFirstPlayingAt&&!radioPerfBufferingStartedAt){radioPerfBufferingStartedAt=Date.now();radioPerfBufferCount++}
+  updateRadioPerformance();
+  setRadioAdvancedStatus("⏳ Buffering...");
+ }
 });
 radioPlayer.addEventListener("stalled",()=>{
  if(currentStation){
@@ -1455,6 +1480,7 @@ stopRadio=function(){
  clearRadioAdvancedTimers();
  radioAdvancedRetryAttempts=0;
  _jonOriginalStopRadio();
+ resetRadioPerformance("");
  radioDiag("radioDiagConnection","Stopped");
  radioDiag("radioDiagBuffer","0s");
  radioDiag("radioDiagReconnects","0");
