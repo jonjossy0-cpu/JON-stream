@@ -1343,8 +1343,8 @@ function getRadioRetryDelay(){
  )]*multiplier);
 }
 function recoverRadioAdvanced(){
- if(!currentStation)return;
- clearTimeout(radioAdvancedRetryTimer);
+ // Keep stalled/error events from repeatedly resetting or overlapping the retry timer.
+ if(!currentStation||radioAdvancedRetryTimer)return;
  if(radioAdvancedRetryAttempts>=RADIO_MAX_RETRIES){
   radioAdvancedRetryAttempts=0;
   setRadioAdvancedStatus("⚠️ Stream unavailable — retry protection active");
@@ -1355,6 +1355,7 @@ function recoverRadioAdvanced(){
  radioDiag("radioDiagReconnects",radioAdvancedRetryAttempts);
  setRadioAdvancedStatus("🔄 Reconnecting in "+Math.round(delay/1000)+"s...");
  radioAdvancedRetryTimer=setTimeout(()=>{
+  radioAdvancedRetryTimer=null;
   if(!currentStation)return;
   try{
    radioPlayer.load();
@@ -1386,6 +1387,8 @@ function resetRadioAdvancedRecovery(){
 }
 function recoverRadioOnNetworkChange(){
  if(!currentStation)return;
+ clearTimeout(radioAdvancedRetryTimer);
+ radioAdvancedRetryTimer=null;
  setRadioAdvancedStatus("📶 Network changed — recovering...");
  radioAdvancedRetryAttempts=0;
  try{
@@ -1398,6 +1401,8 @@ function recoverRadioOnNetworkChange(){
 
 /* Advanced monitoring hooks; existing Radio listeners remain. */
 radioPlayer.addEventListener("playing",()=>{
+ clearTimeout(radioAdvancedRetryTimer);
+ radioAdvancedRetryTimer=null;
  radioAdvancedRetryAttempts=0;
  radioAdvancedLastTime=radioPlayer.currentTime||0;
  radioAdvancedLastTimeAt=Date.now();
