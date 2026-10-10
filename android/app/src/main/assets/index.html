@@ -712,6 +712,51 @@ audio,video{
 #jonTVRemoteDisplay small{display:block;font-size:10px;letter-spacing:1px;opacity:.72;margin-bottom:2px}
 @media(max-width:600px){#jonTVRemoteDisplay{top:10px;min-width:120px;padding:8px 14px;font-size:19px}}
 </style>
+<style id="jonAdFullImageNoBlackBarsFix">
+/* Compact ad card; use a wider, shorter frame in landscape without cropping edges. */
+#jonLiveUpdates.jon-bottom-ad{
+  max-height:58vh!important;
+}
+#jonLiveUpdates .jon-ad-card{
+  padding:7px 9px!important;
+}
+#jonLiveUpdates .jon-ad-card h3{
+  margin:0 0 5px!important;
+  font-size:13px!important;
+}
+#jonLiveUpdates img.jon-ad-media,
+img.jon-ad-media{
+  display:block!important;
+  width:100%!important;
+  height:min(18vh, 150px)!important;
+  max-width:100%!important;
+  max-height:150px!important;
+  object-fit:fill!important;
+  object-position:center!important;
+  background:transparent!important;
+  border-radius:8px!important;
+  margin:0!important;
+}
+@media (orientation:landscape){
+  #jonLiveUpdates.jon-bottom-ad{
+    max-height:82vh!important;
+  }
+  #jonLiveUpdates img.jon-ad-media,
+  img.jon-ad-media{
+    width:100%!important;
+    height:min(36vh, 210px)!important;
+    max-height:210px!important;
+    object-fit:fill!important;
+  }
+  #jonLiveUpdates .jon-ad-card{
+    padding:5px 8px!important;
+  }
+  #jonLiveUpdates .jon-ad-card h3{
+    margin:0 0 4px!important;
+    font-size:12px!important;
+  }
+}
+</style>
 </head>
 
 <body>
@@ -2513,10 +2558,10 @@ body.jon-ad-visible{padding-bottom:245px}
 #jonLiveUpdates.jon-horizontal-ad-scroll{display:flex!important;flex-direction:row;flex-wrap:nowrap;gap:10px;overflow-x:auto;overflow-y:hidden;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 /* Compact advertisement layout for landscape rotation and Smart TV */
 @media (orientation:landscape) and (max-height:700px){
-#jonLiveUpdates.jon-bottom-ad{bottom:8px;width:min(520px,calc(100vw - 20px));max-height:70vh;overflow-x:auto;overflow-y:auto}
+#jonLiveUpdates.jon-bottom-ad{bottom:6px;width:min(400px,calc(100vw - 24px));max-height:38vh;overflow-x:auto;overflow-y:auto}
 #jonLiveUpdates .jon-ad-card{padding:7px 9px;border-radius:11px}
 #jonLiveUpdates .jon-ad-card h3{margin:0 0 4px;font-size:12px}
-#jonLiveUpdates .jon-ad-media{max-height:58px;border-radius:7px}
+#jonLiveUpdates .jon-ad-media{width:100%;height:36px;max-height:36px;object-fit:fill;border-radius:6px}
 #jonLiveUpdates .jon-ad-desc,#jonLiveUpdates .jon-ad-actions{display:block!important}
 #jonLiveUpdates .jon-ad-countdown{top:5px;right:5px;padding:3px 6px;font-size:9px}
 #jonLiveUpdates .jon-ad-close{top:5px;left:5px;width:22px;height:22px;font-size:14px;line-height:22px}
@@ -2527,10 +2572,10 @@ body.jon-ad-visible{padding-bottom:95px}
 @media (orientation:landscape) and (min-width:900px){
 .container{max-width:1600px;padding:18px 28px}.logo{width:105px;height:105px}.brand{padding:4px 0 12px}
 .brand h1{font-size:23px;margin:8px 0 3px}.time-panel,.mode-switch{max-width:900px;margin-left:auto;margin-right:auto}
-#jonLiveUpdates.jon-bottom-ad{width:min(460px,34vw);max-height:70vh;bottom:12px}
+#jonLiveUpdates.jon-bottom-ad{width:min(430px,42vw);max-height:38vh;bottom:8px}
 #jonLiveUpdates .jon-ad-card{padding:7px 9px;border-radius:11px}
 #jonLiveUpdates .jon-ad-card h3{font-size:12px;margin-bottom:4px}
-#jonLiveUpdates .jon-ad-media{max-height:60px}
+#jonLiveUpdates .jon-ad-media{width:100%;height:36px;max-height:36px;object-fit:fill}
 #jonLiveUpdates .jon-ad-desc,#jonLiveUpdates .jon-ad-actions{display:block!important}
 body.jon-ad-visible{padding-bottom:85px}
 }
@@ -3091,6 +3136,37 @@ window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
     clearTimeout(jonOKTimer);
     jonOKTimer=null;
   });
+})();
+</script>
+
+<!-- JON TV REMOTE SPATIAL ARROW NAVIGATION - ADDITIVE ONLY -->
+<style id="jonTvRemoteArrowNavigationCSS">
+button.jon-tv-focused,[role="button"].jon-tv-focused,a.jon-tv-focused{
+  outline:3px solid #fff !important;outline-offset:3px !important;
+  box-shadow:0 0 0 4px rgba(227,27,35,.9),0 0 18px rgba(227,27,35,.8) !important;
+  transform:scale(1.02);
+}
+</style>
+<script id="jonTvRemoteArrowNavigationJS">
+(function(){
+"use strict";
+const S='button:not([disabled]):not([hidden]),[role="button"]:not([aria-disabled="true"]):not([hidden]),a[href]:not([hidden])';
+const SKIP=['INPUT','TEXTAREA','SELECT']; let focused=null;
+function vis(el){if(!el||el.closest('[hidden]'))return false;const s=getComputedStyle(el),r=el.getBoundingClientRect();return s.display!=="none"&&s.visibility!=="hidden"&&Number(s.opacity)!==0&&r.width>0&&r.height>0}
+function all(){return [...document.querySelectorAll(S)].filter(vis)}
+function set(el){if(!el||!vis(el))return false;document.querySelectorAll('.jon-tv-focused').forEach(x=>x.classList.remove('jon-tv-focused'));focused=el;el.classList.add('jon-tv-focused');try{el.focus({preventScroll:true})}catch(_){try{el.focus()}catch(__){}}try{el.scrollIntoView({behavior:"smooth",block:"nearest",inline:"nearest"})}catch(_){try{el.scrollIntoView({block:"nearest",inline:"nearest"})}catch(__){}}return true}
+function cur(){if(focused&&vis(focused))return focused;const a=document.activeElement;return a&&all().includes(a)?a:null}
+function score(a,b,d){const A=a.getBoundingClientRect(),B=b.getBoundingClientRect(),ax=A.left+A.width/2,ay=A.top+A.height/2,bx=B.left+B.width/2,by=B.top+B.height/2,dx=bx-ax,dy=by-ay;if(d==="right"&&dx<=2||d==="left"&&dx>=-2||d==="down"&&dy<=2||d==="up"&&dy>=-2)return Infinity;const p=(d==="left"||d==="right")?Math.abs(dx):Math.abs(dy),c=(d==="left"||d==="right")?Math.abs(dy):Math.abs(dx);return p+c*2+(c>Math.max(60,((d==="left"||d==="right")?A.height:B.height)*1.5)?Math.min(500,c*4):0)}
+function move(d){const a=all();if(!a.length)return;const from=cur();if(!from){set(a[0]);return}let best=null,bs=Infinity;for(const el of a){if(el===from)continue;const z=score(from,el,d);if(z<bs){bs=z;best=el}}if(best)set(best)}
+function seed(){const a=all(),x=document.activeElement;if(x&&a.includes(x))set(x);else if(!focused||!vis(focused))set(a[0])}
+window.addEventListener("keydown",e=>{if(!["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)||SKIP.includes(document.activeElement?.tagName))return;e.preventDefault();e.stopImmediatePropagation();seed();move(e.key==="ArrowUp"?"up":e.key==="ArrowDown"?"down":e.key==="ArrowLeft"?"left":"right")},true);
+document.addEventListener("focusin",e=>{if(e.target.matches?.(S)&&vis(e.target))set(e.target)});
+document.addEventListener("click",e=>{const x=e.target.closest?.(S);if(x&&vis(x))set(x)},true);
+window.addEventListener("scroll",()=>{if(focused&&!vis(focused)){focused=null;document.querySelectorAll('.jon-tv-focused').forEach(x=>x.classList.remove('jon-tv-focused'))}},{passive:true});
+document.getElementById("tvModeBtn")?.addEventListener("click",()=>setTimeout(seed,120));
+document.getElementById("radioModeBtn")?.addEventListener("click",()=>setTimeout(seed,120));
+window.addEventListener("jon-firebase-data",()=>setTimeout(seed,300));
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(seed,250));else setTimeout(seed,250);
 })();
 </script>
 </body>
