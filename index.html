@@ -2450,7 +2450,7 @@ function recoverTVStream(){
  tvRetryTimer=setTimeout(()=>{tvRetryTimer=null;if(currentTV)playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex,false)},delay);
 }
 function reconnectTV(){recoverTVStream()}
-function setTVConnected(){clearTimeout(tvStartupTimer);tvRetryAttempt=0;tvStatus("🟢 Connected");updateTVDiagnostics()}
+function setTVConnected(){clearTimeout(tvStartupTimer);clearTimeout(tvRetryTimer);tvRetryTimer=null;tvRetryAttempt=0;tvStatus("🟢 Connected");updateTVDiagnostics()}
 function nextTV(){if(!filteredTV.length)return;let n=currentTVIndex<0?0:currentTVIndex+1;if(n>=filteredTV.length)n=0;const c=filteredTV[n];playTVStream(c.url,c.name,n)}
 function previousTV(){if(!filteredTV.length)return;let n=currentTVIndex<=0?filteredTV.length-1:currentTVIndex-1;const c=filteredTV[n];playTVStream(c.url,c.name,n)}
 function toggleTVMute(){tvPlayer.muted=!tvPlayer.muted}
