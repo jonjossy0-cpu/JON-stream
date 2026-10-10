@@ -1390,6 +1390,9 @@ function recoverRadioAdvanced(){
  },delay);
 }
 function setRadioAdvancedMode(mode){
+ clearTimeout(radioAdvancedRetryTimer);
+ radioAdvancedRetryTimer=null;
+ radioAdvancedRetryAttempts=0;
  radioAdvancedMode=mode;
  if(currentStation){
   setRadioAdvancedStatus("🔄 Applying playback mode...");
