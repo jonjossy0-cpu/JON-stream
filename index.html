@@ -2604,6 +2604,7 @@ function stopTV(){
   tvPlayer.load();
  }catch(_){}
  document.getElementById("tvPlayerTitle").innerHTML="📺 TV stopped";
+ resetTVPerformance("");
  tvStatus("⚪ Stopped");
  tvDiag("diagSource","None");
  tvDiag("diagBuffer","0s");
