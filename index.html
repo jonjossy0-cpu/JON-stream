@@ -2308,9 +2308,18 @@ function stopTVTimers(){clearTimeout(tvRetryTimer);clearTimeout(tvAbrCapTimer);c
 function destroyTVEngine(){stopTVTimers();if(hls){try{hls.destroy()}catch(_){}hls=null}if(window.jonMpegtsPlayer){try{window.jonMpegtsPlayer.destroy()}catch(_){}window.jonMpegtsPlayer=null}if(window.jonDashPlayer){try{window.jonDashPlayer.reset()}catch(_){}window.jonDashPlayer=null}}
 function cleanupPreviousTV(){destroyTVEngine();try{tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load()}catch(_){}}
 function buildTVSources(channel){
- const list=[];if(channel&&channel.url)list.push(channel.url);
+ const candidates=[];
+ if(channel&&channel.url)candidates.push(channel.url);
  const backups=channel&&(Array.isArray(channel.backupUrls)?channel.backupUrls:Array.isArray(channel.backupStreams)?channel.backupStreams:channel.backupUrl?[channel.backupUrl]:[]);
- (backups||[]).forEach(u=>{if(u&&!list.includes(u))list.push(u)});return list;
+ (backups||[]).forEach(u=>{if(u)candidates.push(u)});
+ // Normalize before deduplication so equivalent URL forms do not create
+ // redundant failover attempts against the same stream.
+ const seen=new Set(),list=[];
+ candidates.forEach(value=>{
+  const url=jonNormalizeStreamUrl(value);
+  if(url&&!seen.has(url)){seen.add(url);list.push(url)}
+ });
+ return list;
 }
 function startTVDiagnostics(){
  clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();
