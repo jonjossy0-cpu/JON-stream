@@ -6,7 +6,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -19,6 +18,7 @@ public final class MainActivity extends Activity {
     private static final String START_URL = "https://jonjossy0-cpu.github.io/JON-stream/";
     private FrameLayout root;
     private WebView webView;
+    private WebChromeClient chromeClient;
     private View customFullscreenView;
     private WebChromeClient.CustomViewCallback customViewCallback;
 
@@ -44,7 +44,7 @@ public final class MainActivity extends Activity {
             s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) s.setSafeBrowsingEnabled(true);
             webView.setWebViewClient(new WebViewClient());
-            webView.setWebChromeClient(new WebChromeClient() {
+            chromeClient = new WebChromeClient() {
                 @Override public void onShowCustomView(View view, CustomViewCallback callback) {
                     if (customFullscreenView != null) {
                         callback.onCustomViewHidden();
@@ -68,7 +68,8 @@ public final class MainActivity extends Activity {
                     if (webView != null) webView.setVisibility(View.VISIBLE);
                     applyImmersive();
                 }
-            });
+            };
+            webView.setWebChromeClient(chromeClient);
             root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
             webView.loadUrl(START_URL);
             webView.requestFocus();
@@ -124,7 +125,7 @@ public final class MainActivity extends Activity {
     @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK || keyCode == KeyEvent.KEYCODE_ESCAPE) {
             if (customFullscreenView != null && webView != null) {
-                webView.getWebChromeClient().onHideCustomView();
+                if (chromeClient != null) chromeClient.onHideCustomView();
                 return true;
             }
             if (webView != null && webView.canGoBack()) {
