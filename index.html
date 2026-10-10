@@ -1051,6 +1051,9 @@ img.jon-ad-media{
     <div class="tv-diagnostic"><b>Reconnects</b><span id="diagReconnects">0</span></div>
     <div class="tv-diagnostic"><b>Source</b><span id="diagSource">Primary</span></div>
     <div class="tv-diagnostic"><b>Health</b><span id="diagHealth">100%</span></div>
+    <div class="tv-diagnostic"><b>Startup</b><span id="diagStartup">—</span></div>
+    <div class="tv-diagnostic"><b>Buffer Events</b><span id="diagBufferEvents">0</span></div>
+    <div class="tv-diagnostic"><b>Buffer Time</b><span id="diagBufferTime">0s</span></div>
    </div>
   </div>
  </div>
@@ -2268,6 +2271,18 @@ async function checkTVStreamHealth(url,name){
 
 /* TV PLAYER - ADVANCED STABILITY SYSTEM */
 let tvRetryAttempt=0,tvRetryTimer=null,tvStallTimer=null,tvDiagnosticsTimer=null,tvStartupTimer=null,tvPlayAttemptId=0;
+let tvPerfChannelKey="",tvPerfStartedAt=0,tvPerfFirstPlayingAt=0,tvPerfBufferCount=0,tvPerfBufferingStartedAt=0,tvPerfBufferingMs=0;
+function resetTVPerformance(key){
+ tvPerfChannelKey=key;tvPerfStartedAt=key?Date.now():0;tvPerfFirstPlayingAt=0;tvPerfBufferCount=0;tvPerfBufferingStartedAt=0;tvPerfBufferingMs=0;
+ tvDiag("diagStartup","—");tvDiag("diagBufferEvents","0");tvDiag("diagBufferTime","0s");
+}
+function updateTVPerformance(){
+ if(!tvPerfStartedAt)return;
+ const activeBuffer=tvPerfBufferingStartedAt?Date.now()-tvPerfBufferingStartedAt:0;
+ tvDiag("diagBufferEvents",tvPerfBufferCount);
+ tvDiag("diagBufferTime",((tvPerfBufferingMs+activeBuffer)/1000).toFixed(1)+"s");
+ if(tvPerfFirstPlayingAt)tvDiag("diagStartup",((tvPerfFirstPlayingAt-tvPerfStartedAt)/1000).toFixed(1)+"s");
+}
 let tvSourceIndex=0,tvSourceList=[],tvLastProgress=0,tvLastProgressAt=0,tvAbrCapTimer=null;
 let tvManualQuality=-1,tvLatencyMode="balanced",tvLowData=false;
 const TV_RETRY_DELAYS=[3000,15000,30000,3000],TV_MAX_RETRIES=4,TV_STALL_LIMIT_MS=12000;
@@ -2303,6 +2318,7 @@ function updateTVDiagnostics(){
  }
  tvDiag("diagBitrate",bitrate);tvDiag("diagLatency",latency);
  tvDiag("diagHealth",Math.round(Math.max(0,Math.min(100,100-tvRetryAttempt*8-(buffer<1?15:0)-(buffer<3?8:0))))+"%");
+ updateTVPerformance();
 }
 function stopTVTimers(){clearTimeout(tvRetryTimer);clearTimeout(tvAbrCapTimer);clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);tvRetryTimer=tvDiagnosticsTimer=tvStallTimer=tvAbrCapTimer=null}
 function destroyTVEngine(){stopTVTimers();if(hls){try{hls.destroy()}catch(_){}hls=null}if(window.jonMpegtsPlayer){try{window.jonMpegtsPlayer.destroy()}catch(_){}window.jonMpegtsPlayer=null}if(window.jonDashPlayer){try{window.jonDashPlayer.reset()}catch(_){}window.jonDashPlayer=null}}
@@ -2397,6 +2413,8 @@ function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  clearTimeout(tvStartupTimer);
  const startupAttemptId=++tvPlayAttemptId;
  const channel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
+ const perfKey=String(channel.name||name||"TV")+"|"+String(channel.url||url||"");
+ if(perfKey!==tvPerfChannelKey)resetTVPerformance(perfKey);
  currentTV={...channel,url:jonNormalizeStreamUrl(url)};currentTVIndex=index;tvSourceList=buildTVSources(currentTV).map(jonNormalizeStreamUrl).filter(Boolean);
  tvSourceIndex=Math.max(0,Math.min(sourceIndex,tvSourceList.length-1));
  document.getElementById("tvPlayerBox").style.display="block";
@@ -2466,7 +2484,7 @@ function setTVConnected(){clearTimeout(tvStartupTimer);clearTimeout(tvRetryTimer
 function nextTV(){if(!filteredTV.length)return;let n=currentTVIndex<0?0:currentTVIndex+1;if(n>=filteredTV.length)n=0;const c=filteredTV[n];playTVStream(c.url,c.name,n)}
 function previousTV(){if(!filteredTV.length)return;let n=currentTVIndex<=0?filteredTV.length-1:currentTVIndex-1;const c=filteredTV[n];playTVStream(c.url,c.name,n)}
 function toggleTVMute(){tvPlayer.muted=!tvPlayer.muted}
-function stopTV(){clearTimeout(tvReconnectTimer);clearTimeout(tvStartupTimer);tvPlayAttemptId++;currentTV=null;tvSourceList=[];destroyTVEngine();tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load();document.getElementById("tvPlayerTitle").innerHTML="📺 TV stopped";tvStatus("⚪ Stopped");tvDiag("diagSource","None");tvDiag("diagBuffer","0s")}
+function stopTV(){clearTimeout(tvReconnectTimer);clearTimeout(tvStartupTimer);tvPlayAttemptId++;currentTV=null;tvSourceList=[];destroyTVEngine();tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load();resetTVPerformance("");document.getElementById("tvPlayerTitle").innerHTML="📺 TV stopped";tvStatus("⚪ Stopped");tvDiag("diagSource","None");tvDiag("diagBuffer","0s")}
 async function fullscreenTV(){const v=document.getElementById("tvPlayer");const fs=document.fullscreenElement||document.webkitFullscreenElement;if(!v)return;if(fs){try{if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)await document.webkitExitFullscreen()}catch(_){}}else{try{if(v.requestFullscreen)await v.requestFullscreen();else if(v.webkitRequestFullscreen)await v.webkitRequestFullscreen()}catch(_){}}}
 
 /* TV QUALITY */
@@ -2609,9 +2627,9 @@ function scheduleTVAutoQualityRestore(){
 tvPlayer.addEventListener("play",()=>{const b=document.getElementById("tvPlayPauseBtn");if(b)b.textContent="⏸ PAUSE"});
 tvPlayer.addEventListener("pause",()=>{const b=document.getElementById("tvPlayPauseBtn");if(b)b.textContent="▶ PLAY"});
 /* TV EVENTS - recovery, never delete a channel */
-tvPlayer.addEventListener("playing",()=>{clearTimeout(tvStartupTimer);scheduleTVAutoQualityRestore();tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();setTVConnected()});
+tvPlayer.addEventListener("playing",()=>{clearTimeout(tvStartupTimer);if(tvPerfStartedAt&&!tvPerfFirstPlayingAt)tvPerfFirstPlayingAt=Date.now();if(tvPerfBufferingStartedAt){tvPerfBufferingMs+=Date.now()-tvPerfBufferingStartedAt;tvPerfBufferingStartedAt=0}updateTVPerformance();scheduleTVAutoQualityRestore();tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();setTVConnected()});
 tvPlayer.addEventListener("progress",()=>{tvLastProgressAt=Date.now()});
-tvPlayer.addEventListener("waiting",()=>{if(currentTV){lowerTVAutoQualityOnBuffer();tvStatus("⏳ Buffering...")}});
+tvPlayer.addEventListener("waiting",()=>{if(currentTV){if(tvPerfFirstPlayingAt&&!tvPerfBufferingStartedAt){tvPerfBufferingStartedAt=Date.now();tvPerfBufferCount++}updateTVPerformance();lowerTVAutoQualityOnBuffer();tvStatus("⏳ Buffering...")}});
 tvPlayer.addEventListener("stalled",()=>{if(currentTV){tvStatus("⏳ Stalled — recovering...");recoverTVStream()}});
 tvPlayer.addEventListener("error",()=>{if(currentTV){tvStatus("⚠️ Stream error — recovering...");recoverTVStream()}});
 const tvNetworkConnection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
