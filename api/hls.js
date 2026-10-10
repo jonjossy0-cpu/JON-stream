@@ -91,22 +91,52 @@ export default async function handler(req, res) {
   }
 
   try {
-    const upstream = await fetch(target.toString(), {
-      method: req.method,
-      headers: {
-        "User-Agent": req.headers["user-agent"] || "JON-Stream-Gateway",
-        "Accept": req.headers.accept || "*/*",
-        ...(req.headers.range ? { "Range": req.headers.range } : {})
-      },
-      redirect: "follow"
-    });
+    // Validate every redirect destination before making a request to it.
+    // Native redirect:"follow" would contact the next host before we could
+    // enforce the allowlist.
+    let requestUrl = target;
+    let upstream;
+    for (let redirects = 0; redirects <= 5; redirects++) {
+      upstream = await fetch(requestUrl.toString(), {
+        method: req.method,
+        headers: {
+          "User-Agent": req.headers["user-agent"] || "JON-Stream-Gateway",
+          "Accept": req.headers.accept || "*/*",
+          ...(req.headers.range ? { "Range": req.headers.range } : {})
+        },
+        redirect: "manual"
+      });
 
-    const finalTarget = new URL(upstream.url || target.toString());
-    if (!isAllowed(finalTarget)) {
-      Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
-      return res.status(502).send("Redirected host not allowed");
+      const redirectStatus = [301, 302, 303, 307, 308].includes(upstream.status);
+      const location = upstream.headers.get("location");
+      if (!redirectStatus || !location) break;
+
+      if (redirects === 5) {
+        try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
+        Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
+        return res.status(502).send("Too many upstream redirects");
+      }
+
+      let nextUrl;
+      try {
+        nextUrl = new URL(location, requestUrl);
+      } catch (_) {
+        try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
+        Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
+        return res.status(502).send("Invalid upstream redirect");
+      }
+
+      if (!isAllowed(nextUrl)) {
+        try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
+        Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
+        return res.status(502).send("Redirected host not allowed");
+      }
+
+      try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
+      requestUrl = nextUrl;
     }
 
+    const finalTarget = requestUrl;
     const contentType = (upstream.headers.get("content-type") || "").toLowerCase();
     const looksLikePlaylist =
       contentType.includes("mpegurl") ||
