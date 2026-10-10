@@ -2574,15 +2574,15 @@ function populateTVQualitySelect(){const s=document.getElementById("tvQualitySel
 function setTVManualQuality(value){tvManualQuality=Number(value);if(hls&&tvManualQuality<0)hls.autoLevelCapping=-1;clearTimeout(tvAbrCapTimer);tvAbrCapTimer=null;applyTVQuality()}
 function applyTVQuality(){if(!hls)return;if(tvManualQuality>=0&&tvManualQuality<hls.levels.length)hls.currentLevel=tvManualQuality;else{hls.autoLevelCapping=-1;hls.currentLevel=-1}}
 function lowerTVAutoQualityOnBuffer(){
- if(!hls||tvManualQuality>=0||!hls.levels||hls.levels.length<2)return;
+ if(!hls||!hls.levels||hls.levels.length<2||(tvManualQuality>=0&&tvManualQuality<hls.levels.length))return;
  clearTimeout(tvAbrCapTimer);tvAbrCapTimer=null;
  const cap=typeof hls.autoLevelCapping==="number"&&hls.autoLevelCapping>=0?hls.autoLevelCapping:hls.levels.length-1;
  hls.autoLevelCapping=Math.max(0,cap-1);
 }
 function scheduleTVAutoQualityRestore(){
- if(!hls||tvManualQuality>=0||typeof hls.autoLevelCapping!=="number"||hls.autoLevelCapping<0)return;
+ if(!hls||(tvManualQuality>=0&&tvManualQuality<hls.levels.length)||typeof hls.autoLevelCapping!=="number"||hls.autoLevelCapping<0)return;
  clearTimeout(tvAbrCapTimer);
- tvAbrCapTimer=setTimeout(()=>{tvAbrCapTimer=null;if(hls&&currentTV&&tvManualQuality<0)hls.autoLevelCapping=-1},30000);
+ tvAbrCapTimer=setTimeout(()=>{tvAbrCapTimer=null;if(hls&&currentTV&&!(tvManualQuality>=0&&tvManualQuality<hls.levels.length))hls.autoLevelCapping=-1},30000);
 }
 tvPlayer.addEventListener("play",()=>{const b=document.getElementById("tvPlayPauseBtn");if(b)b.textContent="⏸ PAUSE"});
 tvPlayer.addEventListener("pause",()=>{const b=document.getElementById("tvPlayPauseBtn");if(b)b.textContent="▶ PLAY"});
