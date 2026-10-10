@@ -12,6 +12,7 @@ function corsHeaders() {
 
 function isAllowed(url) {
   return (url.protocol === "http:" || url.protocol === "https:") &&
+    !url.username && !url.password &&
     ALLOWED_HOSTS.has(url.hostname);
 }
 
