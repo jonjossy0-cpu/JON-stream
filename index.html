@@ -3324,7 +3324,7 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
  document.getElementById("jonTVFavoriteClose")?.addEventListener("click",()=>panel.hidden=true);
  items.onclick=e=>{
   const p=e.target.closest("[data-p]"),r=e.target.closest("[data-r]");
-  if(p&&typeof playTVStream==="function"){let i=+p.dataset.p;playTVStream(tvChannels[i].url,tvChannels[i].name,i);panel.hidden=true}
+  if(p&&typeof playTVStream==="function"){let i=+p.dataset.p;const channel=tvChannels[i];if(!channel||!jonAllowsChannel(channel))return;const visibleIndex=Array.isArray(filteredTV)?filteredTV.findIndex(x=>x?.url===channel.url):-1;playTVStream(channel.url,channel.name,visibleIndex);panel.hidden=true}
   if(r){save(get().filter(x=>x!==decodeURIComponent(r.dataset.r)));render();if(typeof renderTV==="function"&&typeof filteredTV!=="undefined")renderTV(filteredTV)}
  };
  window.addEventListener("jon-firebase-data",render); setTimeout(render,300);
