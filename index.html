@@ -2541,6 +2541,9 @@ function updateQuality(){
 /* TV CONNECTED */
 function setTVConnected(){
  clearTimeout(tvStartupTimer);
+ // Playback recovered: cancel any retry queued by an earlier stall/error event.
+ clearTimeout(tvRetryTimer);
+ tvRetryTimer=null;
  tvRetryAttempt=0;
  tvStatus("🟢 Connected");
  updateTVDiagnostics();
