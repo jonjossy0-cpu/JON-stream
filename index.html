@@ -2216,11 +2216,11 @@ function runNextTVHealthChecks(){
 }
 
 async function checkTVStreamHealth(url,name){
- let state="unknown",title="Stream status uncertain";
+ let state="unknown",title="Stream status uncertain",response=null;
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),TV_HEALTH_TIMEOUT_MS);
  try{
-  const response=await fetch(url,{
+  response=await fetch(url,{
    method:"GET",
    mode:"cors",
    cache:"no-store",
@@ -2248,6 +2248,10 @@ async function checkTVStreamHealth(url,name){
   }
  }finally{
   clearTimeout(timer);
+  // Health checks need only response headers. Stop any live-stream body
+  // immediately so checks do not keep downloading media in the background.
+  try{controller.abort()}catch(_){}
+  try{if(response&&response.body)response.body.cancel().catch(()=>{})}catch(_){}
  }
  tvHealthCache.set(url,{state,title,time:Date.now()});
  setTVHealthIcon(url,state,title);
