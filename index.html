@@ -1237,8 +1237,8 @@ radioPlayer.addEventListener("waiting",()=>{
 
 radioPlayer.addEventListener("error",()=>{
  if(!currentStation)return;
+ // The advanced recovery listener below owns the single-flight retry timer.
  radioStatus.innerHTML="🔄 Reconnecting...";
- reconnectRadio();
 });
 
 function reconnectRadio(){
