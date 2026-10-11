@@ -26,7 +26,20 @@ function absolutize(value, base) {
 }
 
 function gatewayUrl(target) {
-  return "https://jon-stream.vercel.app/api/hls?url=" + encodeURIComponent(target);
+  // Vercel sets VERCEL_URL to the hostname of the current deployment.
+  // This keeps preview playlists and their child segments on the same deployment.
+  const deploymentHost =
+    typeof process !== "undefined" && process.env
+      ? process.env.VERCEL_URL
+      : "";
+
+  const gatewayBase =
+    typeof deploymentHost === "string" &&
+    /^[a-z0-9.-]+\.vercel\.app$/i.test(deploymentHost)
+      ? "https://" + deploymentHost
+      : "https://jon-stream.vercel.app";
+
+  return gatewayBase + "/api/hls?url=" + encodeURIComponent(target);
 }
 
 function rewriteUriAttributes(line, baseUrl) {
