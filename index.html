@@ -843,7 +843,8 @@ img.jon-ad-media{
 /* Keep the fullscreen feature set available inside the normal channel-list player too. */
 #tvVideoFrame:not(:fullscreen) .tv-fullscreen-overlay{display:flex;padding:clamp(6px,1.2vw,14px);background:linear-gradient(180deg,rgba(0,0,0,.55),transparent 28%,transparent 48%,rgba(0,0,0,.78));}
 /* In the embedded player, auto-hide the overlay after 4 seconds; keep the separate controls below the player available. */
-#tvVideoFrame:not(:fullscreen).tv-controls-hidden .tv-fullscreen-overlay{opacity:0!important;pointer-events:none!important;transition:opacity .25s;}
+#tvVideoFrame:not(:fullscreen).tv-controls-hidden .tv-fullscreen-overlay{opacity:0!important;visibility:hidden!important;pointer-events:none!important;transition:opacity .25s;}
+#tvVideoFrame.tv-controls-hidden .tv-fullscreen-overlay{opacity:0!important;visibility:hidden!important;pointer-events:none!important;}
 #tvVideoFrame:not(:fullscreen) .tv-fullscreen-top{align-items:flex-start;gap:6px}
 #tvVideoFrame:not(:fullscreen) .tv-fullscreen-brand{gap:7px;max-width:68%;padding:5px 8px 5px 5px;border-radius:10px}
 #tvVideoFrame:not(:fullscreen) .tv-fullscreen-channel-logo{width:30px;height:30px;border-radius:7px}
@@ -3691,12 +3692,17 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   if(!frame)return;
   frame.classList.remove("tv-controls-hidden");
   clearTimeout(overlayTimer);
-  /* Both embedded and fullscreen overlays disappear after 4 seconds of playback inactivity. */
-  overlayTimer=setTimeout(()=>{if(!video.paused)frame.classList.add("tv-controls-hidden")},4000);
+  /* Both embedded and fullscreen overlays disappear after 3 seconds without interaction. */
+  overlayTimer=setTimeout(()=>frame.classList.add("tv-controls-hidden"),3000);
  }
  window.jonShowTVFullscreenOverlay=showOverlay;
  if(frame){
-  ["pointermove","pointerdown","touchstart","mousemove"].forEach(ev=>frame.addEventListener(ev,showOverlay,{passive:true}));
+  frame.addEventListener("pointermove",e=>{if(e.pointerType!=="touch")showOverlay()},{passive:true});
+  frame.addEventListener("click",e=>{
+   if(e.target&&e.target.closest&&e.target.closest(".tv-fullscreen-overlay")){showOverlay();return;}
+   if(frame.classList.contains("tv-controls-hidden"))showOverlay();
+   else{clearTimeout(overlayTimer);frame.classList.add("tv-controls-hidden");}
+  });
   frame.addEventListener("keydown",showOverlay);
   function updateFullscreenMode(){const active=document.fullscreenElement===frame||document.webkitFullscreenElement===frame;video.controls=false;frame.classList.remove("tv-controls-hidden");syncFullscreenControls();clearTimeout(overlayTimer);showOverlay()}
   updateFullscreenMode();
