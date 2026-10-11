@@ -822,6 +822,24 @@ img.jon-ad-media{
 }
 </style>
 
+<style id="jonTvPlayerFitControls">
+#tvPlayerBox{min-width:0;max-width:100%;overflow:hidden}
+#tvPlayerBox .tv-playback-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 10px}
+#tvPlayerBox .tv-live-pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:rgba(227,27,35,.14);border:1px solid rgba(227,27,35,.55);color:#ff4b55;font-size:12px;font-weight:900;letter-spacing:.8px}
+#tvPlayerBox .tv-live-pill i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#f32632;box-shadow:0 0 10px #f32632;animation:jonLivePulse 1.4s infinite}
+#tvPlayerBox .tv-playback-clock{display:inline-flex;align-items:center;justify-content:center;min-width:96px;padding:6px 10px;border-radius:9px;background:rgba(25,118,210,.15);border:1px solid rgba(65,153,255,.5);color:#65adff;font-size:13px;font-weight:900;font-variant-numeric:tabular-nums}
+#tvPlayerBox .tv-video-frame{position:relative;width:100%;height:clamp(180px,56.25vw,68vh);max-height:68vh;min-height:180px;overflow:hidden;border-radius:12px;background:#000;isolation:isolate}
+#tvPlayerBox #tvPlayer{display:block;width:100%;height:100%;max-width:100%;max-height:100%;margin:0;border:0;border-radius:0;background:#000;object-fit:contain}
+#tvPlayerBox .tv-smart-options{max-width:100%;overflow:hidden}
+#tvPlayerBox .tv-smart-options label{min-width:0;flex-wrap:wrap}
+#tvPlayerBox .tv-smart-options select{max-width:100%}
+#tvPlayerBox .tv-controls,#tvPlayerBox .advanced-controls{max-width:100%}
+@keyframes jonLivePulse{0%,100%{opacity:1}50%{opacity:.4}}
+@media(max-width:520px){#tvPlayerBox .tv-video-frame{height:clamp(180px,56.25vw,58vh);max-height:58vh;min-height:180px}#tvPlayerBox .tv-playback-clock{min-width:88px;font-size:12px}}
+@media(orientation:landscape) and (max-height:520px){#tvPlayerBox .tv-video-frame{height:58vh;max-height:58vh;min-height:140px}}
+#tvVideoFrame:fullscreen{width:100vw;height:100vh;max-height:100vh;border-radius:0}
+#tvVideoFrame:fullscreen #tvPlayer{width:100%;height:100%;max-height:100%;object-fit:contain}
+</style>
 </head>
 
 <body>
@@ -840,11 +858,6 @@ img.jon-ad-media{
 <div class="mode-switch" role="tablist" aria-label="Choose Radio or TV">
  <button id="radioModeBtn" class="active" onclick="setMode('radio')">📻 RADIO</button>
  <button id="tvModeBtn" onclick="setMode('tv')">📺 TV</button>
-</div>
-
-<div class="jon-player-launch" style="margin:0 0 18px;padding:14px;border:1px solid #24415f;border-radius:16px;background:linear-gradient(120deg,#102a48,#0b1b30);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
- <div><div style="font-weight:900;font-size:16px;color:#f4f8ff">🎬 JON PLAYER</div><div style="font-size:12px;color:#a9bbd2;margin-top:3px">Open the new media player · HLS · DASH · Web embeds · Local files</div></div>
- <a href="./jon-player.html" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;background:#1976d2;color:#fff;font-weight:800;border-radius:10px;padding:11px 15px;border:1px solid #3189e8;white-space:nowrap">▶ OPEN PLAYER</a>
 </div>
 
 <div class="brand">
@@ -995,7 +1008,13 @@ img.jon-ad-media{
  <div class="tv-player-box" id="tvPlayerBox">
   <div class="tv-player-title" id="tvPlayerTitle">📺 TV</div>
 
-  <video id="tvPlayer" controls playsinline preload="metadata"></video>
+  <div class="tv-playback-meta" aria-live="polite">
+   <span class="tv-live-pill" id="tvLivePill"><i></i> LIVE</span>
+   <span class="tv-playback-clock" id="tvPlaybackClock">00:00:00</span>
+  </div>
+  <div class="tv-video-frame" id="tvVideoFrame">
+   <video id="tvPlayer" controls playsinline preload="metadata"></video>
+  </div>
 
   <div class="quality" id="videoQuality">
    <span>Quality: Auto</span>
@@ -1045,6 +1064,11 @@ img.jon-ad-media{
    <label>🎚️ Quality
     <select id="tvQualitySelect" onchange="setTVManualQuality(this.value)">
      <option value="-1">Auto</option>
+    </select>
+   </label>
+   <label>🖼️ Fit
+    <select id="tvFitSelect" onchange="setTVFit(this.value)">
+     <option value="contain">Fit</option><option value="cover">Crop</option><option value="fill">Stretch</option>
     </select>
    </label>
   </div>
@@ -3493,6 +3517,48 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 (function(){
   "use strict";
   window.addEventListener("beforeunload",function(){try{if(window.jonMpegtsPlayer)window.jonMpegtsPlayer.destroy();if(window.jonDashPlayer)window.jonDashPlayer.reset()}catch(_){} });
+})();
+</script>
+<script id="jonTvPlaybackClockAndFit">
+(function(){
+ "use strict";
+ const video=document.getElementById("tvPlayer");
+ const clock=document.getElementById("tvPlaybackClock");
+ const fit=document.getElementById("tvFitSelect");
+ if(!video||!clock)return;
+ let elapsed=0,startedAt=0,timer=null;
+ function render(){
+  const total=Math.floor((elapsed+(startedAt?Date.now()-startedAt:0))/1000);
+  const h=String(Math.floor(total/3600)).padStart(2,"0");
+  const m=String(Math.floor((total%3600)/60)).padStart(2,"0");
+  const sec=String(total%60).padStart(2,"0");
+  clock.textContent=h+":"+m+":"+sec;
+ }
+ function start(){
+  if(!startedAt)startedAt=Date.now();
+  if(!timer)timer=setInterval(render,1000);
+  render();
+ }
+ function pause(){
+  if(startedAt){elapsed+=Date.now()-startedAt;startedAt=0}
+  if(timer){clearInterval(timer);timer=null}
+  render();
+ }
+ function reset(){
+  elapsed=0;startedAt=0;
+  if(timer){clearInterval(timer);timer=null}
+  render();
+ }
+ window.setTVFit=function(value){
+  const fitValue=["contain","cover","fill"].includes(value)?value:"contain";
+  video.style.objectFit=fitValue;
+  if(fit)fit.value=fitValue;
+ };
+ video.addEventListener("playing",start);
+ video.addEventListener("pause",pause);
+ video.addEventListener("ended",pause);
+ video.addEventListener("emptied",reset);
+ render();
 })();
 </script>
 </html>
