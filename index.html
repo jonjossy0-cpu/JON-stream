@@ -1871,29 +1871,68 @@ let tvChannels=USER_TV_CHANNELS.slice();
 let filteredTV=[];
 let currentTVIndex=-1;
 let tvFilter="all";
-const JON_TV_ORDER_KEY="jonTVChannelOrder";
-const JON_TV_ORDER_COOKIE="jonTVChannelOrder";
+/* Versioned and project-specific key: avoids collisions with other GitHub Pages apps. */
+const JON_TV_ORDER_KEY="jonStreamMainvTVChannelOrderV2";
+const JON_TV_ORDER_LEGACY_KEY="jonTVChannelOrder";
+
+/* Use a stable identity per channel, not URL alone: FIFA TV and FIFA+ English
+   intentionally share a stream URL but must remain independently movable. */
+function getTVChannelOrderId(channel){
+ return JSON.stringify([
+  String(channel&&channel.name||""),
+  String(channel&&channel.url||""),
+  String(channel&&channel.id||"")
+ ]);
+}
 
 function getSavedTVOrder(){
  try{
   const raw=localStorage.getItem(JON_TV_ORDER_KEY);
-  if(raw){const parsed=JSON.parse(raw);if(Array.isArray(parsed)&&parsed.length)return parsed.filter(Boolean);}
+  if(raw){
+   const parsed=JSON.parse(raw);
+   if(Array.isArray(parsed))return parsed.filter(value=>typeof value==="string"&&value);
+  }
  }catch(_){}
+
+ /* One-time migration from the previous URL-only order. Match duplicate URLs
+    by occurrence against the original channel list so each channel gets its
+    own identity. The new version is saved on the next successful move. */
+ let legacy=[];
  try{
-  const m=document.cookie.match(/(?:^|; )jonTVChannelOrder=([^;]*)/);
-  if(m){const parsed=JSON.parse(decodeURIComponent(m[1]));if(Array.isArray(parsed))return parsed.filter(Boolean);}
+  const raw=localStorage.getItem(JON_TV_ORDER_LEGACY_KEY);
+  if(raw){const parsed=JSON.parse(raw);if(Array.isArray(parsed))legacy=parsed.filter(Boolean);}
  }catch(_){}
+ if(legacy.length){
+  const used=new Set();
+  const migrated=[];
+  for(const url of legacy){
+   let index=USER_TV_CHANNELS.findIndex((channel,i)=>!used.has(i)&&String(channel.url||"")===String(url));
+   if(index<0)index=USER_TV_CHANNELS.findIndex(channel=>String(channel.url||"")===String(url));
+   if(index>=0){
+    used.add(index);
+    migrated.push(getTVChannelOrderId(USER_TV_CHANNELS[index]));
+   }
+  }
+  if(migrated.length)return migrated;
+ }
  return [];
 }
 
 function saveTVOrder(){
- const order=JSON.stringify(tvChannels.map(ch=>String(ch.url||"")));
- try{localStorage.setItem(JON_TV_ORDER_KEY,order)}catch(_){}
- try{document.cookie=JON_TV_ORDER_COOKIE+"="+encodeURIComponent(order)+"; Max-Age=31536000; Path=/; SameSite=Lax"}catch(_){}
+ const order=JSON.stringify(tvChannels.map(getTVChannelOrderId));
+ try{
+  localStorage.setItem(JON_TV_ORDER_KEY,order);
+  /* Do not report success unless storage actually retained the exact order. */
+  return localStorage.getItem(JON_TV_ORDER_KEY)===order;
+ }catch(_){
+  return false;
+ }
 }
 
-/* Re-apply the saved order after Firebase merges its channel list.
-   This prevents a moved Firebase channel from jumping back after reload. */
+/* Re-apply the saved order after Firebase merges/updates its channel list.
+   Existing channels keep their saved positions; newly added channels follow
+   them until the user moves/saves the updated list. Removed channels' order
+   entries remain in storage, so a channel that returns keeps its position. */
 function reapplySavedTVOrder(){
  if(!Array.isArray(tvChannels)||!tvChannels.length)return;
  tvChannels=applySavedTVOrder(tvChannels);
@@ -1907,30 +1946,37 @@ window.addEventListener("pagehide",persistTVOrderBeforeExit);
 function applySavedTVOrder(list){
  const order=getSavedTVOrder();
  if(!order.length)return list.slice();
- const pos=new Map(order.map((url,i)=>[url,i]));
+ const pos=new Map();
+ order.forEach((identity,index)=>{if(!pos.has(identity))pos.set(identity,index);});
  return list.slice().sort((a,b)=>{
-  const pa=pos.has(String(a.url||""))?pos.get(String(a.url||"")):999999999;
-  const pb=pos.has(String(b.url||""))?pos.get(String(b.url||"")):999999999;
+  const ia=getTVChannelOrderId(a),ib=getTVChannelOrderId(b);
+  const pa=pos.has(ia)?pos.get(ia):Number.MAX_SAFE_INTEGER;
+  const pb=pos.has(ib)?pos.get(ib):Number.MAX_SAFE_INTEGER;
   return pa-pb;
  });
 }
 
-function showTVSavedMessage(){
+function showTVSavedMessage(saved=true){
  let e=document.getElementById("jonTVSavedMessage");
  if(!e){
   e=document.createElement("div");
   e.id="jonTVSavedMessage";
-  e.textContent="✓ Saved";
   e.style.cssText="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:99999;background:#111;color:#fff;padding:12px 24px;border-radius:999px;font-size:18px;font-weight:800;box-shadow:0 8px 30px rgba(0,0,0,.35);pointer-events:none;opacity:0;transition:opacity .2s";
   document.body.appendChild(e);
  }
+ e.textContent=saved?"✓ Order saved on this device":"⚠ Could not save order on this device";
+ e.style.background=saved?"#111":"#8b1d1d";
  clearTimeout(window.jonTVSavedTimer);
  e.style.opacity="1";
- window.jonTVSavedTimer=setTimeout(()=>{e.style.opacity="0"},1400);
+ window.jonTVSavedTimer=setTimeout(()=>{e.style.opacity="0"},2200);
 }
 
 function moveTVChannelToNumber(channel,targetNumber){
- const current=tvChannels.findIndex(ch=>ch.url===channel.url);
+ let current=tvChannels.indexOf(channel);
+ if(current<0){
+  const identity=getTVChannelOrderId(channel);
+  current=tvChannels.findIndex(ch=>getTVChannelOrderId(ch)===identity);
+ }
  if(current<0)return;
  const n=parseInt(targetNumber,10);
  if(!Number.isInteger(n)||n<1||n>tvChannels.length){
@@ -1943,12 +1989,13 @@ function moveTVChannelToNumber(channel,targetNumber){
   filteredTV=tvChannels.slice();
   searchTVChannels();
  }
- saveTVOrder();
- showTVSavedMessage();
+ showTVSavedMessage(saveTVOrder());
 }
 
 function promptMoveTVChannel(channel){
- const current=tvChannels.findIndex(ch=>ch.url===channel.url)+1;
+ let current=tvChannels.indexOf(channel);
+ if(current<0)current=tvChannels.findIndex(ch=>getTVChannelOrderId(ch)===getTVChannelOrderId(channel));
+ current+=1;
  const target=prompt("Move "+channel.name+" to channel number (1-"+tvChannels.length+"):",String(current));
  if(target!==null)moveTVChannelToNumber(channel,target);
 }
@@ -2244,7 +2291,7 @@ function renderTV(list){
  display.forEach((channel,index)=>{
   const card=document.createElement("div");
   card.className="tv-card";
-  const channelNumber=tvChannels.findIndex(ch=>ch.url===channel.url)+1;
+  const channelNumber=(tvChannels.indexOf(channel)>=0?tvChannels.indexOf(channel):tvChannels.findIndex(ch=>getTVChannelOrderId(ch)===getTVChannelOrderId(channel)))+1;
 
   const fav=tvFavorites.includes(channel.url);
 
