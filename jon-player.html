@@ -60,7 +60,7 @@ button,input,select{font:inherit}button{cursor:pointer;border:1px solid #315477;
  function say(message,error=false){status.textContent=message;status.classList.toggle('error',error)}
  function badge(text,live=false){const el=$('liveBadge');el.replaceChildren();if(live){const dot=document.createElement('i');dot.className='dot';el.appendChild(dot)}el.appendChild(document.createTextNode(text))}
  function title(text){$('mediaTitle').textContent=text||'JON Player'}
- function cleanEngines(){try{video.pause()}catch(e){}if(hls){hls.destroy();hls=null}if(dash){try{dash.reset()}catch(e){}dash=null}try{video.removeAttribute('src');video.load()}catch(e){}}
+ function cleanEngines(){try{video.pause()}catch(e){}if(hls){hls.destroy();hls=null}if(dash){try{dash.reset()}catch(e){}dash=null}try{video.removeAttribute('src');video.load()}catch(e){}try{embed.src='about:blank'}catch(e){}}
  function showVideo(){embed.classList.add('hidden');video.classList.remove('hidden');placeholder.classList.add('hidden')}
  function showEmbed(){video.classList.add('hidden');embed.classList.remove('hidden');placeholder.classList.add('hidden')}
  function showPlaceholder(){video.classList.add('hidden');embed.classList.add('hidden');placeholder.classList.remove('hidden')}
@@ -71,11 +71,11 @@ button,input,select{font:inherit}button{cursor:pointer;border:1px solid #315477;
  function setQualityOptions(levels,kind){resetQuality();levels.forEach((level,index)=>{const opt=document.createElement('option');opt.value=String(index);opt.textContent=level.label;$('quality').appendChild(opt)});$('qualityHint').textContent=levels.length?'Available variants':'Single quality';$('quality').onchange=()=>{const n=Number($('quality').value);if(kind==='hls'&&hls)hls.currentLevel=n;else if(kind==='dash'&&dash){if(n<0)dash.updateSettings({streaming:{abr:{autoSwitchBitrate:{video:true}}}});else{dash.updateSettings({streaming:{abr:{autoSwitchBitrate:{video:false}}}});dash.setQualityFor('video',n)}}}}
  async function openMedia(raw,forceEmbed=false){
   raw=raw.trim();if(!raw){say('Paste a URL first.',true);return}if(!validUrl(raw)||!/^https?:/i.test(raw)){say('Please enter a valid HTTP or HTTPS URL.',true);return}
-  cleanEngines();if(objectUrl){URL.revokeObjectURL(objectUrl);objectUrl=null}resetQuality();urlInput.value=raw;title(getTitle(raw));$('info').textContent='Loading: '+raw;const lower=raw.toLowerCase().split(/[?#]/)[0];
-  const isHls=lower.endsWith('.m3u8')||raw.toLowerCase().includes('.m3u8?');
-  const isDash=lower.endsWith('.mpd')||raw.toLowerCase().includes('.mpd?');
+  cleanEngines();if(objectUrl){URL.revokeObjectURL(objectUrl);objectUrl=null}resetQuality();urlInput.value=raw;title(getTitle(raw));$('info').textContent='Loading: '+raw;let path='';try{path=new URL(raw).pathname.toLowerCase()}catch(e){}const lower=path||raw.toLowerCase().split(/[?#]/)[0];
+  const isHls=lower.endsWith('.m3u8');
+  const isDash=lower.endsWith('.mpd');
   const knownVideo=/\.(mp4|m4v|webm|mov|ogv|mp3|m4a|aac|wav|ogg|ts|mkv|avi)$/i.test(lower);
-  if(forceEmbed||inputMode==='embed'||(!isHls&&!isDash&&!knownVideo)){
+  if(forceEmbed||inputMode==='embed'){
    mode='embed';showEmbed();embed.src=raw;badge('WEB PLAYER');say('Opening embedded web player. If it stays blank, the provider may block iframe playback; try its official embed page or a direct stream URL.');return
   }
   mode='video';showVideo();badge(isHls||isDash?'LIVE / STREAM':'VIDEO',isHls||isDash);
@@ -105,9 +105,9 @@ button,input,select{font:inherit}button{cursor:pointer;border:1px solid #315477;
  $('fileInput').onchange=e=>{const file=e.target.files&&e.target.files[0];if(!file)return;cleanEngines();if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=URL.createObjectURL(file);mode='video';showVideo();video.src=objectUrl;title(file.name);badge('LOCAL FILE');say('Local file selected. Supported codecs depend on this browser and device.');video.play().catch(()=>{})};
  $('streamTab').onclick=()=>{inputMode='stream';$('streamTab').classList.add('active');$('webTab').classList.remove('active');urlInput.placeholder='Paste HLS, DASH or direct media URL'};
  $('webTab').onclick=()=>{inputMode='embed';$('webTab').classList.add('active');$('streamTab').classList.remove('active');urlInput.placeholder='Paste web player or NovaStream embed URL'};
- $('hlsExample').onclick=()=>{urlInput.focus();urlInput.placeholder='Paste your .m3u8 URL here';say('Paste an HLS .m3u8 URL into the field above.')};
- $('dashExample').onclick=()=>{urlInput.focus();urlInput.placeholder='Paste your .mpd URL here';say('Paste a DASH .mpd URL into the field above.')};
- $('embedExample').onclick=()=>{urlInput.focus();urlInput.placeholder='Paste the full embed URL here';say('Paste the provider’s embed URL, then press Open.')};
+ $('hlsExample').onclick=()=>{inputMode='stream';$('streamTab').classList.add('active');$('webTab').classList.remove('active');urlInput.focus();urlInput.placeholder='Paste your .m3u8 URL here';say('Paste an HLS .m3u8 URL into the field above.')};
+ $('dashExample').onclick=()=>{inputMode='stream';$('streamTab').classList.add('active');$('webTab').classList.remove('active');urlInput.focus();urlInput.placeholder='Paste your .mpd URL here';say('Paste a DASH .mpd URL into the field above.')};
+ $('embedExample').onclick=()=>{inputMode='embed';$('webTab').classList.add('active');$('streamTab').classList.remove('active');urlInput.focus();urlInput.placeholder='Paste the full embed URL here';say('Paste the provider’s embed URL, then press Open.')};
 })();
 </script>
 </body>
