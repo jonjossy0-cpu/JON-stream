@@ -7,11 +7,15 @@
 <title>JON FM ETHIOPIA</title>
 
 <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1.7.3"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/mpegts.js@1.8.2/dist/mpegts.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/dashjs@5.2.1/dist/dash.all.min.js"></script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app-check.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
   import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+  import { getStorage, ref as storageRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-storage.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyC5uNWNp9KbcepO36VQCx8gfbyPmZW4fxM",
@@ -25,9 +29,16 @@
 
   try {
     const app = initializeApp(firebaseConfig);
+    const appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider("6Le3cbYtAAAAAOdcVa3NOG1Md2ZADXvlnvf-ZlU1"),
+      isTokenAutoRefreshEnabled: true
+    });
+    window.__JON_APP_CHECK = appCheck;
     try { getAnalytics(app); } catch (_) {}
 
     const db = getFirestore(app);
+    const storage = getStorage(app);
+    window.__JON_RESOLVE_MEDIA_URL = async function(value){ const v=String(value??"").trim(); if(!v)return ""; if(/^https?:\/\//i.test(v)||/^data:/i.test(v)||/^blob:/i.test(v))return v; try{return await getDownloadURL(storageRef(storage,v.startsWith("gs://")?v:v.replace(/^\/+/,"")))}catch(e){console.warn("JON media URL could not be resolved:",v,e);return "";} };
     const ref = doc(db, "jonStream", "appData");
     onSnapshot(ref, (snap) => {
       window.__JON_FIREBASE_DATA = snap.exists() ? snap.data() : null;
@@ -486,8 +497,7 @@ audio,video{
  font-size:13px;
 }
 
-.footer-logo{
- width:65px;
+.footer-logo{ width:65px;
  height:65px;
  object-fit:cover;
  border-radius:15px;
@@ -497,7 +507,8 @@ audio,video{
  .container{padding:8px}
  .sections-grid{gap:8px}
  .section-head h2{font-size:18px}
- .mode-switch button{min-height:48px;font-size:14px} .time-card .time{font-size:16px}
+ .mode-switch button{min-height:48px;font-size:14px}
+ .time-card .time{font-size:16px}
  .social-grid{grid-template-columns:1fr 1fr}
  .player,.tv-player-box{padding:10px}
  .search input,.tv-search input{padding:11px;font-size:13px}
@@ -571,6 +582,7 @@ audio,video{
 
 </style>
 
+<style id="jonGithubMediaFix">.jonMediaHeroImage{visibility:visible!important}.jonMediaHeroImage.show{visibility:visible!important;opacity:1!important}.jon-ad-media{visibility:visible!important}</style>
 <style id="jonLandscapeReadMoreFix">
 /* JON additive fix: keep Read More / Read Less usable in landscape. */
 @media (orientation:landscape){
@@ -712,6 +724,58 @@ audio,video{
 #jonTVRemoteDisplay small{display:block;font-size:10px;letter-spacing:1px;opacity:.72;margin-bottom:2px}
 @media(max-width:600px){#jonTVRemoteDisplay{top:10px;min-width:120px;padding:8px 14px;font-size:19px}}
 </style>
+
+<!-- JON STREAM GATEWAY ADD-ON: GitHub-safe browser gateway helpers.
+     Additive only: existing app/Firebase/Radio/TV code is preserved. -->
+<script>
+(function(){
+  "use strict";
+  window.JON_GATEWAY = window.JON_GATEWAY || {};
+
+  const s = v => String(v ?? "").trim();
+
+  window.JON_GATEWAY.detect = function(url){
+    const u=s(url).toLowerCase().split("?")[0].split("#")[0];
+    if(/\.(m3u8|m3u)$/.test(u)) return "HLS";
+    if(/\.mpd$/.test(u)) return "DASH";
+    if(/\.ism(\/manifest)?$|\.isml(\/manifest)?$|manifest$/.test(u)) return "MSS";
+    if(/\.ts$|mpegts|video\/mp2t/.test(u)) return "MPEG-TS";
+    if(/\.flv$|http-flv|\/flv(?:\?|$)/.test(u)) return "HTTP-FLV";
+    if(/\.mp4$/.test(u)) return "MP4";
+    if(/\.webm$/.test(u)) return "WebM";
+    if(/webrtc:|wss?:.*webrtc|rtc/.test(u)) return "WebRTC";
+    if(/^rtmp(s)?:\/\//.test(u)) return "RTMP";
+    if(/^rtsps?:\/\//.test(u)) return "RTSP";
+    if(/^srt:\/\//.test(u)) return "SRT";
+    return "AUTO";
+  };
+
+  /* Browser-safe gateway endpoint resolver.
+     If Firebase contains gateway/proxy fields, use them; otherwise return
+     the original URL so the existing player remains the fallback. */
+  window.JON_GATEWAY.resolve = async function(channel){
+    const c=channel||{};
+    const original=s(c.url||c.streamUrl||c.source);
+    const gateway=s(c.gatewayUrl||c.gatewayURL||c.proxyUrl||c.proxyURL||c.hlsGateway||c.hlsUrl||"");
+    if(gateway) return gateway;
+    return original;
+  };
+
+  window.JON_GATEWAY.info = function(channel){
+    const url=s(channel?.url||channel?.streamUrl||channel?.source);
+    const format=s(channel?.format||channel?.streamFormat||channel?.mediaFormat||channel?.protocol||channel?.type)||window.JON_GATEWAY.detect(url);
+    return {
+      format:format.toUpperCase(),
+      directBrowserPlayable:/^(HLS|DASH|MPEG-TS|HTTP-FLV|MP4|WebM|CMAF)$/.test(format.toUpperCase()),
+      gatewayRequired:/^(RTMP|RTSP|SRT)$/.test(format.toUpperCase())
+    };
+  };
+
+  window.dispatchEvent(new CustomEvent("jon-gateway-ready"));
+})();
+</script>
+
+
 <style id="jonAdFullImageNoBlackBarsFix">
 /* Compact ad card; use a wider, shorter frame in landscape without cropping edges. */
 #jonLiveUpdates.jon-bottom-ad{
@@ -757,6 +821,7 @@ img.jon-ad-media{
   }
 }
 </style>
+
 </head>
 
 <body>
@@ -860,6 +925,9 @@ img.jon-ad-media{
     <div class="radio-diagnostic"><b>Reconnects</b><span id="radioDiagReconnects">0</span></div>
     <div class="radio-diagnostic"><b>Health</b><span id="radioDiagHealth">100%</span></div>
     <div class="radio-diagnostic"><b>Stream</b><span id="radioDiagStream">—</span></div>
+    <div class="radio-diagnostic"><b>Startup</b><span id="radioDiagStartup">—</span></div>
+    <div class="radio-diagnostic"><b>Buffer Events</b><span id="radioDiagBufferEvents">0</span></div>
+    <div class="radio-diagnostic"><b>Buffer Time</b><span id="radioDiagBufferTime">0s</span></div>
    </div>
   </div>
 
@@ -978,8 +1046,7 @@ img.jon-ad-media{
   <button type="button" class="diagnostics-toggle" id="tvDiagnosticsToggle" onclick="toggleDiagnostics('tv')">📊 Hide Live Diagnostics</button>
   <div class="tv-diagnostics" id="tvDiagnostics">
    <div class="advanced-title">📊 Live Diagnostics</div>
-   <div class="tv-diagnostics-grid">
-    <div class="tv-diagnostic"><b>Connection</b><span id="diagConnection">Ready</span></div>
+   <div class="tv-diagnostics-grid">    <div class="tv-diagnostic"><b>Connection</b><span id="diagConnection">Ready</span></div>
     <div class="tv-diagnostic"><b>Buffer</b><span id="diagBuffer">0s</span></div>
     <div class="tv-diagnostic"><b>Bitrate</b><span id="diagBitrate">—</span></div>
     <div class="tv-diagnostic"><b>Latency</b><span id="diagLatency">—</span></div>
@@ -987,6 +1054,9 @@ img.jon-ad-media{
     <div class="tv-diagnostic"><b>Reconnects</b><span id="diagReconnects">0</span></div>
     <div class="tv-diagnostic"><b>Source</b><span id="diagSource">Primary</span></div>
     <div class="tv-diagnostic"><b>Health</b><span id="diagHealth">100%</span></div>
+    <div class="tv-diagnostic"><b>Startup</b><span id="diagStartup">—</span></div>
+    <div class="tv-diagnostic"><b>Buffer Events</b><span id="diagBufferEvents">0</span></div>
+    <div class="tv-diagnostic"><b>Buffer Time</b><span id="diagBufferTime">0s</span></div>
    </div>
   </div>
  </div>
@@ -1042,7 +1112,8 @@ let stations=[
  url:"https://stream.zeno.fm/b8skbyqeqeruv"
 },
 {
- name:"TIreta 97.6 FM", url:"https://stream.zeno.fm/x751reg18zhvv"
+ name:"TIreta 97.6 FM",
+ url:"https://stream.zeno.fm/x751reg18zhvv"
 },
 {
  name:"SHGER FM 102.1",
@@ -1118,8 +1189,13 @@ let previousVolume=.8;
 let favorites=JSON.parse(localStorage.getItem("jonRadioFavorites")||"[]");
 
 function selectStation(index){
+ clearTimeout(radioAdvancedRetryTimer);
+ radioAdvancedRetryTimer=null;
+ radioAdvancedRetryAttempts=0;
  currentStation=stations[index];
-  updateRadioMediaSession();
+ const perfKey=String(currentStation.name||"Radio")+"|"+String(currentStation.url||"");
+ resetRadioPerformance(perfKey);
+ updateRadioMediaSession();
  clearTimeout(reconnectTimer);
 
  radioPlayer.src=currentStation.url;
@@ -1172,8 +1248,8 @@ radioPlayer.addEventListener("waiting",()=>{
 
 radioPlayer.addEventListener("error",()=>{
  if(!currentStation)return;
+ // The advanced recovery listener below owns the single-flight retry timer.
  radioStatus.innerHTML="🔄 Reconnecting...";
- reconnectRadio();
 });
 
 function reconnectRadio(){
@@ -1201,6 +1277,18 @@ let radioAdvancedRetryTimer=null;
 let radioAdvancedStallTimer=null;
 let radioAdvancedDiagnosticsTimer=null;
 let radioAdvancedRetryAttempts=0;
+let radioPerfStationKey="",radioPerfStartedAt=0,radioPerfFirstPlayingAt=0,radioPerfBufferCount=0,radioPerfBufferingStartedAt=0,radioPerfBufferingMs=0;
+function resetRadioPerformance(key){
+ radioPerfStationKey=key;radioPerfStartedAt=key?Date.now():0;radioPerfFirstPlayingAt=0;radioPerfBufferCount=0;radioPerfBufferingStartedAt=0;radioPerfBufferingMs=0;
+ radioDiag("radioDiagStartup","—");radioDiag("radioDiagBufferEvents","0");radioDiag("radioDiagBufferTime","0s");
+}
+function updateRadioPerformance(){
+ if(!radioPerfStartedAt)return;
+ const activeBuffer=radioPerfBufferingStartedAt?Date.now()-radioPerfBufferingStartedAt:0;
+ radioDiag("radioDiagBufferEvents",radioPerfBufferCount);
+ radioDiag("radioDiagBufferTime",((radioPerfBufferingMs+activeBuffer)/1000).toFixed(1)+"s");
+ if(radioPerfFirstPlayingAt)radioDiag("radioDiagStartup",((radioPerfFirstPlayingAt-radioPerfStartedAt)/1000).toFixed(1)+"s");
+}
 let radioAdvancedLastTime=0;
 let radioAdvancedLastTimeAt=Date.now();
 const RADIO_RETRY_DELAYS=[10000,15000,20000,30000];
@@ -1237,6 +1325,7 @@ function updateRadioDiagnostics(){
   100-radioAdvancedRetryAttempts*8-(buffer<1?12:0)-(buffer<3?5:0)
  ));
  radioDiag("radioDiagHealth",Math.round(health)+"%");
+ updateRadioPerformance();
 }
 function setRadioAdvancedStatus(text){
  if(typeof radioStatus!=="undefined"&&radioStatus)radioStatus.innerHTML=text;
@@ -1278,8 +1367,8 @@ function getRadioRetryDelay(){
  )]*multiplier);
 }
 function recoverRadioAdvanced(){
- if(!currentStation)return;
- clearTimeout(radioAdvancedRetryTimer);
+ // Keep stalled/error events from repeatedly resetting or overlapping the retry timer.
+ if(!currentStation||radioAdvancedRetryTimer)return;
  if(radioAdvancedRetryAttempts>=RADIO_MAX_RETRIES){
   radioAdvancedRetryAttempts=0;
   setRadioAdvancedStatus("⚠️ Stream unavailable — retry protection active");
@@ -1290,6 +1379,7 @@ function recoverRadioAdvanced(){
  radioDiag("radioDiagReconnects",radioAdvancedRetryAttempts);
  setRadioAdvancedStatus("🔄 Reconnecting in "+Math.round(delay/1000)+"s...");
  radioAdvancedRetryTimer=setTimeout(()=>{
+  radioAdvancedRetryTimer=null;
   if(!currentStation)return;
   try{
    radioPlayer.load();
@@ -1300,6 +1390,9 @@ function recoverRadioAdvanced(){
  },delay);
 }
 function setRadioAdvancedMode(mode){
+ clearTimeout(radioAdvancedRetryTimer);
+ radioAdvancedRetryTimer=null;
+ radioAdvancedRetryAttempts=0;
  radioAdvancedMode=mode;
  if(currentStation){
   setRadioAdvancedStatus("🔄 Applying playback mode...");
@@ -1321,6 +1414,8 @@ function resetRadioAdvancedRecovery(){
 }
 function recoverRadioOnNetworkChange(){
  if(!currentStation)return;
+ clearTimeout(radioAdvancedRetryTimer);
+ radioAdvancedRetryTimer=null;
  setRadioAdvancedStatus("📶 Network changed — recovering...");
  radioAdvancedRetryAttempts=0;
  try{
@@ -1333,14 +1428,23 @@ function recoverRadioOnNetworkChange(){
 
 /* Advanced monitoring hooks; existing Radio listeners remain. */
 radioPlayer.addEventListener("playing",()=>{
+ clearTimeout(radioAdvancedRetryTimer);
+ radioAdvancedRetryTimer=null;
  radioAdvancedRetryAttempts=0;
+ if(radioPerfStartedAt&&!radioPerfFirstPlayingAt)radioPerfFirstPlayingAt=Date.now();
+ if(radioPerfBufferingStartedAt){radioPerfBufferingMs+=Date.now()-radioPerfBufferingStartedAt;radioPerfBufferingStartedAt=0}
+ updateRadioPerformance();
  radioAdvancedLastTime=radioPlayer.currentTime||0;
  radioAdvancedLastTimeAt=Date.now();
  setRadioAdvancedStatus("🟢 Connected");
  startRadioAdvancedMonitoring();
 });
 radioPlayer.addEventListener("waiting",()=>{
- if(currentStation)setRadioAdvancedStatus("⏳ Buffering...");
+ if(currentStation){
+  if(radioPerfFirstPlayingAt&&!radioPerfBufferingStartedAt){radioPerfBufferingStartedAt=Date.now();radioPerfBufferCount++}
+  updateRadioPerformance();
+  setRadioAdvancedStatus("⏳ Buffering...");
+ }
 });
 radioPlayer.addEventListener("stalled",()=>{
  if(currentStation){
@@ -1379,6 +1483,7 @@ stopRadio=function(){
  clearRadioAdvancedTimers();
  radioAdvancedRetryAttempts=0;
  _jonOriginalStopRadio();
+ resetRadioPerformance("");
  radioDiag("radioDiagConnection","Stopped");
  radioDiag("radioDiagBuffer","0s");
  radioDiag("radioDiagReconnects","0");
@@ -1478,7 +1583,6 @@ function renderStations(list){
   box.innerHTML='<div class="empty">No radio station found.</div>';
   return;
  }
-
  list.forEach(station=>{
   const index=stations.indexOf(station);
   const fav=favorites.includes(index);
@@ -1541,7 +1645,8 @@ function updateTimer(){
   "⏱️ "+String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
 }
 
-function cancelTimer(){ clearInterval(timerInterval);
+function cancelTimer(){
+ clearInterval(timerInterval);
  timerEnd=0;
  document.getElementById("timerDisplay").innerHTML="Timer OFF";
 }
@@ -1770,6 +1875,19 @@ function updateTVRemoteDisplay(value){
 window.addEventListener("keydown",e=>{
  if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName))return;
  const k=e.key;
+ /* Computer keyboard channel rocker: Page Up = CH+, Page Down = CH-.
+    Arrow keys remain unchanged; Page Up/Page Down act only as channel controls. */
+ if(k==="PageUp" || k==="PageDown"){
+  e.preventDefault();
+  const direction=k==="PageUp"?1:-1;
+  if(!Array.isArray(tvChannels)||!tvChannels.length)return;
+  let currentIndex=(typeof currentTVIndex==="number"&&currentTVIndex>=0)?currentTVIndex:0;
+  const nextIndex=(currentIndex+direction+tvChannels.length)%tvChannels.length;
+  const channel=tvChannels[nextIndex];
+  if(!channel||!jonAllowsChannel(channel))return;
+  playTVStream(channel.url,channel.name,nextIndex);
+  return;
+ }
  if(!/^\d$/.test(k))return;
  jonTVRemoteNumberBuffer+=k;
  updateTVRemoteDisplay(jonTVRemoteNumberBuffer);
@@ -1977,8 +2095,7 @@ function getJonChannelLocks(){
  try{return JSON.parse(localStorage.getItem(JON_CHANNEL_LOCKS_KEY)||"[]")}catch(_){return []}
 }
 function saveJonChannelLocks(list){localStorage.setItem(JON_CHANNEL_LOCKS_KEY,JSON.stringify([...new Set(list)]))}
-function jonChannelLockId(channel){return String((channel&&channel.url)||"").trim()}
-function isJonChannelLocked(channel){const id=jonChannelLockId(channel);return !!id&&getJonChannelLocks().includes(id)}
+function jonChannelLockId(channel){return String((channel&&channel.url)||"").trim()}function isJonChannelLocked(channel){const id=jonChannelLockId(channel);return !!id&&getJonChannelLocks().includes(id)}
 function getJonParentalPin(){return localStorage.getItem(JON_PARENTAL_PIN_KEY)||""}
 function ensureJonParentalPin(){
  let pin=getJonParentalPin();
@@ -2018,6 +2135,12 @@ function toggleJonChannelLock(channel){
 function renderTV(list){
  const box=document.getElementById("tvChannels");
  box.innerHTML="";
+ // Drop queued health checks for channels no longer shown after search/filter changes.
+ // In-flight checks remain bounded by the existing concurrency and timeout limits.
+ if(Array.isArray(tvHealthQueue)){
+  const visibleHealthUrls=new Set((list||[]).slice(0,500).filter(channel=>channel&&channel.url).map(channel=>channel.url));
+  tvHealthQueue=tvHealthQueue.filter(job=>visibleHealthUrls.has(job.url));
+ }
 
  if(!list.length){
   box.innerHTML='<div class="empty">No TV channel found.</div>';
@@ -2040,7 +2163,8 @@ function renderTV(list){
   card.innerHTML=`
    <div class="tv-number" title="Channel number">${channelNumber}</div>
    ${logoHTML}
-   <div class="tv-info">    <div class="tv-name">${escapeHTML(channel.name)}</div>
+   <div class="tv-info">
+    <div class="tv-name">${escapeHTML(channel.name)}</div>
     <div class="tv-country">${escapeHTML(channel.country||channel.group||"TV Channel")}</div>
    </div>
 
@@ -2133,11 +2257,11 @@ function runNextTVHealthChecks(){
 }
 
 async function checkTVStreamHealth(url,name){
- let state="unknown",title="Stream status uncertain";
+ let state="unknown",title="Stream status uncertain",response=null;
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),TV_HEALTH_TIMEOUT_MS);
  try{
-  const response=await fetch(url,{
+  response=await fetch(url,{
    method:"GET",
    mode:"cors",
    cache:"no-store",
@@ -2165,21 +2289,38 @@ async function checkTVStreamHealth(url,name){
   }
  }finally{
   clearTimeout(timer);
+  // Health checks need only response headers. Stop any live-stream body
+  // immediately so checks do not keep downloading media in the background.
+  try{controller.abort()}catch(_){}
+  try{if(response&&response.body)response.body.cancel().catch(()=>{})}catch(_){}
  }
  tvHealthCache.set(url,{state,title,time:Date.now()});
  setTVHealthIcon(url,state,title);
 }
 
 /* TV PLAYER - ADVANCED STABILITY SYSTEM */
-let tvRetryAttempt=0,tvRetryTimer=null,tvStallTimer=null,tvDiagnosticsTimer=null;
-let tvSourceIndex=0,tvSourceList=[],tvLastProgress=0,tvLastProgressAt=0;
+let tvRetryAttempt=0,tvRetryTimer=null,tvStallTimer=null,tvDiagnosticsTimer=null,tvStartupTimer=null,tvPlayAttemptId=0;
+let tvPerfChannelKey="",tvPerfStartedAt=0,tvPerfFirstPlayingAt=0,tvPerfBufferCount=0,tvPerfBufferingStartedAt=0,tvPerfBufferingMs=0;
+function resetTVPerformance(key){
+ tvPerfChannelKey=key;tvPerfStartedAt=key?Date.now():0;tvPerfFirstPlayingAt=0;tvPerfBufferCount=0;tvPerfBufferingStartedAt=0;tvPerfBufferingMs=0;
+ tvDiag("diagStartup","—");tvDiag("diagBufferEvents","0");tvDiag("diagBufferTime","0s");
+}
+function updateTVPerformance(){
+ if(!tvPerfStartedAt)return;
+ const activeBuffer=tvPerfBufferingStartedAt?Date.now()-tvPerfBufferingStartedAt:0;
+ tvDiag("diagBufferEvents",tvPerfBufferCount);
+ tvDiag("diagBufferTime",((tvPerfBufferingMs+activeBuffer)/1000).toFixed(1)+"s");
+ if(tvPerfFirstPlayingAt)tvDiag("diagStartup",((tvPerfFirstPlayingAt-tvPerfStartedAt)/1000).toFixed(1)+"s");
+}
+let tvSourceIndex=0,tvSourceList=[],tvLastProgress=0,tvLastProgressAt=0,tvAbrCapTimer=null;
 let tvManualQuality=-1,tvLatencyMode="balanced",tvLowData=false;
-const TV_RETRY_DELAYS=[3000,15000,30000,3000],TV_MAX_RETRIES=Infinity,TV_STALL_LIMIT_MS=12000;
+const TV_RETRY_DELAYS=[3000,15000,30000,3000],TV_MAX_RETRIES=4,TV_STALL_LIMIT_MS=12000;
 
 function tvStatus(text){
  const e=document.getElementById("tvConnectionStatus");if(e)e.innerHTML=text;
  const d=document.getElementById("diagConnection");if(d)d.textContent=text.replace(/<[^>]*>/g,"");
 }
+function tvNeedTapToPlay(){clearTimeout(tvStartupTimer);tvStatus("▶ Tap PLAY")}
 function updateCurrentTVHealthFromPlayer(state,title){
  if(currentTV && currentTV.url){
   tvHealthCache.set(currentTV.url,{state,title,time:Date.now()});
@@ -2206,14 +2347,24 @@ function updateTVDiagnostics(){
  }
  tvDiag("diagBitrate",bitrate);tvDiag("diagLatency",latency);
  tvDiag("diagHealth",Math.round(Math.max(0,Math.min(100,100-tvRetryAttempt*8-(buffer<1?15:0)-(buffer<3?8:0))))+"%");
+ updateTVPerformance();
 }
-function stopTVTimers(){clearTimeout(tvRetryTimer);clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);tvRetryTimer=tvDiagnosticsTimer=tvStallTimer=null}
-function destroyTVEngine(){stopTVTimers();if(hls){try{hls.destroy()}catch(_){}hls=null}}
+function stopTVTimers(){clearTimeout(tvRetryTimer);clearTimeout(tvAbrCapTimer);clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);tvRetryTimer=tvDiagnosticsTimer=tvStallTimer=tvAbrCapTimer=null}
+function destroyTVEngine(){stopTVTimers();if(hls){try{hls.destroy()}catch(_){}hls=null}if(window.jonMpegtsPlayer){try{window.jonMpegtsPlayer.destroy()}catch(_){}window.jonMpegtsPlayer=null}if(window.jonDashPlayer){try{window.jonDashPlayer.reset()}catch(_){}window.jonDashPlayer=null}}
 function cleanupPreviousTV(){destroyTVEngine();try{tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load()}catch(_){}}
 function buildTVSources(channel){
- const list=[];if(channel&&channel.url)list.push(channel.url);
+ const candidates=[];
+ if(channel&&channel.url)candidates.push(channel.url);
  const backups=channel&&(Array.isArray(channel.backupUrls)?channel.backupUrls:Array.isArray(channel.backupStreams)?channel.backupStreams:channel.backupUrl?[channel.backupUrl]:[]);
- (backups||[]).forEach(u=>{if(u&&!list.includes(u))list.push(u)});return list;
+ (backups||[]).forEach(u=>{if(u)candidates.push(u)});
+ // Normalize before deduplication so equivalent URL forms do not create
+ // redundant failover attempts against the same stream.
+ const seen=new Set(),list=[];
+ candidates.forEach(value=>{
+  const url=jonNormalizeStreamUrl(value);
+  if(url&&!seen.has(url)){seen.add(url);list.push(url)}
+ });
+ return list;
 }
 function startTVDiagnostics(){
  clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();
@@ -2227,59 +2378,146 @@ function startTVDiagnostics(){
 }
 function configureHLS(){
  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
- const slow=tvLowData||(c&&(c.saveData||["slow-2g","2g","3g"].includes(c.effectiveType)));
- return{enableWorker:true,lowLatencyMode:tvLatencyMode==="low",maxBufferLength:tvLatencyMode==="low"?12:(slow?20:30),
-  maxMaxBufferLength:tvLatencyMode==="low"?24:(slow?40:60),backBufferLength:tvLatencyMode==="low"?10:30,
-  manifestLoadingMaxRetry:2,levelLoadingMaxRetry:3,fragLoadingMaxRetry:3,fragLoadingMaxRetryTimeout:8000,
-  manifestLoadingMaxRetryTimeout:8000,levelLoadingMaxRetryTimeout:8000,startFragPrefetch:true,capLevelToPlayerSize:true,
-  abrEwmaFastLive:2,abrEwmaSlowLive:5,maxBufferHole:.5};
+ const verySlow=tvLowData||(c&&(c.saveData||["slow-2g","2g"].includes(c.effectiveType)));
+ const slow=verySlow||(c&&c.effectiveType==="3g");
+ return{
+  enableWorker:true,
+  lowLatencyMode:tvLatencyMode==="low",
+  // Favor faster startup on very weak links, while retaining a little more safety buffer.
+  maxBufferLength:tvLatencyMode==="low"?12:(slow?24:30),
+  maxMaxBufferLength:tvLatencyMode==="low"?24:(slow?48:60),
+  backBufferLength:tvLatencyMode==="low"?10:(slow?12:30),
+  maxBufferSize:slow?20*1000*1000:60*1000*1000,
+  startLevel:-1,
+  testBandwidth:true,
+  abrBandWidthFactor:verySlow?0.6:(slow?0.7:0.95),
+  abrBandWidthUpFactor:verySlow?0.4:(slow?0.5:0.7),
+  abrEwmaDefaultEstimate:verySlow?300000:(slow?500000:1000000),
+  manifestLoadingMaxRetry:2,
+  levelLoadingMaxRetry:3,
+  fragLoadingMaxRetry:3,
+  fragLoadingMaxRetryTimeout:8000,
+  manifestLoadingMaxRetryTimeout:8000,
+  levelLoadingMaxRetryTimeout:8000,
+  startFragPrefetch:true,
+  capLevelToPlayerSize:true,
+  abrEwmaFastLive:2,
+  abrEwmaSlowLive:5,
+  maxBufferHole:.5
+ };
+}
+function jonNormalizeStreamUrl(value){
+ const raw=String(value??"").trim();
+ if(!raw)return "";
+ return raw.replace(/\\/g,"/").replace(/^https?:\/\/(https?:\/\/)/i,"$1");
+}
+function jonStreamKind(source){
+ const s=jonNormalizeStreamUrl(source).toLowerCase();
+ if(/^rtmp:\/\//.test(s))return "rtmp";
+ if(/^rtsp:\/\//.test(s))return "rtsp";
+ if(/^srt:\/\//.test(s))return "srt";
+ if(/\.m3u8(?:$|[?#])/i.test(s))return "hls";
+ if(/\.mpd(?:$|[?#])/i.test(s))return "dash";
+ if(/\.flv(?:$|[?#])/i.test(s))return "flv";
+ if(/\.ts(?:$|[?#])/i.test(s))return "ts";
+ if(/\bwebrtc\b/i.test(s)||/^wss?:\/\//i.test(s))return "webrtc";
+ return "media";
+}
+function jonGatewayForChannel(channel,kind){
+ if(!channel)return "";
+ const candidates=[channel.gatewayUrl,channel.gatewayURL,channel.proxyUrl,channel.proxyURL,channel.hlsGateway,channel.hlsUrl];
+ for(const v of candidates){const u=jonNormalizeStreamUrl(v);if(u)return u}
+ const source=jonNormalizeStreamUrl(channel.url||channel.streamUrl||channel.source);
+ if(kind==="hls"&&source){
+   try{
+     const u=new URL(source);
+     if(u.protocol==="http:"&&u.hostname&&!["localhost","127.0.0.1"].includes(u.hostname)){
+       return "https://jon-stream.vercel.app/api/hls?url="+encodeURIComponent(source);
+     }
+   }catch(_){}
+ }
+ return "";
 }
 function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
+ clearTimeout(tvStartupTimer);
+ // A new playback attempt must not inherit a delayed retry from the previous channel/source.
+ clearTimeout(tvRetryTimer);
+ tvRetryTimer=null;
+ const startupAttemptId=++tvPlayAttemptId;
  const channel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
- currentTV={...channel,url};currentTVIndex=index;tvSourceList=buildTVSources(currentTV);
+ const perfKey=String(channel.name||name||"TV")+"|"+String(channel.url||url||"");
+ if(perfKey!==tvPerfChannelKey||(resetRetry&&sourceIndex===0))resetTVPerformance(perfKey);
+ currentTV={...channel,url:jonNormalizeStreamUrl(url)};currentTVIndex=index;tvSourceList=buildTVSources(currentTV).map(jonNormalizeStreamUrl).filter(Boolean);
  tvSourceIndex=Math.max(0,Math.min(sourceIndex,tvSourceList.length-1));
  document.getElementById("tvPlayerBox").style.display="block";
  document.getElementById("tvPlayerBox").classList.add("tv-display-persistent");
  document.getElementById("tvPlayerTitle").innerHTML="📺 "+escapeHTML(name);tvStatus("🔄 Connecting...");
  tvDiag("diagSource",tvSourceIndex===0?"Primary":"Backup "+tvSourceIndex);if(resetRetry)tvRetryAttempt=0;clearTimeout(tvReconnectTimer);cleanupPreviousTV();
- const source=tvSourceList[tvSourceIndex]||url;if(!source){tvStatus("⚠️ No stream source");return}
- const isM3U8=/\.m3u8($|\?)/i.test(source);
+ let source=tvSourceList[tvSourceIndex]||currentTV.url;
+ if(!source){tvStatus("⚠️ No stream source");return}
+ let kind=jonStreamKind(source);
+ const gateway=jonGatewayForChannel({...currentTV,url:source},kind);
+ if(gateway&&gateway!==source){
+   const originalKind=kind;
+   source=gateway;
+   kind=originalKind==="hls"?"hls":jonStreamKind(source);
+   tvStatus("🔄 Using JON Stream Gateway...");
+ }
+ if(["rtmp","rtsp","srt"].includes(kind)){
+   if(gateway&&gateway!==source){/* gateway already applied */}
+   else{tvStatus("⚠️ "+kind.toUpperCase()+" needs an HLS/HTTP gateway on Android/WebView");tvDiag("diagSource",kind.toUpperCase()+" — gateway required");return}
+ }
+ tvStartupTimer=setTimeout(()=>{
+  if(!currentTV||startupAttemptId!==tvPlayAttemptId)return;
+  if(tvPlayer.paused&&tvPlayer.readyState>=2){tvNeedTapToPlay();return}
+  tvStatus("⏳ Startup timeout — trying recovery...");
+  recoverTVStream();
+ },18000);
+ const isM3U8=kind==="hls";
  if(isM3U8&&window.Hls&&Hls.isSupported()){
   hls=new Hls(configureHLS());hls.attachMedia(tvPlayer);
   hls.on(Hls.Events.MEDIA_ATTACHED,()=>{try{hls.loadSource(source)}catch(_){recoverTVStream()}});
-  hls.on(Hls.Events.MANIFEST_PARSED,()=>{updateQuality();populateTVQualitySelect();applyTVQuality();try{tvPlayer.play().then(setTVConnected).catch(()=>tvStatus("▶ Tap PLAY"))}catch(_){tvStatus("▶ Tap PLAY")}});
+  hls.on(Hls.Events.MANIFEST_PARSED,()=>{updateQuality();populateTVQualitySelect();applyTVQuality();try{tvPlayer.play().then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){tvStatus("▶ Tap PLAY")}});
   hls.on(Hls.Events.LEVEL_SWITCHED,()=>{updateQuality();populateTVQualitySelect();updateTVDiagnostics()});
   hls.on(Hls.Events.FRAG_BUFFERED,()=>{tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();setTVConnected()});
-  hls.on(Hls.Events.ERROR,(event,data)=>{
-   if(!data||!data.fatal)return;
-   tvStatus("🔄 Recovering stream...");
-   if(data.type===Hls.ErrorTypes.MEDIA_ERROR){try{hls.recoverMediaError();return}catch(_){}}
-   recoverTVStream();
-  });
+  hls.on(Hls.Events.ERROR,(event,data)=>{if(!data||!data.fatal)return;tvStatus("🔄 Recovering stream...");if(data.type===Hls.ErrorTypes.MEDIA_ERROR){try{hls.recoverMediaError();return}catch(_){} }recoverTVStream()});
  }else if(isM3U8&&tvPlayer.canPlayType("application/vnd.apple.mpegurl")){
-  tvPlayer.src=source;tvPlayer.addEventListener("loadedmetadata",()=>{try{tvPlayer.play().then(setTVConnected).catch(()=>tvStatus("▶ Tap PLAY"))}catch(_){}},{once:true});
+  tvPlayer.src=source;tvPlayer.addEventListener("loadedmetadata",()=>{try{tvPlayer.play().then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){}},{once:true});
+ }else if((kind==="flv"||kind==="ts")&&window.mpegts&&mpegts.isSupported()){
+  try{window.jonMpegtsPlayer=mpegts.createPlayer({type:kind==="flv"?"flv":"mpegts",url:source,isLive:true},{enableWorker:true,enableStashBuffer:true,stashInitialSize:384});window.jonMpegtsPlayer.attachMediaElement(tvPlayer);window.jonMpegtsPlayer.on(mpegts.Events.ERROR,()=>recoverTVStream());window.jonMpegtsPlayer.on(mpegts.Events.STATISTICS_INFO,()=>{tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();setTVConnected()});window.jonMpegtsPlayer.load();window.jonMpegtsPlayer.play().catch(()=>tvNeedTapToPlay());}
+  catch(_){tvStatus("⚠️ MPEG-TS/FLV player failed");recoverTVStream()}
+ }else if(kind==="dash"&&window.dashjs){
+  try{window.jonDashPlayer=dashjs.MediaPlayer().create();window.jonDashPlayer.initialize(tvPlayer,source,true);window.jonDashPlayer.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED,()=>{setTVConnected();updateTVDiagnostics()});window.jonDashPlayer.on(dashjs.MediaPlayer.events.ERROR,()=>recoverTVStream());}
+  catch(_){tvStatus("⚠️ DASH player failed");recoverTVStream()}
+ }else if(kind==="webrtc"){
+  tvStatus("⚠️ WebRTC requires a compatible WebRTC player/signaling source");tvDiag("diagSource","WebRTC — player/signaling required");
  }else{
-  tvPlayer.src=source;try{tvPlayer.play().then(setTVConnected).catch(()=>tvStatus("▶ Tap PLAY"))}catch(_){tvStatus("▶ Tap PLAY")}
+  tvPlayer.src=source;try{tvPlayer.play().then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){tvStatus("▶ Tap PLAY")}
  }
  startTVDiagnostics();
 }
 function recoverTVStream(){
- if(!currentTV)return;clearTimeout(tvRetryTimer);
+ // Prevent overlapping retries when stalled/error/startup events fire together.
+ if(!currentTV||tvRetryTimer)return;
  if(tvRetryAttempt>=TV_MAX_RETRIES){
   if(tvSourceIndex+1<tvSourceList.length){tvSourceIndex++;tvRetryAttempt=0;tvStatus("🔀 Switching to backup source...");playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex);return}
-  tvStatus("⚠️ Stream unavailable — retry protection active");return;
+  const nextSourceIndex=tvSourceList.length>1?0:tvSourceIndex;
+  tvRetryAttempt=0;
+  tvStatus("⚠️ Stream unavailable — retrying in 30s...");
+  tvRetryTimer=setTimeout(()=>{tvRetryTimer=null;if(currentTV)playTVStream(currentTV.url,currentTV.name,currentTVIndex,nextSourceIndex,false)},30000);
+  return;
  }
  const delay=TV_RETRY_DELAYS[Math.min(tvRetryAttempt,TV_RETRY_DELAYS.length-1)];tvRetryAttempt++;tvDiag("diagReconnects",tvRetryAttempt);
  tvStatus("🔄 Reconnecting in "+Math.round(delay/1000)+"s...");
- tvRetryTimer=setTimeout(()=>{if(currentTV)playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex,false)},delay);
+ tvRetryTimer=setTimeout(()=>{tvRetryTimer=null;if(currentTV)playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex,false)},delay);
 }
 function reconnectTV(){recoverTVStream()}
-function setTVConnected(){tvRetryAttempt=0;tvStatus("🟢 Connected");updateTVDiagnostics()}
+function setTVConnected(){clearTimeout(tvStartupTimer);clearTimeout(tvRetryTimer);tvRetryTimer=null;tvRetryAttempt=0;tvStatus("🟢 Connected");updateTVDiagnostics()}
 function nextTV(){if(!filteredTV.length)return;let n=currentTVIndex<0?0:currentTVIndex+1;if(n>=filteredTV.length)n=0;const c=filteredTV[n];playTVStream(c.url,c.name,n)}
 function previousTV(){if(!filteredTV.length)return;let n=currentTVIndex<=0?filteredTV.length-1:currentTVIndex-1;const c=filteredTV[n];playTVStream(c.url,c.name,n)}
 function toggleTVMute(){tvPlayer.muted=!tvPlayer.muted}
-function stopTV(){clearTimeout(tvReconnectTimer);currentTV=null;tvSourceList=[];destroyTVEngine();tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load();document.getElementById("tvPlayerTitle").innerHTML="📺 TV stopped";tvStatus("⚪ Stopped");tvDiag("diagSource","None");tvDiag("diagBuffer","0s")}
-function fullscreenTV(){const box=document.getElementById("tvPlayerBox");if(box.requestFullscreen)box.requestFullscreen().catch(()=>{});else if(tvPlayer.requestFullscreen)tvPlayer.requestFullscreen();else if(tvPlayer.webkitRequestFullscreen)tvPlayer.webkitRequestFullscreen()}
+function stopTV(){clearTimeout(tvReconnectTimer);clearTimeout(tvStartupTimer);tvPlayAttemptId++;currentTV=null;tvSourceList=[];destroyTVEngine();tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load();resetTVPerformance("");document.getElementById("tvPlayerTitle").innerHTML="📺 TV stopped";tvStatus("⚪ Stopped");tvDiag("diagSource","None");tvDiag("diagBuffer","0s")}
+async function fullscreenTV(){const v=document.getElementById("tvPlayer");const fs=document.fullscreenElement||document.webkitFullscreenElement;if(!v)return;if(fs){try{if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)await document.webkitExitFullscreen()}catch(_){}}else{try{if(v.requestFullscreen)await v.requestFullscreen();else if(v.webkitRequestFullscreen)await v.webkitRequestFullscreen()}catch(_){}}}
 
 /* TV QUALITY */
 function updateQuality(){
@@ -2302,7 +2540,13 @@ function updateQuality(){
 
 /* TV CONNECTED */
 function setTVConnected(){
- document.getElementById("tvConnectionStatus").innerHTML="🟢 Connected";
+ clearTimeout(tvStartupTimer);
+ // Playback recovered: cancel any retry queued by an earlier stall/error event.
+ clearTimeout(tvRetryTimer);
+ tvRetryTimer=null;
+ tvRetryAttempt=0;
+ tvStatus("🟢 Connected");
+ updateTVDiagnostics();
 }
 
 /* TV NEXT */
@@ -2348,18 +2592,22 @@ function toggleTVMute(){
 /* TV STOP */
 function stopTV(){
  clearTimeout(tvReconnectTimer);
-
- if(hls){
-  hls.destroy();
-  hls=null;
- }
-
- tvPlayer.pause();
- tvPlayer.removeAttribute("src");
- tvPlayer.load();
-
+ clearTimeout(tvStartupTimer);
+ clearTimeout(tvRetryTimer);
+ tvPlayAttemptId++;
+ currentTV=null;
+ tvSourceList=[];
+ destroyTVEngine();
+ try{
+  tvPlayer.pause();
+  tvPlayer.removeAttribute("src");
+  tvPlayer.load();
+ }catch(_){}
  document.getElementById("tvPlayerTitle").innerHTML="📺 TV stopped";
- document.getElementById("tvConnectionStatus").innerHTML="⚪ Stopped";
+ resetTVPerformance("");
+ tvStatus("⚪ Stopped");
+ tvDiag("diagSource","None");
+ tvDiag("diagBuffer","0s");
 }
 
 /* TV AUTO RECONNECT */
@@ -2374,11 +2622,19 @@ function reconnectTV(){
 }
 
 /* TV FULLSCREEN */
-function fullscreenTV(){
- if(tvPlayer.requestFullscreen){
-  tvPlayer.requestFullscreen();
- }else if(tvPlayer.webkitRequestFullscreen){
-  tvPlayer.webkitRequestFullscreen();
+async function fullscreenTV(){
+ const v=document.getElementById("tvPlayer");
+ const fs=document.fullscreenElement||document.webkitFullscreenElement;
+ if(fs){
+  try{
+   if(document.exitFullscreen)await document.exitFullscreen();
+   else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
+  }catch(_){}
+ }else{
+  try{
+   if(v.requestFullscreen)await v.requestFullscreen();
+   else if(v.webkitRequestFullscreen)await v.webkitRequestFullscreen();
+  }catch(_){}
  }
 }
 
@@ -2391,14 +2647,25 @@ function setTVSpeed(value){tvPlayer.playbackRate=Number(value)}
 async function pictureInPictureTV(){try{if(document.pictureInPictureElement)await document.exitPictureInPicture();else if(document.pictureInPictureEnabled&&tvPlayer.readyState>0)await tvPlayer.requestPictureInPicture()}catch(e){}}
 function setTVLatencyMode(mode){tvLatencyMode=mode;tvLowData=mode==="data";if(currentTV){const playing=!tvPlayer.paused,idx=currentTVIndex,u=currentTV.url,n=currentTV.name;tvRetryAttempt=0;playTVStream(u,n,idx,tvSourceIndex);if(!playing)tvPlayer.pause()}}
 function populateTVQualitySelect(){const s=document.getElementById("tvQualitySelect");if(!s)return;const old=tvManualQuality;s.innerHTML='<option value="-1">Auto</option>';if(hls&&hls.levels)hls.levels.forEach((l,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=(l.height?l.height+"p":"Level "+(i+1))+(l.bitrate?" • "+(l.bitrate/1000000).toFixed(1)+"Mbps":"");s.appendChild(o)});s.value=String(old)}
-function setTVManualQuality(value){tvManualQuality=Number(value);applyTVQuality()}
-function applyTVQuality(){if(!hls)return;if(tvManualQuality>=0&&tvManualQuality<hls.levels.length)hls.currentLevel=tvManualQuality;else hls.currentLevel=-1}
+function setTVManualQuality(value){tvManualQuality=Number(value);if(hls&&tvManualQuality<0)hls.autoLevelCapping=-1;clearTimeout(tvAbrCapTimer);tvAbrCapTimer=null;applyTVQuality()}
+function applyTVQuality(){if(!hls)return;if(tvManualQuality>=0&&tvManualQuality<hls.levels.length)hls.currentLevel=tvManualQuality;else{hls.autoLevelCapping=-1;hls.currentLevel=-1}}
+function lowerTVAutoQualityOnBuffer(){
+ if(!hls||!hls.levels||hls.levels.length<2||(tvManualQuality>=0&&tvManualQuality<hls.levels.length))return;
+ clearTimeout(tvAbrCapTimer);tvAbrCapTimer=null;
+ const cap=typeof hls.autoLevelCapping==="number"&&hls.autoLevelCapping>=0?hls.autoLevelCapping:hls.levels.length-1;
+ hls.autoLevelCapping=Math.max(0,cap-1);
+}
+function scheduleTVAutoQualityRestore(){
+ if(!hls||(tvManualQuality>=0&&tvManualQuality<hls.levels.length)||typeof hls.autoLevelCapping!=="number"||hls.autoLevelCapping<0)return;
+ clearTimeout(tvAbrCapTimer);
+ tvAbrCapTimer=setTimeout(()=>{tvAbrCapTimer=null;if(hls&&currentTV&&!(tvManualQuality>=0&&tvManualQuality<hls.levels.length))hls.autoLevelCapping=-1},30000);
+}
 tvPlayer.addEventListener("play",()=>{const b=document.getElementById("tvPlayPauseBtn");if(b)b.textContent="⏸ PAUSE"});
 tvPlayer.addEventListener("pause",()=>{const b=document.getElementById("tvPlayPauseBtn");if(b)b.textContent="▶ PLAY"});
 /* TV EVENTS - recovery, never delete a channel */
-tvPlayer.addEventListener("playing",()=>{tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();setTVConnected()});
+tvPlayer.addEventListener("playing",()=>{clearTimeout(tvStartupTimer);if(tvPerfStartedAt&&!tvPerfFirstPlayingAt)tvPerfFirstPlayingAt=Date.now();if(tvPerfBufferingStartedAt){tvPerfBufferingMs+=Date.now()-tvPerfBufferingStartedAt;tvPerfBufferingStartedAt=0}updateTVPerformance();scheduleTVAutoQualityRestore();tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();setTVConnected()});
 tvPlayer.addEventListener("progress",()=>{tvLastProgressAt=Date.now()});
-tvPlayer.addEventListener("waiting",()=>{if(currentTV)tvStatus("⏳ Buffering...")});
+tvPlayer.addEventListener("waiting",()=>{if(currentTV){if(tvPerfFirstPlayingAt&&!tvPerfBufferingStartedAt){tvPerfBufferingStartedAt=Date.now();tvPerfBufferCount++}updateTVPerformance();lowerTVAutoQualityOnBuffer();tvStatus("⏳ Buffering...")}});
 tvPlayer.addEventListener("stalled",()=>{if(currentTV){tvStatus("⏳ Stalled — recovering...");recoverTVStream()}});
 tvPlayer.addEventListener("error",()=>{if(currentTV){tvStatus("⚠️ Stream error — recovering...");recoverTVStream()}});
 const tvNetworkConnection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
@@ -2412,7 +2679,7 @@ function updateRadioMediaSession(){
   if("mediaSession" in navigator && currentStation){
    navigator.mediaSession.metadata=new MediaMetadata({
     title:currentStation.name||"JON FM ETHIOPIA",
-    artist:"JON FM ETHIOPIA",
+    artist:"FUTURE RADIO",
     album:"Live Radio"
    });
   }
@@ -2428,8 +2695,7 @@ function toggleDiagnostics(type){
  const hidden=panel.classList.toggle("diagnostics-hidden");
  button.textContent=hidden?"📊 Show Live Diagnostics":"📊 Hide Live Diagnostics";
  try{localStorage.setItem("jonDiagnostics_"+type,hidden?"hidden":"shown")}catch(_){}
-}
-function restoreDiagnosticsVisibility(type){
+}function restoreDiagnosticsVisibility(type){
  const panel=document.getElementById(type==="tv"?"tvDiagnostics":"radioDiagnostics");
  const button=document.getElementById(type==="tv"?"tvDiagnosticsToggle":"radioDiagnosticsToggle");
  if(!panel||!button)return;
@@ -2539,7 +2805,8 @@ loadTV();
 <!-- =====================================================
      JON STREAM LIVE DATA: ADS + NOTIFICATIONS
      Additive only: existing UI, TV, Radio and player stay intact.
-===================================================== --><style>
+===================================================== -->
+<style>
 #jonLiveUpdates{display:none;margin:14px 0;gap:10px;flex-direction:column}
 #jonLiveUpdates.jon-bottom-ad{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:9990;width:min(680px,calc(100vw - 24px));max-height:70vh;overflow-x:auto;overflow-y:auto;margin:0;padding:0;gap:8px;box-sizing:border-box;filter:drop-shadow(0 10px 28px rgba(0,0,0,.24));scrollbar-width:thin;touch-action:pan-x pan-y}
 body.jon-ad-visible{padding-bottom:245px}
@@ -2552,16 +2819,18 @@ body.jon-ad-visible{padding-bottom:245px}
 .jon-ad-more{background:var(--red);color:#fff}
 .jon-ad-card,.jon-notify-card{background:var(--card);border:1px solid var(--border);border-radius:17px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
 .jon-ad-card h3,.jon-notify-card h3{margin:0 0 7px;font-size:16px}
-.jon-ad-media{width:100%;max-height:360px;object-fit:cover;border-radius:12px;background:#000;display:block}
+.jon-ad-media{width:100%;height:80px;max-height:80px;object-fit:fill;border-radius:12px;background:#000;display:block}
 #jonLiveUpdates .jon-ad-card{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:15px;backdrop-filter:blur(8px);position:relative;flex:0 0 100%;min-width:100%;max-width:100%}
-#jonLiveUpdates .jon-ad-media{max-height:125px;object-fit:cover;border-radius:10px}
+#jonLiveUpdates .jon-ad-media{width:100%;height:80px;max-height:80px;object-fit:fill;border-radius:10px}
 #jonLiveUpdates.jon-horizontal-ad-scroll{display:flex!important;flex-direction:row;flex-wrap:nowrap;gap:10px;overflow-x:auto;overflow-y:hidden;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 /* Compact advertisement layout for landscape rotation and Smart TV */
 @media (orientation:landscape) and (max-height:700px){
 #jonLiveUpdates.jon-bottom-ad{bottom:6px;width:min(400px,calc(100vw - 24px));max-height:38vh;overflow-x:auto;overflow-y:auto}
-#jonLiveUpdates .jon-ad-card{padding:7px 9px;border-radius:11px}
-#jonLiveUpdates .jon-ad-card h3{margin:0 0 4px;font-size:12px}
+#jonLiveUpdates .jon-ad-card{padding:5px 7px;border-radius:9px}
+#jonLiveUpdates .jon-ad-card h3{margin:0 0 3px;font-size:11px}
 #jonLiveUpdates .jon-ad-media{width:100%;height:36px;max-height:36px;object-fit:fill;border-radius:6px}
+#jonLiveUpdates .jon-ad-desc{font-size:10px;margin:4px 0}
+#jonLiveUpdates .jon-ad-btn{padding:5px 8px;font-size:10px}
 #jonLiveUpdates .jon-ad-desc,#jonLiveUpdates .jon-ad-actions{display:block!important}
 #jonLiveUpdates .jon-ad-countdown{top:5px;right:5px;padding:3px 6px;font-size:9px}
 #jonLiveUpdates .jon-ad-close{top:5px;left:5px;width:22px;height:22px;font-size:14px;line-height:22px}
@@ -2573,9 +2842,11 @@ body.jon-ad-visible{padding-bottom:95px}
 .container{max-width:1600px;padding:18px 28px}.logo{width:105px;height:105px}.brand{padding:4px 0 12px}
 .brand h1{font-size:23px;margin:8px 0 3px}.time-panel,.mode-switch{max-width:900px;margin-left:auto;margin-right:auto}
 #jonLiveUpdates.jon-bottom-ad{width:min(430px,42vw);max-height:38vh;bottom:8px}
-#jonLiveUpdates .jon-ad-card{padding:7px 9px;border-radius:11px}
-#jonLiveUpdates .jon-ad-card h3{font-size:12px;margin-bottom:4px}
+#jonLiveUpdates .jon-ad-card{padding:5px 7px;border-radius:9px}
+#jonLiveUpdates .jon-ad-card h3{font-size:11px;margin-bottom:3px}
 #jonLiveUpdates .jon-ad-media{width:100%;height:36px;max-height:36px;object-fit:fill}
+#jonLiveUpdates .jon-ad-desc{font-size:10px;margin:4px 0}
+#jonLiveUpdates .jon-ad-btn{padding:5px 8px;font-size:10px}
 #jonLiveUpdates .jon-ad-desc,#jonLiveUpdates .jon-ad-actions{display:block!important}
 body.jon-ad-visible{padding-bottom:85px}
 }
@@ -2589,7 +2860,7 @@ body.jon-ad-visible{padding-bottom:85px}
 #jonLiveUpdates .jon-ad-desc.is-expanded{display:block !important;-webkit-line-clamp:unset;overflow:visible}
 .jon-ad-desc,.jon-notify-msg{font-size:13px;color:var(--muted);margin:8px 0}
 .jon-ad-btn{display:inline-block;text-decoration:none;background:var(--red);color:#fff;border-radius:10px;padding:9px 13px;font-weight:800;font-size:13px}
-@media(max-width:600px){#jonLiveUpdates.jon-bottom-ad{bottom:8px;width:calc(100vw - 16px);max-height:70vh;overflow-x:auto;overflow-y:auto}#jonLiveUpdates .jon-ad-media{max-height:95px}body.jon-ad-visible{padding-bottom:225px}}
+@media(max-width:600px){#jonLiveUpdates.jon-bottom-ad{bottom:8px;width:calc(100vw - 12px);max-height:55vh;overflow-x:auto;overflow-y:auto}#jonLiveUpdates .jon-ad-media{width:100%;height:72px;max-height:72px;object-fit:fill}body.jon-ad-visible{padding-bottom:150px}}
 #jonNotificationBell{position:fixed;right:14px;bottom:235px;z-index:9998;border:0;border-radius:999px;width:52px;height:52px;background:var(--red);color:#fff;font-size:22px;box-shadow:0 8px 24px rgba(0,0,0,.25);cursor:pointer}
 #jonNotificationPanel{display:none;position:fixed;right:14px;bottom:297px;z-index:9999;width:min(360px,calc(100vw - 28px));max-height:65vh;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:17px;padding:12px;box-shadow:0 15px 40px rgba(0,0,0,.3)}
 </style>
@@ -2643,6 +2914,18 @@ body.jon-ad-visible{padding-bottom:85px}
     if(e.stopImmediatePropagation) e.stopImmediatePropagation();
     hideAdFor15Seconds();
   }, true);
+
+  async function resolveMediaValue(x,keys){
+    if(!x)return ""; const vals=[];
+    for(const k of keys){const v=x?.[k];if(typeof v==="string"&&v.trim())vals.push(v.trim());}
+    if(x?.media&&typeof x.media==="object")for(const k of ["url","downloadURL","downloadUrl","image","imageUrl","video","videoUrl","src"]){const v=x.media?.[k];if(typeof v==="string"&&v.trim())vals.push(v.trim());}
+    for(const v of vals){if(/^https?:\/\//i.test(v)||/^data:/i.test(v)||/^blob:/i.test(v))return v;if(typeof window.__JON_RESOLVE_MEDIA_URL==="function"){const u=await window.__JON_RESOLVE_MEDIA_URL(v);if(u)return u;}} return "";
+  }
+  async function resolveAndRenderAds(ads){
+    if(!Array.isArray(ads)){renderAds(ads);return;}
+    const resolved=await Promise.all(ads.map(async x=>{if(!x)return x;const y={...x};y.video=await resolveMediaValue(x,["video","videoUrl","mediaUrl","videoURL","videoSrc","videoPath","mediaPath"]);y.image=await resolveMediaValue(x,["image","imageUrl","imageURL","banner","bannerUrl","bannerURL","photo","photoUrl","photoURL","imagePath","bannerPath","mediaUrl"]);return y;}));
+    renderAds(resolved);
+  }
 
   function renderAds(ads){
     /* Do not cancel the 15-second X-close timer while the ad is hidden. */
@@ -2783,13 +3066,34 @@ body.jon-ad-visible{padding-bottom:85px}
 
   function syncFirebaseData(remote){
     if(!remote) return;
-    renderAds(remote.ads);
+    resolveAndRenderAds(remote.ads);
     renderNotifications(remote.notifications);
+
+    /* Accept only well-formed HTTP(S) stream URLs and normalize optional
+       text fields before remote records reach search/filter/player code. */
+    const isHttpUrl=value=>{
+      if(typeof value!=='string'||!value.trim()) return false;
+      try{
+        const parsed=new URL(value.trim());
+        return (parsed.protocol==='http:'||parsed.protocol==='https:')&&!!parsed.hostname;
+      }catch(_){return false}
+    };
+    const cleanStreamUrl=value=>isHttpUrl(value)?value.trim():'';
 
     /* Safe additive TV/Radio sync: Firestore items are merged into the original
        lists. Nothing already in this file is removed or replaced. */
     if(Array.isArray(remote.tv)){
-      const incoming=remote.tv.filter(x=>x&&x.enabled!==false&&x.name&&x.url).map(x=>({name:x.name,url:x.url,logo:x.logo||'',country:x.country||'',group:x.category||x.group||'TV Channel',id:x.id,backupUrl:x.backupUrl||'',backupUrls:Array.isArray(x.backupUrls)?x.backupUrls:[],backupStreams:Array.isArray(x.backupStreams)?x.backupStreams:[]}));
+      const incoming=remote.tv.filter(x=>x&&x.enabled!==false&&typeof x.name==='string'&&x.name.trim()&&isHttpUrl(x.url)).map(x=>({
+        name:x.name.trim(),
+        url:x.url.trim(),
+        logo:typeof x.logo==='string'?x.logo:'',
+        country:typeof x.country==='string'?x.country:'',
+        group:typeof x.category==='string'&&x.category.trim()?x.category.trim():(typeof x.group==='string'&&x.group.trim()?x.group.trim():'TV Channel'),
+        id:x.id==null?'':String(x.id),
+        backupUrl:cleanStreamUrl(x.backupUrl),
+        backupUrls:Array.isArray(x.backupUrls)?x.backupUrls.filter(isHttpUrl).map(u=>u.trim()):[],
+        backupStreams:Array.isArray(x.backupStreams)?x.backupStreams.filter(isHttpUrl).map(u=>u.trim()):[]
+      }));
       const merged=[...tvChannels,...incoming];
       const seen=new Set();
       tvChannels=merged.filter(x=>{const k=String(x.url||'').trim(); if(!k||seen.has(k)) return false; seen.add(k); return true;});
@@ -2801,7 +3105,11 @@ body.jon-ad-visible{padding-bottom:85px}
       const st=document.getElementById('tvStatus'); if(st) st.innerHTML='📺 '+tvChannels.length+' TV channels available';
     }
     if(Array.isArray(remote.radio)){
-      const incoming=remote.radio.filter(x=>x&&x.enabled!==false&&x.name&&x.url).map(x=>({name:x.name,url:x.url,logo:x.logo||''}));
+      const incoming=remote.radio.filter(x=>x&&x.enabled!==false&&typeof x.name==='string'&&x.name.trim()&&isHttpUrl(x.url)).map(x=>({
+        name:x.name.trim(),
+        url:x.url.trim(),
+        logo:typeof x.logo==='string'?x.logo:''
+      }));
       const merged=[...stations,...incoming];
       const seen=new Set();
       stations=merged.filter(x=>{const k=String(x.url||'').trim(); if(!k||seen.has(k)) return false; seen.add(k); return true;});
@@ -2915,8 +3223,7 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
 
 /* TV STREAM HEALTH INDICATOR - ADDITIVE ONLY */
 .tv-stream-health{
-  width:18px;
-  height:18px;
+  width:18px;  height:18px;
   min-width:18px;
   border-radius:50%;
   display:inline-flex !important;
@@ -2979,10 +3286,9 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
   tv:document.querySelector('[data-jon-hero-img="tv"]')
  };
  function ok(u){try{let x=new URL(u);return x.protocol==="http:"||x.protocol==="https:"}catch(e){return false}}
- function setList(remote){
-  const a=Array.isArray(remote?.backgrounds)?remote.backgrounds
-    .filter(x=>x&&x.enabled!==false&&ok(x.url))
-    .map(x=>({url:String(x.url),seconds:Math.max(1,Number(x.seconds)||5)})):[];
+ async function setList(remote){
+  const raw=Array.isArray(remote?.backgrounds)?remote.backgrounds.filter(x=>x&&x.enabled!==false):[]; const a=[];
+  for(const x of raw){const candidates=[x.url,x.image,x.imageUrl,x.imageURL,x.background,x.backgroundUrl,x.backgroundURL,x.photo,x.photoUrl,x.photoURL,x.src,x.downloadURL,x.downloadUrl,x.path,x.storagePath];let u="";for(const v of candidates){if(typeof v!=="string"||!v.trim())continue;if(ok(v.trim())||/^data:/i.test(v.trim())){u=v.trim();break;}if(typeof window.__JON_RESOLVE_MEDIA_URL==="function"){u=await window.__JON_RESOLVE_MEDIA_URL(v.trim());if(u)break;}}if(u)a.push({url:u,seconds:Math.max(1,Number(x.seconds||x.duration||x.durationSeconds)||5)});}
   if(JSON.stringify(a)!==JSON.stringify(list)){list=a;idx=0;clearTimeout(timer);show()}
  }
  function show(){
@@ -3018,27 +3324,17 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
  document.getElementById("jonTVFavoriteClose")?.addEventListener("click",()=>panel.hidden=true);
  items.onclick=e=>{
   const p=e.target.closest("[data-p]"),r=e.target.closest("[data-r]");
-  if(p&&typeof playTVStream==="function"){let i=+p.dataset.p;playTVStream(tvChannels[i].url,tvChannels[i].name,i);panel.hidden=true}
+  if(p&&typeof playTVStream==="function"){let i=+p.dataset.p;const channel=tvChannels[i];if(!channel||!jonAllowsChannel(channel))return;const visibleIndex=Array.isArray(filteredTV)?filteredTV.findIndex(x=>x?.url===channel.url):-1;playTVStream(channel.url,channel.name,visibleIndex);panel.hidden=true}
   if(r){save(get().filter(x=>x!==decodeURIComponent(r.dataset.r)));render();if(typeof renderTV==="function"&&typeof filteredTV!=="undefined")renderTV(filteredTV)}
  };
  window.addEventListener("jon-firebase-data",render); setTimeout(render,300);
-})();
-</script><script id="jonTVFavoriteRestoreJS2">
-(function(){
-const b=document.getElementById("jonTVFavoriteIcon"),p=document.getElementById("jonTVFavoritePanel"),it=document.getElementById("jonTVFavoriteItems"),c=document.getElementById("jonTVFavoriteCount");
-if(!b||!p||!it)return;
-const get=()=>{try{return [...new Set(JSON.parse(localStorage.getItem("jonTVFavorites")||"[]"))]}catch(e){return[]}};
-const esc=x=>String(x).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
-function render(){let f=get(),a=typeof tvChannels!=="undefined"?tvChannels:[];c.textContent=f.length;it.innerHTML=f.length?f.map(u=>{let i=a.findIndex(x=>x?.url===u),n=i>=0?a[i].name:u;return `<div style="display:flex;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)"><span style="flex:1;font-weight:800">📺 ${esc(n)}</span>${i>=0?`<button data-p="${i}">▶</button>`:""}<button data-r="${encodeURIComponent(u)}">✕</button></div>`}).join(""):'<div style="padding:12px;text-align:center;opacity:.7">No favorite TV channels yet.</div>'}
-b.onclick=()=>{render();p.hidden=!p.hidden};document.getElementById("jonTVFavoriteClose")?.addEventListener("click",()=>p.hidden=true);
-it.onclick=e=>{let x=e.target.closest("[data-p]"),r=e.target.closest("[data-r]");if(x&&typeof playTVStream==="function"){let i=+x.dataset.p;playTVStream(tvChannels[i].url,tvChannels[i].name,i);p.hidden=true}if(r){localStorage.setItem("jonTVFavorites",JSON.stringify(get().filter(u=>u!==decodeURIComponent(r.dataset.r))));render();if(typeof renderTV==="function"&&typeof filteredTV!=="undefined")renderTV(filteredTV)}};
-window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
 })();
 </script>
 <button type="button" id="jonTVDisplayShortcut" aria-label="Go to TV display">📺 DISPLAY</button>
 <div id="jonTVRemoteDisplay" aria-live="polite"><small>TV CHANNEL</small><span id="jonTVRemoteNumber">--</span></div>
 
-<script id="jonTVDisplayShortcutJS">(function(){
+<script id="jonTVDisplayShortcutJS">
+(function(){
  const btn=document.getElementById('jonTVDisplayShortcut');
  const box=document.getElementById('tvPlayerBox');
  const list=document.getElementById('tvChannels');
@@ -3102,6 +3398,59 @@ window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
 })();
 </script>
 
+<script id="jonGatewayFirebaseBridge">
+(function(){
+  "use strict";
+  function attach(remote){
+    try{
+      if(!remote || !Array.isArray(remote.tv)) return;
+      remote.tv.forEach(ch=>{
+        if(!ch) return;
+        ch.gatewayInfo=window.JON_GATEWAY.info(ch);
+        ch.gatewayUrl=ch.gatewayUrl||ch.gatewayURL||ch.proxyUrl||ch.proxyURL||ch.hlsGateway||ch.hlsUrl||"";
+      });
+    }catch(e){ console.warn("JON Gateway bridge:",e); }
+  }
+  window.addEventListener("jon-firebase-data",e=>attach(e.detail));
+})();
+</script>
+
+
+
+<!-- JON TV REMOTE OK LONG-PRESS FULLSCREEN -->
+<script>
+(function(){
+  "use strict";
+  let jonOKTimer=null;
+  let jonOKLongPress=false;
+  window.addEventListener("keydown",function(e){
+    if(e.key!=="Enter" || e.repeat)return;
+    if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName))return;
+    jonOKLongPress=false;
+    clearTimeout(jonOKTimer);
+    jonOKTimer=setTimeout(function(){
+      jonOKLongPress=true;
+      const v=document.getElementById("tvPlayer");
+      const fs=document.fullscreenElement||document.webkitFullscreenElement;
+      if(!v)return;
+      try{
+        if(fs){
+          if(document.exitFullscreen)document.exitFullscreen();
+          else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
+        }else{
+          if(v.requestFullscreen)v.requestFullscreen();
+          else if(v.webkitRequestFullscreen)v.webkitRequestFullscreen();
+        }
+      }catch(_){}
+    },2000);
+  });
+  window.addEventListener("keyup",function(e){
+    if(e.key!=="Enter")return;
+    clearTimeout(jonOKTimer);
+    jonOKTimer=null;
+  });
+})();
+</script>
 
 <!-- JON TV REMOTE OK LONG-PRESS FULLSCREEN -->
 <script>
@@ -3139,6 +3488,7 @@ window.addEventListener("jon-firebase-data",render);setTimeout(render,300);
 })();
 </script>
 
+
 <!-- JON TV REMOTE SPATIAL ARROW NAVIGATION - ADDITIVE ONLY -->
 <style id="jonTvRemoteArrowNavigationCSS">
 button.jon-tv-focused,[role="button"].jon-tv-focused,a.jon-tv-focused{
@@ -3169,5 +3519,12 @@ window.addEventListener("jon-firebase-data",()=>setTimeout(seed,300));
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(seed,250));else setTimeout(seed,250);
 })();
 </script>
+
 </body>
+<script id="jonStreamCompatibilityPatch">
+(function(){
+  "use strict";
+  window.addEventListener("beforeunload",function(){try{if(window.jonMpegtsPlayer)window.jonMpegtsPlayer.destroy();if(window.jonDashPlayer)window.jonDashPlayer.reset()}catch(_){} });
+})();
+</script>
 </html>
