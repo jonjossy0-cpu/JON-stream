@@ -3532,16 +3532,44 @@ button.jon-tv-focused,[role="button"].jon-tv-focused,a.jon-tv-focused{
 <script id="jonTvRemoteArrowNavigationJS">
 (function(){
 "use strict";
-const S='button:not([disabled]):not([hidden]),[role="button"]:not([aria-disabled="true"]):not([hidden]),a[href]:not([hidden])';
-const SKIP=['INPUT','TEXTAREA','SELECT']; let focused=null;
+const S='button:not([disabled]):not([hidden]),select:not([disabled]):not([hidden]),[role="button"]:not([aria-disabled="true"]):not([hidden]),a[href]:not([hidden])';
+const SKIP=['INPUT','TEXTAREA']; let focused=null,okDownAt=0,okTarget=null;
+function fullscreenFrame(){const f=document.getElementById("tvVideoFrame");return f&&(document.fullscreenElement===f||document.webkitFullscreenElement===f)?f:null}
 function vis(el){if(!el||el.closest('[hidden]'))return false;const s=getComputedStyle(el),r=el.getBoundingClientRect();return s.display!=="none"&&s.visibility!=="hidden"&&Number(s.opacity)!==0&&r.width>0&&r.height>0}
-function all(){return [...document.querySelectorAll(S)].filter(vis)}
+function all(){const f=fullscreenFrame(),root=f||document;return [...root.querySelectorAll(S)].filter(vis)}
 function set(el){if(!el||!vis(el))return false;document.querySelectorAll('.jon-tv-focused').forEach(x=>x.classList.remove('jon-tv-focused'));focused=el;el.classList.add('jon-tv-focused');try{el.focus({preventScroll:true})}catch(_){try{el.focus()}catch(__){}}try{el.scrollIntoView({behavior:"smooth",block:"nearest",inline:"nearest"})}catch(_){try{el.scrollIntoView({block:"nearest",inline:"nearest"})}catch(__){}}return true}
-function cur(){if(focused&&vis(focused))return focused;const a=document.activeElement;return a&&all().includes(a)?a:null}
+function cur(){if(focused&&vis(focused)&&all().includes(focused))return focused;const a=document.activeElement;return a&&all().includes(a)?a:null}
 function score(a,b,d){const A=a.getBoundingClientRect(),B=b.getBoundingClientRect(),ax=A.left+A.width/2,ay=A.top+A.height/2,bx=B.left+B.width/2,by=B.top+B.height/2,dx=bx-ax,dy=by-ay;if(d==="right"&&dx<=2||d==="left"&&dx>=-2||d==="down"&&dy<=2||d==="up"&&dy>=-2)return Infinity;const p=(d==="left"||d==="right")?Math.abs(dx):Math.abs(dy),c=(d==="left"||d==="right")?Math.abs(dy):Math.abs(dx);return p+c*2+(c>Math.max(60,((d==="left"||d==="right")?A.height:B.height)*1.5)?Math.min(500,c*4):0)}
 function move(d){const a=all();if(!a.length)return;const from=cur();if(!from){set(a[0]);return}let best=null,bs=Infinity;for(const el of a){if(el===from)continue;const z=score(from,el,d);if(z<bs){bs=z;best=el}}if(best)set(best)}
-function seed(){const a=all(),x=document.activeElement;if(x&&a.includes(x))set(x);else if(!focused||!vis(focused))set(a[0])}
-window.addEventListener("keydown",e=>{if(!["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)||SKIP.includes(document.activeElement?.tagName))return;e.preventDefault();e.stopImmediatePropagation();seed();move(e.key==="ArrowUp"?"up":e.key==="ArrowDown"?"down":e.key==="ArrowLeft"?"left":"right")},true);
+function seed(){const a=all(),x=document.activeElement;if(x&&a.includes(x))set(x);else if(!focused||!vis(focused)||!a.includes(focused))set(a[0])}
+window.addEventListener("keydown",e=>{
+ if(["INPUT","TEXTAREA"].includes(document.activeElement?.tagName))return;
+ if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)){
+  const f=fullscreenFrame();
+  if(f&&typeof window.jonShowTVFullscreenOverlay==="function")window.jonShowTVFullscreenOverlay();
+  if(document.activeElement?.tagName==="SELECT"){e.stopImmediatePropagation();return}
+  e.preventDefault();e.stopImmediatePropagation();
+  const a=all(),active=cur(),inside=!!(f&&active&&f.contains(active));
+  if(f&&!inside){if(a[0])set(a[0]);return}
+  if(!active){seed();return}
+  move(e.key==="ArrowUp"?"up":e.key==="ArrowDown"?"down":e.key==="ArrowLeft"?"left":"right");
+  return;
+ }
+ if(e.key==="Enter"&&!e.repeat){
+  const f=fullscreenFrame(),active=cur();
+  if(f&&active&&f.contains(active)&&active.tagName!=="SELECT"){
+   e.preventDefault();okDownAt=Date.now();okTarget=active;
+  }
+ }
+},true);
+window.addEventListener("keyup",e=>{
+ if(e.key!=="Enter"||!okDownAt)return;
+ const elapsed=Date.now()-okDownAt,target=okTarget;
+ okDownAt=0;okTarget=null;
+ if(elapsed<1800&&target&&fullscreenFrame()?.contains(target)&&vis(target)){
+  e.preventDefault();e.stopImmediatePropagation();target.click();
+ }
+},true);
 document.addEventListener("focusin",e=>{if(e.target.matches?.(S)&&vis(e.target))set(e.target)});
 document.addEventListener("click",e=>{const x=e.target.closest?.(S);if(x&&vis(x))set(x)},true);
 window.addEventListener("scroll",()=>{if(focused&&!vis(focused)){focused=null;document.querySelectorAll('.jon-tv-focused').forEach(x=>x.classList.remove('jon-tv-focused'))}},{passive:true});
@@ -3630,6 +3658,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
    overlayTimer=setTimeout(()=>{if(!video.paused)frame.classList.add("tv-controls-hidden")},4500);
   }
  }
+ window.jonShowTVFullscreenOverlay=showOverlay;
  if(frame){
   ["pointermove","pointerdown","touchstart","mousemove"].forEach(ev=>frame.addEventListener(ev,showOverlay,{passive:true}));
   frame.addEventListener("keydown",showOverlay);
