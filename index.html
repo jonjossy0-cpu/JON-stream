@@ -837,8 +837,19 @@ img.jon-ad-media{
 @keyframes jonLivePulse{0%,100%{opacity:1}50%{opacity:.4}}
 @media(max-width:520px){#tvPlayerBox .tv-video-frame{height:clamp(180px,56.25vw,58vh);max-height:58vh;min-height:180px}#tvPlayerBox .tv-playback-clock{min-width:88px;font-size:12px}}
 @media(orientation:landscape) and (max-height:520px){#tvPlayerBox .tv-video-frame{height:58vh;max-height:58vh;min-height:140px}}
-#tvVideoFrame:fullscreen{width:100vw;height:100vh;max-height:100vh;border-radius:0}
+#tvVideoFrame:fullscreen{width:100vw;height:100vh;max-height:100vh;min-height:100vh;border-radius:0;overflow:hidden;background:#000}
 #tvVideoFrame:fullscreen #tvPlayer{width:100%;height:100%;max-height:100%;object-fit:contain}
+#tvVideoFrame:fullscreen .tv-fullscreen-overlay{display:flex}
+.tv-fullscreen-overlay{display:none;position:absolute;inset:0;z-index:5;flex-direction:column;justify-content:space-between;padding:clamp(10px,2vw,24px);pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.42),transparent 22%,transparent 60%,rgba(0,0,0,.78))}
+.tv-fullscreen-top,.tv-fullscreen-bottom{display:flex;align-items:center;gap:9px;flex-wrap:wrap;pointer-events:auto}
+.tv-fullscreen-top{justify-content:space-between}
+.tv-fullscreen-bottom{justify-content:center}
+.tv-fullscreen-bottom button,.tv-fullscreen-bottom select{min-height:40px;padding:8px 11px;border-radius:9px;background:rgba(12,20,32,.92);color:#fff;border:1px solid rgba(255,255,255,.35);font-size:13px;font-weight:800}
+.tv-fullscreen-bottom label{display:flex;align-items:center;gap:5px;color:#fff;font-size:12px;font-weight:800;pointer-events:auto}
+#tvVideoFrame:fullscreen.tv-controls-hidden .tv-fullscreen-overlay{opacity:0;transition:opacity .25s;pointer-events:none}
+#tvVideoFrame:fullscreen .tv-fullscreen-overlay{opacity:1;transition:opacity .2s}
+#tvVideoFrame:fullscreen #tvPlayer::-webkit-media-controls{display:none!important}
+@media(max-width:600px){.tv-fullscreen-bottom{gap:5px}.tv-fullscreen-bottom button,.tv-fullscreen-bottom select{min-height:35px;padding:6px 8px;font-size:11px}.tv-fullscreen-bottom label{font-size:10px}}
 </style>
 </head>
 
@@ -1008,12 +1019,22 @@ img.jon-ad-media{
  <div class="tv-player-box" id="tvPlayerBox">
   <div class="tv-player-title" id="tvPlayerTitle">📺 TV</div>
 
-  <div class="tv-playback-meta" aria-live="polite">
-   <span class="tv-live-pill" id="tvLivePill"><i></i> LIVE</span>
-   <span class="tv-playback-clock" id="tvPlaybackClock">00:00:00</span>
-  </div>
   <div class="tv-video-frame" id="tvVideoFrame">
    <video id="tvPlayer" controls playsinline preload="metadata"></video>
+   <div class="tv-fullscreen-overlay" id="tvFullscreenOverlay">
+    <div class="tv-fullscreen-top" aria-live="polite">
+     <span class="tv-live-pill" id="tvLivePill"><i></i> LIVE</span>
+     <span class="tv-playback-clock" id="tvPlaybackClock">00:00:00</span>
+    </div>
+    <div class="tv-fullscreen-bottom">
+     <button type="button" onclick="toggleTVPlay()" id="tvFullscreenPlay">▶ Play</button>
+     <button type="button" onclick="toggleTVMute()" id="tvFullscreenMute">🔊 Sound</button>
+     <label>Quality <select id="tvFullscreenQuality" onchange="setTVManualQuality(this.value)"><option value="-1">Auto</option></select></label>
+     <label>Fit <select id="tvFullscreenFit" onchange="setTVFit(this.value)"><option value="contain">Fit</option><option value="cover">Crop</option><option value="fill">Stretch</option></select></label>
+     <button type="button" onclick="pictureInPictureTV()">PiP</button>
+     <button type="button" onclick="fullscreenTV()" id="tvFullscreenExit">⛶ Exit</button>
+    </div>
+   </div>
   </div>
 
   <div class="quality" id="videoQuality">
@@ -2675,7 +2696,7 @@ function setTVVolume(value){tvPlayer.volume=Number(value);tvPlayer.muted=Number(
 function setTVSpeed(value){tvPlayer.playbackRate=Number(value)}
 async function pictureInPictureTV(){try{if(document.pictureInPictureElement)await document.exitPictureInPicture();else if(document.pictureInPictureEnabled&&tvPlayer.readyState>0)await tvPlayer.requestPictureInPicture()}catch(e){}}
 function setTVLatencyMode(mode){tvLatencyMode=mode;tvLowData=mode==="data";if(currentTV){const playing=!tvPlayer.paused,idx=currentTVIndex,u=currentTV.url,n=currentTV.name;tvRetryAttempt=0;playTVStream(u,n,idx,tvSourceIndex);if(!playing)tvPlayer.pause()}}
-function populateTVQualitySelect(){const s=document.getElementById("tvQualitySelect");if(!s)return;const old=tvManualQuality;s.innerHTML='<option value="-1">Auto</option>';if(hls&&hls.levels)hls.levels.forEach((l,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=(l.height?l.height+"p":"Level "+(i+1))+(l.bitrate?" • "+(l.bitrate/1000000).toFixed(1)+"Mbps":"");s.appendChild(o)});s.value=String(old)}
+function populateTVQualitySelect(){const s=document.getElementById("tvQualitySelect");if(!s)return;const old=tvManualQuality;s.innerHTML='<option value="-1">Auto</option>';if(hls&&hls.levels)hls.levels.forEach((l,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=(l.height?l.height+"p":"Level "+(i+1))+(l.bitrate?" • "+(l.bitrate/1000000).toFixed(1)+"Mbps":"");s.appendChild(o)});s.value=String(old);const fs=document.getElementById("tvFullscreenQuality");if(fs){fs.innerHTML=s.innerHTML;fs.value=String(old)}}
 function setTVManualQuality(value){tvManualQuality=Number(value);if(hls&&tvManualQuality<0)hls.autoLevelCapping=-1;clearTimeout(tvAbrCapTimer);tvAbrCapTimer=null;applyTVQuality()}
 function applyTVQuality(){if(!hls)return;if(tvManualQuality>=0&&tvManualQuality<hls.levels.length)hls.currentLevel=tvManualQuality;else{hls.autoLevelCapping=-1;hls.currentLevel=-1}}
 function lowerTVAutoQualityOnBuffer(){
@@ -3553,21 +3574,61 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   if(timer){clearInterval(timer);timer=null}
   render();setLiveState(false);
  }
+ const frame=document.getElementById("tvVideoFrame");
+ const fsQuality=document.getElementById("tvFullscreenQuality");
+ const fsFit=document.getElementById("tvFullscreenFit");
+ const fsPlay=document.getElementById("tvFullscreenPlay");
+ const fsMute=document.getElementById("tvFullscreenMute");
+ let overlayTimer=null;
+ function syncFullscreenControls(){
+  if(fsPlay)fsPlay.textContent=video.paused?"▶ Play":"⏸ Pause";
+  if(fsMute)fsMute.textContent=(video.muted||video.volume===0)?"🔇 Muted":"🔊 Sound";
+  if(fsFit&&fit)fsFit.value=fit.value||"contain";
+  const mainQuality=document.getElementById("tvQualitySelect");
+  if(fsQuality&&mainQuality){
+   const old=fsQuality.value;
+   fsQuality.innerHTML=mainQuality.innerHTML;
+   fsQuality.value=[...fsQuality.options].some(o=>o.value===old)?old:mainQuality.value;
+  }
+ }
+ function showOverlay(){
+  if(!frame)return;
+  frame.classList.remove("tv-controls-hidden");
+  clearTimeout(overlayTimer);
+  if(document.fullscreenElement===frame||document.webkitFullscreenElement===frame){
+   overlayTimer=setTimeout(()=>{if(!video.paused)frame.classList.add("tv-controls-hidden")},4500);
+  }
+ }
+ if(frame){
+  ["pointermove","pointerdown","touchstart","mousemove"].forEach(ev=>frame.addEventListener(ev,showOverlay,{passive:true}));
+  frame.addEventListener("keydown",showOverlay);
+  document.addEventListener("fullscreenchange",()=>{frame.classList.remove("tv-controls-hidden");syncFullscreenControls();if(document.fullscreenElement===frame)showOverlay();else clearTimeout(overlayTimer)});
+  document.addEventListener("webkitfullscreenchange",()=>{frame.classList.remove("tv-controls-hidden");syncFullscreenControls();if(document.webkitFullscreenElement===frame)showOverlay();else clearTimeout(overlayTimer)});
+ }
+ video.addEventListener("play",syncFullscreenControls);
+ video.addEventListener("pause",syncFullscreenControls);
+ video.addEventListener("volumechange",syncFullscreenControls);
  window.setTVFit=function(value){
   const fitValue=["contain","cover","fill"].includes(value)?value:"contain";
   video.style.objectFit=fitValue;
   if(fit)fit.value=fitValue;
+  if(fsFit)fsFit.value=fitValue;
  };
  window.fullscreenTV=async function(){
-  const target=document.getElementById("tvVideoFrame")||video;
+  const target=frame||video;
   const fs=document.fullscreenElement||document.webkitFullscreenElement;
   try{
    if(fs){if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)document.webkitExitFullscreen()}
    else if(target.requestFullscreen)await target.requestFullscreen();
    else if(target.webkitRequestFullscreen)target.webkitRequestFullscreen();
+   syncFullscreenControls();
   }catch(_){}
  };
- video.addEventListener("playing",()=>{setLiveState(true);start()});
+ window.addEventListener("jon-tv-quality-updated",syncFullscreenControls);
+ const mainQuality=document.getElementById("tvQualitySelect");
+ if(mainQuality)mainQuality.addEventListener("change",syncFullscreenControls);
+ syncFullscreenControls();
+ video.addEventListener("playing",()=>{setLiveState(true);start();syncFullscreenControls()});
  video.addEventListener("pause",pause);
  video.addEventListener("ended",pause);
  video.addEventListener("emptied",reset);
