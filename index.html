@@ -856,7 +856,8 @@ img.jon-ad-media{
 .tv-fullscreen-bottom button:focus-visible,.tv-fullscreen-bottom select:focus-visible{outline:3px solid #fff;outline-offset:3px;box-shadow:0 0 0 5px rgba(25,118,210,.8)}
 .tv-fullscreen-bottom label{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:11px;background:rgba(0,0,0,.25);color:#dce8f7;font-size:12px;font-weight:850;pointer-events:auto}
 #tvVideoFrame:fullscreen.tv-controls-hidden .tv-fullscreen-overlay{opacity:1;transition:opacity .25s;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.42),transparent 32%)}
-#tvVideoFrame:fullscreen.tv-controls-hidden .tv-fullscreen-status,#tvVideoFrame:fullscreen.tv-controls-hidden .tv-fullscreen-bottom,#tvVideoFrame:fullscreen.tv-controls-hidden #tvFullscreenChannelName{opacity:0;transition:opacity .25s}
+#tvVideoFrame:fullscreen.tv-controls-hidden .tv-fullscreen-brand,#tvVideoFrame:fullscreen.tv-controls-hidden .tv-fullscreen-status,#tvVideoFrame:fullscreen.tv-controls-hidden .tv-fullscreen-bottom{opacity:0;transition:opacity .25s;pointer-events:none}
+#tvVideoFrame:fullscreen .tv-fullscreen-brand{opacity:1;transition:opacity .25s}
 #tvVideoFrame:fullscreen #tvFullscreenChannelName{transition:opacity .25s}
 #tvVideoFrame:fullscreen .tv-fullscreen-overlay{opacity:1;transition:opacity .2s}
 #tvVideoFrame:fullscreen #tvPlayer::-webkit-media-controls{display:none!important}
