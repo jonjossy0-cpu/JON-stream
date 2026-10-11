@@ -3488,7 +3488,8 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
           if(document.exitFullscreen)document.exitFullscreen();
           else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
         }else{
-          if(v.requestFullscreen)v.requestFullscreen();
+          if(typeof window.fullscreenTV==="function")window.fullscreenTV();
+          else if(v.requestFullscreen)v.requestFullscreen();
           else if(v.webkitRequestFullscreen)v.webkitRequestFullscreen();
         }
       }catch(_){}
@@ -3602,8 +3603,9 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
  if(frame){
   ["pointermove","pointerdown","touchstart","mousemove"].forEach(ev=>frame.addEventListener(ev,showOverlay,{passive:true}));
   frame.addEventListener("keydown",showOverlay);
-  document.addEventListener("fullscreenchange",()=>{frame.classList.remove("tv-controls-hidden");syncFullscreenControls();if(document.fullscreenElement===frame)showOverlay();else clearTimeout(overlayTimer)});
-  document.addEventListener("webkitfullscreenchange",()=>{frame.classList.remove("tv-controls-hidden");syncFullscreenControls();if(document.webkitFullscreenElement===frame)showOverlay();else clearTimeout(overlayTimer)});
+  function updateFullscreenMode(){const active=document.fullscreenElement===frame||document.webkitFullscreenElement===frame;video.controls=!active;frame.classList.remove("tv-controls-hidden");syncFullscreenControls();if(active)showOverlay();else clearTimeout(overlayTimer)}
+  document.addEventListener("fullscreenchange",updateFullscreenMode);
+  document.addEventListener("webkitfullscreenchange",updateFullscreenMode);
  }
  video.addEventListener("play",syncFullscreenControls);
  video.addEventListener("pause",syncFullscreenControls);
