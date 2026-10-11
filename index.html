@@ -840,6 +840,29 @@ img.jon-ad-media{
 #tvVideoFrame:fullscreen{width:100vw;height:100vh;max-height:100vh;min-height:100vh;border-radius:0;overflow:hidden;background:#000}
 #tvVideoFrame:fullscreen #tvPlayer{width:100%;height:100%;max-height:100%;object-fit:contain}
 #tvVideoFrame:fullscreen .tv-fullscreen-overlay{display:flex}
+/* Keep the fullscreen feature set available inside the normal channel-list player too. */
+#tvVideoFrame:not(:fullscreen) .tv-fullscreen-overlay{display:flex;padding:clamp(6px,1.2vw,14px);background:linear-gradient(180deg,rgba(0,0,0,.55),transparent 28%,transparent 48%,rgba(0,0,0,.78));}
+/* In the embedded player, auto-hide the overlay after 4 seconds; keep the separate controls below the player available. */
+#tvVideoFrame:not(:fullscreen).tv-controls-hidden .tv-fullscreen-overlay{opacity:0!important;pointer-events:none!important;transition:opacity .25s;}
+#tvVideoFrame:not(:fullscreen) .tv-fullscreen-top{align-items:flex-start;gap:6px}
+#tvVideoFrame:not(:fullscreen) .tv-fullscreen-brand{gap:7px;max-width:68%;padding:5px 8px 5px 5px;border-radius:10px}
+#tvVideoFrame:not(:fullscreen) .tv-fullscreen-channel-logo{width:30px;height:30px;border-radius:7px}
+#tvVideoFrame:not(:fullscreen) #tvFullscreenChannelName{font-size:clamp(11px,1.6vw,16px)}
+#tvVideoFrame:not(:fullscreen) .tv-fullscreen-brand-copy small{font-size:8px;letter-spacing:.7px}
+#tvVideoFrame:not(:fullscreen) .tv-fullscreen-status{gap:4px}
+#tvVideoFrame:not(:fullscreen) .tv-fullscreen-status .tv-live-pill{font-size:9px;padding:4px 6px}
+#tvVideoFrame:not(:fullscreen) #tvPlayerBox .tv-playback-clock{font-size:10px;min-width:76px;padding:4px 6px}
+#tvVideoFrame:not(:fullscreen) .tv-fullscreen-bottom{gap:5px;padding:6px;border-radius:11px}
+#tvVideoFrame:not(:fullscreen) .tv-fullscreen-bottom button,
+#tvVideoFrame:not(:fullscreen) .tv-fullscreen-bottom select{min-height:30px;padding:5px 7px;font-size:10px;border-radius:8px}
+#tvVideoFrame:not(:fullscreen) .tv-fullscreen-bottom label{gap:4px;padding:4px 5px;font-size:10px;border-radius:8px}
+@media(max-width:520px){
+ #tvVideoFrame:not(:fullscreen) .tv-fullscreen-overlay{padding:5px}
+ #tvVideoFrame:not(:fullscreen) .tv-fullscreen-bottom{gap:3px;padding:4px}
+ #tvVideoFrame:not(:fullscreen) .tv-fullscreen-bottom button,
+ #tvVideoFrame:not(:fullscreen) .tv-fullscreen-bottom select{min-height:27px;padding:4px 5px;font-size:9px}
+ #tvVideoFrame:not(:fullscreen) .tv-fullscreen-bottom label{font-size:9px}
+}
 .tv-fullscreen-overlay{display:none;position:absolute;inset:0;z-index:5;flex-direction:column;justify-content:space-between;padding:clamp(10px,2vw,24px);pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.42),transparent 22%,transparent 60%,rgba(0,0,0,.78))}
 .tv-fullscreen-top,.tv-fullscreen-bottom{display:flex;align-items:center;gap:10px;flex-wrap:wrap;pointer-events:auto}
 .tv-fullscreen-top{justify-content:space-between}
@@ -3536,7 +3559,7 @@ const S='button:not([disabled]):not([hidden]),select:not([disabled]):not([hidden
 const SKIP=['INPUT','TEXTAREA']; let focused=null,okDownAt=0,okTarget=null,selectChoosing=null;
 function fullscreenFrame(){const f=document.getElementById("tvVideoFrame");return f&&(document.fullscreenElement===f||document.webkitFullscreenElement===f)?f:null}
 function vis(el){if(!el||el.closest('[hidden]'))return false;const s=getComputedStyle(el),r=el.getBoundingClientRect();return s.display!=="none"&&s.visibility!=="hidden"&&Number(s.opacity)!==0&&r.width>0&&r.height>0}
-function all(){const f=fullscreenFrame(),root=f||document;return [...root.querySelectorAll(S)].filter(vis)}
+function all(){const f=fullscreenFrame(),root=f||document;return [...root.querySelectorAll(S)].filter(el=>vis(el)&&(!!f||!el.closest(".tv-fullscreen-overlay")))}
 function set(el){if(!el||!vis(el))return false;document.querySelectorAll('.jon-tv-focused').forEach(x=>x.classList.remove('jon-tv-focused'));focused=el;el.classList.add('jon-tv-focused');try{el.focus({preventScroll:true})}catch(_){try{el.focus()}catch(__){}}try{el.scrollIntoView({behavior:"smooth",block:"nearest",inline:"nearest"})}catch(_){try{el.scrollIntoView({block:"nearest",inline:"nearest"})}catch(__){}}return true}
 function cur(){if(focused&&vis(focused)&&all().includes(focused))return focused;const a=document.activeElement;return a&&all().includes(a)?a:null}
 function score(a,b,d){const A=a.getBoundingClientRect(),B=b.getBoundingClientRect(),ax=A.left+A.width/2,ay=A.top+A.height/2,bx=B.left+B.width/2,by=B.top+B.height/2,dx=bx-ax,dy=by-ay;if(d==="right"&&dx<=2||d==="left"&&dx>=-2||d==="down"&&dy<=2||d==="up"&&dy>=-2)return Infinity;const p=(d==="left"||d==="right")?Math.abs(dx):Math.abs(dy),c=(d==="left"||d==="right")?Math.abs(dy):Math.abs(dx);return p+c*2+(c>Math.max(60,((d==="left"||d==="right")?A.height:B.height)*1.5)?Math.min(500,c*4):0)}
@@ -3637,6 +3660,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
  const fsFit=document.getElementById("tvFullscreenFit");
  const fsPlay=document.getElementById("tvFullscreenPlay");
  const fsMute=document.getElementById("tvFullscreenMute");
+ const fsToggle=document.getElementById("tvFullscreenExit");
  const channelName=document.getElementById("tvFullscreenChannelName");
  const channelLogo=document.getElementById("tvFullscreenChannelLogo");
  const playerTitle=document.getElementById("tvPlayerTitle");
@@ -3654,6 +3678,8 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   if(fsPlay)fsPlay.textContent=video.paused?"▶ Play":"⏸ Pause";
   if(fsMute)fsMute.textContent=(video.muted||video.volume===0)?"🔇 Muted":"🔊 Sound";
   if(fsFit&&fit)fsFit.value=fit.value||"contain";
+  const fullscreenActive=!!(frame&&(document.fullscreenElement===frame||document.webkitFullscreenElement===frame));
+  if(fsToggle)fsToggle.textContent=fullscreenActive?"⛶ Exit":"⛶ Fullscreen";
   const mainQuality=document.getElementById("tvQualitySelect");
   if(fsQuality&&mainQuality){
    const old=fsQuality.value;
@@ -3665,15 +3691,15 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   if(!frame)return;
   frame.classList.remove("tv-controls-hidden");
   clearTimeout(overlayTimer);
-  if(document.fullscreenElement===frame||document.webkitFullscreenElement===frame){
-   overlayTimer=setTimeout(()=>{if(!video.paused)frame.classList.add("tv-controls-hidden")},4500);
-  }
+  /* Both embedded and fullscreen overlays disappear after 4 seconds of playback inactivity. */
+  overlayTimer=setTimeout(()=>{if(!video.paused)frame.classList.add("tv-controls-hidden")},4000);
  }
  window.jonShowTVFullscreenOverlay=showOverlay;
  if(frame){
   ["pointermove","pointerdown","touchstart","mousemove"].forEach(ev=>frame.addEventListener(ev,showOverlay,{passive:true}));
   frame.addEventListener("keydown",showOverlay);
-  function updateFullscreenMode(){const active=document.fullscreenElement===frame||document.webkitFullscreenElement===frame;video.controls=!active;frame.classList.remove("tv-controls-hidden");syncFullscreenControls();if(active)showOverlay();else clearTimeout(overlayTimer)}
+  function updateFullscreenMode(){const active=document.fullscreenElement===frame||document.webkitFullscreenElement===frame;video.controls=false;frame.classList.remove("tv-controls-hidden");syncFullscreenControls();clearTimeout(overlayTimer);showOverlay()}
+  updateFullscreenMode();
   document.addEventListener("fullscreenchange",updateFullscreenMode);
   document.addEventListener("webkitfullscreenchange",updateFullscreenMode);
  }
