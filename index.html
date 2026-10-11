@@ -3544,17 +3544,30 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   if(timer){clearInterval(timer);timer=null}
   render();
  }
+ const livePill=document.getElementById("tvLivePill");
+ function setLiveState(isLive){
+  if(livePill){livePill.lastChild.textContent=isLive?" LIVE":" READY";livePill.classList.toggle("is-ready",!isLive)}
+ }
  function reset(){
   elapsed=0;startedAt=0;
   if(timer){clearInterval(timer);timer=null}
-  render();
+  render();setLiveState(false);
  }
  window.setTVFit=function(value){
   const fitValue=["contain","cover","fill"].includes(value)?value:"contain";
   video.style.objectFit=fitValue;
   if(fit)fit.value=fitValue;
  };
- video.addEventListener("playing",start);
+ window.fullscreenTV=async function(){
+  const target=document.getElementById("tvVideoFrame")||video;
+  const fs=document.fullscreenElement||document.webkitFullscreenElement;
+  try{
+   if(fs){if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)document.webkitExitFullscreen()}
+   else if(target.requestFullscreen)await target.requestFullscreen();
+   else if(target.webkitRequestFullscreen)target.webkitRequestFullscreen();
+  }catch(_){}
+ };
+ video.addEventListener("playing",()=>{setLiveState(true);start()});
  video.addEventListener("pause",pause);
  video.addEventListener("ended",pause);
  video.addEventListener("emptied",reset);
