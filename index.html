@@ -3575,7 +3575,7 @@ window.addEventListener("keyup",e=>{
   e.preventDefault();target.click();
  }
 },true);
-document.addEventListener("focusin",e=>{if(e.target.matches?.(S)&&vis(e.target))set(e.target)});
+document.addEventListener("focusin",e=>{if(selectChoosing&&e.target!==selectChoosing)selectChoosing=null;if(e.target.matches?.(S)&&vis(e.target))set(e.target)});
 document.addEventListener("click",e=>{const x=e.target.closest?.(S);if(x&&vis(x))set(x)},true);
 window.addEventListener("scroll",()=>{if(focused&&!vis(focused)){focused=null;document.querySelectorAll('.jon-tv-focused').forEach(x=>x.classList.remove('jon-tv-focused'))}},{passive:true});
 document.getElementById("tvModeBtn")?.addEventListener("click",()=>setTimeout(seed,120));
