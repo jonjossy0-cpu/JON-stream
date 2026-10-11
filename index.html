@@ -3547,7 +3547,13 @@ window.addEventListener("keydown",e=>{
  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)){
   const f=fullscreenFrame();
   if(f&&typeof window.jonShowTVFullscreenOverlay==="function")window.jonShowTVFullscreenOverlay();
-  if(document.activeElement?.tagName==="SELECT"&&selectChoosing===document.activeElement)return;
+  const activeSelect=document.activeElement?.tagName==="SELECT"?document.activeElement:null;
+  if(activeSelect){
+   if(selectChoosing===activeSelect)return; // Only allow native option changes after OK/Enter.
+   e.preventDefault();e.stopImmediatePropagation();
+   move(e.key==="ArrowUp"?"up":e.key==="ArrowDown"?"down":e.key==="ArrowLeft"?"left":"right");
+   return;
+  }
   e.preventDefault();e.stopImmediatePropagation();
   const a=all(),active=cur(),inside=!!(f&&active&&f.contains(active));
   if(f&&!inside){if(a[0])set(a[0]);return}
