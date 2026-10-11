@@ -3567,7 +3567,7 @@ window.addEventListener("keyup",e=>{
  const elapsed=Date.now()-okDownAt,target=okTarget;
  okDownAt=0;okTarget=null;
  if(elapsed<1800&&target&&fullscreenFrame()?.contains(target)&&vis(target)){
-  e.preventDefault();e.stopImmediatePropagation();target.click();
+  e.preventDefault();target.click();
  }
 },true);
 document.addEventListener("focusin",e=>{if(e.target.matches?.(S)&&vis(e.target))set(e.target)});
