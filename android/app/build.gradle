@@ -10,8 +10,8 @@ android {
         applicationId 'com.jonstream.app'
         minSdk 23
         targetSdk 35
-        versionCode 6
-        versionName '6.0'
+        versionCode 7
+        versionName '7.1'
     }
 
     flavorDimensions += "device"
@@ -20,8 +20,8 @@ android {
         mobile {
             dimension "device"
             applicationId "com.jonstream.app"
-            versionCode 6
-            versionName "6.0"
+            versionCode 7
+            versionName "7.1"
         }
         tv {
             dimension "device"
