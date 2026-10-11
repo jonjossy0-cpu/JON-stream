@@ -58,13 +58,13 @@ button,input,select{font:inherit}button{cursor:pointer;border:1px solid #315477;
  const video=$('video'), embed=$('embed'), placeholder=$('placeholder'), urlInput=$('url'), status=$('status');
  let hls=null, dash=null, objectUrl=null, mode='stream', rememberedVolume=1;
  function say(message,error=false){status.textContent=message;status.classList.toggle('error',error)}
- function badge(text,live=false){$('liveBadge').innerHTML=(live?'<i class="dot"></i> ':'')+text}
+ function badge(text,live=false){const el=$('liveBadge');el.replaceChildren();if(live){const dot=document.createElement('i');dot.className='dot';el.appendChild(dot)}el.appendChild(document.createTextNode(text))}
  function title(text){$('mediaTitle').textContent=text||'JON Player'}
  function cleanEngines(){if(hls){hls.destroy();hls=null}if(dash){try{dash.reset()}catch(e){}dash=null}}
  function showVideo(){embed.classList.add('hidden');video.classList.remove('hidden');placeholder.classList.add('hidden')}
  function showEmbed(){video.classList.add('hidden');embed.classList.remove('hidden');placeholder.classList.add('hidden')}
  function showPlaceholder(){video.classList.add('hidden');embed.classList.add('hidden');placeholder.classList.remove('hidden')}
- function resetQuality(){ $('quality').innerHTML='<option value="-1">Auto (recommended)</option>'; $('qualityHint').textContent='Stream dependent'}
+ function resetQuality(){const select=$('quality');select.replaceChildren();const option=document.createElement('option');option.value='-1';option.textContent='Auto (recommended)';select.appendChild(option);$('qualityHint').textContent='Stream dependent'}
  function getTitle(raw){try{let u=new URL(raw);return decodeURIComponent(u.pathname.split('/').filter(Boolean).pop()||u.hostname).slice(0,90)}catch(e){return 'Media'}}
  function validUrl(raw){try{const u=new URL(raw);return ['http:','https:','blob:'].includes(u.protocol)}catch(e){return false}}
  function stop(){cleanEngines();try{video.pause();video.removeAttribute('src');video.load()}catch(e){}embed.src='about:blank';if(objectUrl){URL.revokeObjectURL(objectUrl);objectUrl=null}resetQuality();showPlaceholder();title('Ready to play');badge('READY');say('Playback stopped.')}
