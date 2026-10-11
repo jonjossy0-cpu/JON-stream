@@ -822,6 +822,47 @@ img.jon-ad-media{
 }
 </style>
 
+<style id="jonTvPlayerFitControls">
+#tvPlayerBox{min-width:0;max-width:100%;overflow:hidden}
+#tvPlayerBox .tv-playback-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 10px}
+#tvPlayerBox .tv-live-pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:rgba(227,27,35,.14);border:1px solid rgba(227,27,35,.55);color:#ff4b55;font-size:12px;font-weight:900;letter-spacing:.8px}
+#tvPlayerBox .tv-live-pill i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#f32632;box-shadow:0 0 10px #f32632;animation:jonLivePulse 1.4s infinite}
+#tvPlayerBox .tv-playback-clock{display:inline-flex;align-items:center;justify-content:center;min-width:96px;padding:6px 10px;border-radius:9px;background:rgba(25,118,210,.15);border:1px solid rgba(65,153,255,.5);color:#65adff;font-size:13px;font-weight:900;font-variant-numeric:tabular-nums}
+#tvPlayerBox .tv-video-frame{position:relative;width:100%;height:clamp(180px,56.25vw,68vh);max-height:68vh;min-height:180px;overflow:hidden;border-radius:12px;background:#000;isolation:isolate}
+#tvPlayerBox #tvPlayer{display:block;width:100%;height:100%;max-width:100%;max-height:100%;margin:0;border:0;border-radius:0;background:#000;object-fit:contain}
+#tvPlayerBox .tv-smart-options{max-width:100%;overflow:hidden}
+#tvPlayerBox .tv-smart-options label{min-width:0;flex-wrap:wrap}
+#tvPlayerBox .tv-smart-options select{max-width:100%}
+#tvPlayerBox .tv-controls,#tvPlayerBox .advanced-controls{max-width:100%}
+@keyframes jonLivePulse{0%,100%{opacity:1}50%{opacity:.4}}
+@media(max-width:520px){#tvPlayerBox .tv-video-frame{height:clamp(180px,56.25vw,58vh);max-height:58vh;min-height:180px}#tvPlayerBox .tv-playback-clock{min-width:88px;font-size:12px}}
+@media(orientation:landscape) and (max-height:520px){#tvPlayerBox .tv-video-frame{height:58vh;max-height:58vh;min-height:140px}}
+#tvVideoFrame:fullscreen{width:100vw;height:100vh;max-height:100vh;min-height:100vh;border-radius:0;overflow:hidden;background:#000}
+#tvVideoFrame:fullscreen #tvPlayer{width:100%;height:100%;max-height:100%;object-fit:contain}
+#tvVideoFrame:fullscreen .tv-fullscreen-overlay{display:flex}
+.tv-fullscreen-overlay{display:none;position:absolute;inset:0;z-index:5;flex-direction:column;justify-content:space-between;padding:clamp(10px,2vw,24px);pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.42),transparent 22%,transparent 60%,rgba(0,0,0,.78))}
+.tv-fullscreen-top,.tv-fullscreen-bottom{display:flex;align-items:center;gap:10px;flex-wrap:wrap;pointer-events:auto}
+.tv-fullscreen-top{justify-content:space-between}
+.tv-fullscreen-brand{display:flex;align-items:center;gap:11px;min-width:0;max-width:min(68vw,680px);padding:9px 14px 9px 9px;border:1px solid rgba(255,255,255,.2);border-radius:15px;background:rgba(7,13,23,.78);box-shadow:0 8px 28px rgba(0,0,0,.22);backdrop-filter:blur(12px)}
+.tv-fullscreen-brand-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.tv-fullscreen-channel-logo{width:clamp(34px,5vw,54px);height:clamp(34px,5vw,54px);flex:0 0 auto;object-fit:contain;border-radius:9px;background:rgba(255,255,255,.96);padding:3px;box-shadow:0 3px 12px rgba(0,0,0,.28)}
+.tv-fullscreen-channel-logo[hidden]{display:none!important}
+#tvPlayerBox #tvFullscreenChannelName{display:block;max-width:100%;overflow:hidden;color:#fff;font-size:clamp(14px,2vw,22px);font-weight:900;line-height:1.2;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 2px 10px #000}
+.tv-fullscreen-brand-copy small{color:#b9c9dd;font-size:10px;font-weight:800;letter-spacing:1.4px}
+.tv-fullscreen-status{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.tv-fullscreen-bottom{justify-content:center;padding:10px;border:1px solid rgba(255,255,255,.13);border-radius:17px;background:rgba(4,9,17,.7);box-shadow:0 10px 32px rgba(0,0,0,.24);backdrop-filter:blur(12px)}
+.tv-fullscreen-bottom button,.tv-fullscreen-bottom select{min-height:42px;padding:9px 13px;border-radius:11px;background:linear-gradient(180deg,rgba(34,47,65,.97),rgba(12,20,32,.97));color:#fff;border:1px solid rgba(255,255,255,.22);font-size:13px;font-weight:850;box-shadow:0 3px 10px rgba(0,0,0,.2);cursor:pointer}
+.tv-fullscreen-bottom button:hover,.tv-fullscreen-bottom select:hover{border-color:#64adff;background:rgba(25,118,210,.88)}
+.tv-fullscreen-bottom button:focus-visible,.tv-fullscreen-bottom select:focus-visible{outline:3px solid #fff;outline-offset:3px;box-shadow:0 0 0 5px rgba(25,118,210,.8)}
+.tv-fullscreen-bottom label{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:11px;background:rgba(0,0,0,.25);color:#dce8f7;font-size:12px;font-weight:850;pointer-events:auto}
+#tvVideoFrame:fullscreen.tv-controls-hidden .tv-fullscreen-overlay{opacity:1;transition:opacity .25s;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.42),transparent 32%)}
+#tvVideoFrame:fullscreen.tv-controls-hidden .tv-fullscreen-brand,#tvVideoFrame:fullscreen.tv-controls-hidden .tv-fullscreen-status,#tvVideoFrame:fullscreen.tv-controls-hidden .tv-fullscreen-bottom{opacity:0;transition:opacity .25s;pointer-events:none}
+#tvVideoFrame:fullscreen .tv-fullscreen-brand{opacity:1;transition:opacity .25s}
+#tvVideoFrame:fullscreen #tvFullscreenChannelName{transition:opacity .25s}
+#tvVideoFrame:fullscreen .tv-fullscreen-overlay{opacity:1;transition:opacity .2s}
+#tvVideoFrame:fullscreen #tvPlayer::-webkit-media-controls{display:none!important}
+@media(max-width:600px){.tv-fullscreen-overlay{padding:10px}.tv-fullscreen-top{align-items:flex-start;gap:8px}.tv-fullscreen-brand{gap:8px;max-width:70vw;padding:7px 10px 7px 7px;border-radius:12px}.tv-fullscreen-brand-copy small{font-size:8px;letter-spacing:1px}.tv-fullscreen-status{gap:5px}.tv-fullscreen-bottom{gap:5px;padding:7px;border-radius:13px}.tv-fullscreen-bottom button,.tv-fullscreen-bottom select{min-height:35px;padding:6px 8px;font-size:11px}.tv-fullscreen-bottom label{font-size:10px}}
+</style>
 </head>
 
 <body>
@@ -990,7 +1031,29 @@ img.jon-ad-media{
  <div class="tv-player-box" id="tvPlayerBox">
   <div class="tv-player-title" id="tvPlayerTitle">📺 TV</div>
 
-  <video id="tvPlayer" controls playsinline preload="metadata"></video>
+  <div class="tv-video-frame" id="tvVideoFrame">
+   <video id="tvPlayer" controls playsinline preload="metadata"></video>
+   <div class="tv-fullscreen-overlay" id="tvFullscreenOverlay">
+    <div class="tv-fullscreen-top" aria-live="polite">
+     <div class="tv-fullscreen-brand">
+      <img id="tvFullscreenChannelLogo" class="tv-fullscreen-channel-logo" alt="" hidden>
+      <span class="tv-fullscreen-brand-copy"><strong id="tvFullscreenChannelName">Choose a channel</strong><small>JON STREAM · TV</small></span>
+     </div>
+     <div class="tv-fullscreen-status">
+      <span class="tv-live-pill" id="tvLivePill"><i></i> LIVE</span>
+      <span class="tv-playback-clock" id="tvPlaybackClock">00:00:00</span>
+     </div>
+    </div>
+    <div class="tv-fullscreen-bottom">
+     <button type="button" onclick="toggleTVPlay()" id="tvFullscreenPlay">▶ Play</button>
+     <button type="button" onclick="toggleTVMute()" id="tvFullscreenMute">🔊 Sound</button>
+     <label>Quality <select id="tvFullscreenQuality" onchange="setTVManualQuality(this.value)"><option value="-1">Auto</option></select></label>
+     <label>Fit <select id="tvFullscreenFit" onchange="setTVFit(this.value)"><option value="contain">Fit</option><option value="cover">Crop</option><option value="fill">Stretch</option></select></label>
+     <button type="button" onclick="pictureInPictureTV()">PiP</button>
+     <button type="button" onclick="fullscreenTV()" id="tvFullscreenExit">⛶ Exit</button>
+    </div>
+   </div>
+  </div>
 
   <div class="quality" id="videoQuality">
    <span>Quality: Auto</span>
@@ -1040,6 +1103,11 @@ img.jon-ad-media{
    <label>🎚️ Quality
     <select id="tvQualitySelect" onchange="setTVManualQuality(this.value)">
      <option value="-1">Auto</option>
+    </select>
+   </label>
+   <label>🖼️ Fit
+    <select id="tvFitSelect" onchange="setTVFit(this.value)">
+     <option value="contain">Fit</option><option value="cover">Crop</option><option value="fill">Stretch</option>
     </select>
    </label>
   </div>
@@ -2646,7 +2714,7 @@ function setTVVolume(value){tvPlayer.volume=Number(value);tvPlayer.muted=Number(
 function setTVSpeed(value){tvPlayer.playbackRate=Number(value)}
 async function pictureInPictureTV(){try{if(document.pictureInPictureElement)await document.exitPictureInPicture();else if(document.pictureInPictureEnabled&&tvPlayer.readyState>0)await tvPlayer.requestPictureInPicture()}catch(e){}}
 function setTVLatencyMode(mode){tvLatencyMode=mode;tvLowData=mode==="data";if(currentTV){const playing=!tvPlayer.paused,idx=currentTVIndex,u=currentTV.url,n=currentTV.name;tvRetryAttempt=0;playTVStream(u,n,idx,tvSourceIndex);if(!playing)tvPlayer.pause()}}
-function populateTVQualitySelect(){const s=document.getElementById("tvQualitySelect");if(!s)return;const old=tvManualQuality;s.innerHTML='<option value="-1">Auto</option>';if(hls&&hls.levels)hls.levels.forEach((l,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=(l.height?l.height+"p":"Level "+(i+1))+(l.bitrate?" • "+(l.bitrate/1000000).toFixed(1)+"Mbps":"");s.appendChild(o)});s.value=String(old)}
+function populateTVQualitySelect(){const s=document.getElementById("tvQualitySelect");if(!s)return;const old=tvManualQuality;s.innerHTML='<option value="-1">Auto</option>';if(hls&&hls.levels)hls.levels.forEach((l,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=(l.height?l.height+"p":"Level "+(i+1))+(l.bitrate?" • "+(l.bitrate/1000000).toFixed(1)+"Mbps":"");s.appendChild(o)});s.value=String(old);const fs=document.getElementById("tvFullscreenQuality");if(fs){fs.innerHTML=s.innerHTML;fs.value=String(old)}}
 function setTVManualQuality(value){tvManualQuality=Number(value);if(hls&&tvManualQuality<0)hls.autoLevelCapping=-1;clearTimeout(tvAbrCapTimer);tvAbrCapTimer=null;applyTVQuality()}
 function applyTVQuality(){if(!hls)return;if(tvManualQuality>=0&&tvManualQuality<hls.levels.length)hls.currentLevel=tvManualQuality;else{hls.autoLevelCapping=-1;hls.currentLevel=-1}}
 function lowerTVAutoQualityOnBuffer(){
@@ -3438,7 +3506,8 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
           if(document.exitFullscreen)document.exitFullscreen();
           else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
         }else{
-          if(v.requestFullscreen)v.requestFullscreen();
+          if(typeof window.fullscreenTV==="function")window.fullscreenTV();
+          else if(v.requestFullscreen)v.requestFullscreen();
           else if(v.webkitRequestFullscreen)v.webkitRequestFullscreen();
         }
       }catch(_){}
@@ -3451,43 +3520,6 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
   });
 })();
 </script>
-
-<!-- JON TV REMOTE OK LONG-PRESS FULLSCREEN -->
-<script>
-(function(){
-  "use strict";
-  let jonOKTimer=null;
-  let jonOKTriggered=false;
-  function jonToggleTVFullscreen(){
-    const box=document.getElementById("tvPlayerBox");
-    const video=document.getElementById("tvPlayer");
-    if(!box||!video)return;
-    if(document.fullscreenElement){
-      if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
-      return;
-    }
-    if(box.requestFullscreen) box.requestFullscreen().catch(()=>{});
-    else if(video.requestFullscreen) video.requestFullscreen().catch(()=>{});
-    else if(video.webkitRequestFullscreen) video.webkitRequestFullscreen();
-  }
-  window.addEventListener("keydown",function(e){
-    if(e.key!=="Enter" || e.repeat)return;
-    if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName))return;
-    jonOKTriggered=false;
-    clearTimeout(jonOKTimer);
-    jonOKTimer=setTimeout(function(){
-      jonOKTriggered=true;
-      jonToggleTVFullscreen();
-    },2000);
-  });
-  window.addEventListener("keyup",function(e){
-    if(e.key!=="Enter")return;
-    clearTimeout(jonOKTimer);
-    jonOKTimer=null;
-  });
-})();
-</script>
-
 
 <!-- JON TV REMOTE SPATIAL ARROW NAVIGATION - ADDITIVE ONLY -->
 <style id="jonTvRemoteArrowNavigationCSS">
@@ -3525,6 +3557,115 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 (function(){
   "use strict";
   window.addEventListener("beforeunload",function(){try{if(window.jonMpegtsPlayer)window.jonMpegtsPlayer.destroy();if(window.jonDashPlayer)window.jonDashPlayer.reset()}catch(_){} });
+})();
+</script>
+<script id="jonTvPlaybackClockAndFit">
+(function(){
+ "use strict";
+ const video=document.getElementById("tvPlayer");
+ const clock=document.getElementById("tvPlaybackClock");
+ const fit=document.getElementById("tvFitSelect");
+ if(!video||!clock)return;
+ let elapsed=0,startedAt=0,timer=null;
+ function render(){
+  const total=Math.floor((elapsed+(startedAt?Date.now()-startedAt:0))/1000);
+  const h=String(Math.floor(total/3600)).padStart(2,"0");
+  const m=String(Math.floor((total%3600)/60)).padStart(2,"0");
+  const sec=String(total%60).padStart(2,"0");
+  clock.textContent=h+":"+m+":"+sec;
+ }
+ function start(){
+  if(!startedAt)startedAt=Date.now();
+  if(!timer)timer=setInterval(render,1000);
+  render();
+ }
+ function pause(){
+  if(startedAt){elapsed+=Date.now()-startedAt;startedAt=0}
+  if(timer){clearInterval(timer);timer=null}
+  render();
+ }
+ const livePill=document.getElementById("tvLivePill");
+ function setLiveState(isLive){
+  if(livePill){livePill.lastChild.textContent=isLive?" LIVE":" READY";livePill.classList.toggle("is-ready",!isLive)}
+ }
+ function reset(){
+  elapsed=0;startedAt=0;
+  if(timer){clearInterval(timer);timer=null}
+  render();setLiveState(false);
+ }
+ const frame=document.getElementById("tvVideoFrame");
+ const fsQuality=document.getElementById("tvFullscreenQuality");
+ const fsFit=document.getElementById("tvFullscreenFit");
+ const fsPlay=document.getElementById("tvFullscreenPlay");
+ const fsMute=document.getElementById("tvFullscreenMute");
+ const channelName=document.getElementById("tvFullscreenChannelName");
+ const channelLogo=document.getElementById("tvFullscreenChannelLogo");
+ const playerTitle=document.getElementById("tvPlayerTitle");
+ let overlayTimer=null;
+ function syncChannelName(){
+  if(!channelName)return;
+  const channel=(typeof currentTV!=="undefined"&&currentTV)?currentTV:null;
+  const name=(channel&&channel.name)?channel.name:(playerTitle?playerTitle.textContent.replace(/^📺\s*/,"").trim():"");
+  channelName.textContent=name||"Choose a channel";
+  channelName.title=name||"Choose a channel";
+  if(channelLogo){const logo=channel&&typeof channel.logo==="string"?channel.logo.trim():"";if(logo){if(channelLogo.getAttribute("src")!==logo)channelLogo.src=logo;channelLogo.hidden=false;}else{channelLogo.removeAttribute("src");channelLogo.hidden=true;}}
+ }
+ function syncFullscreenControls(){
+  syncChannelName();
+  if(fsPlay)fsPlay.textContent=video.paused?"▶ Play":"⏸ Pause";
+  if(fsMute)fsMute.textContent=(video.muted||video.volume===0)?"🔇 Muted":"🔊 Sound";
+  if(fsFit&&fit)fsFit.value=fit.value||"contain";
+  const mainQuality=document.getElementById("tvQualitySelect");
+  if(fsQuality&&mainQuality){
+   const old=fsQuality.value;
+   fsQuality.innerHTML=mainQuality.innerHTML;
+   fsQuality.value=[...fsQuality.options].some(o=>o.value===old)?old:mainQuality.value;
+  }
+ }
+ function showOverlay(){
+  if(!frame)return;
+  frame.classList.remove("tv-controls-hidden");
+  clearTimeout(overlayTimer);
+  if(document.fullscreenElement===frame||document.webkitFullscreenElement===frame){
+   overlayTimer=setTimeout(()=>{if(!video.paused)frame.classList.add("tv-controls-hidden")},4500);
+  }
+ }
+ if(frame){
+  ["pointermove","pointerdown","touchstart","mousemove"].forEach(ev=>frame.addEventListener(ev,showOverlay,{passive:true}));
+  frame.addEventListener("keydown",showOverlay);
+  function updateFullscreenMode(){const active=document.fullscreenElement===frame||document.webkitFullscreenElement===frame;video.controls=!active;frame.classList.remove("tv-controls-hidden");syncFullscreenControls();if(active)showOverlay();else clearTimeout(overlayTimer)}
+  document.addEventListener("fullscreenchange",updateFullscreenMode);
+  document.addEventListener("webkitfullscreenchange",updateFullscreenMode);
+ }
+ video.addEventListener("play",syncFullscreenControls);
+ video.addEventListener("pause",syncFullscreenControls);
+ video.addEventListener("volumechange",syncFullscreenControls);
+ window.setTVFit=function(value){
+  const fitValue=["contain","cover","fill"].includes(value)?value:"contain";
+  video.style.objectFit=fitValue;
+  if(fit)fit.value=fitValue;
+  if(fsFit)fsFit.value=fitValue;
+ };
+ window.fullscreenTV=async function(){
+  const target=frame||video;
+  const fs=document.fullscreenElement||document.webkitFullscreenElement;
+  try{
+   if(fs){if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)document.webkitExitFullscreen()}
+   else if(target.requestFullscreen)await target.requestFullscreen();
+   else if(target.webkitRequestFullscreen)target.webkitRequestFullscreen();
+   syncFullscreenControls();
+  }catch(_){}
+ };
+ window.addEventListener("jon-tv-quality-updated",syncFullscreenControls);
+ const mainQuality=document.getElementById("tvQualitySelect");
+ if(mainQuality)mainQuality.addEventListener("change",syncFullscreenControls);
+ if(playerTitle&&window.MutationObserver)new MutationObserver(syncChannelName).observe(playerTitle,{childList:true,subtree:true,characterData:true});
+ syncFullscreenControls();
+ video.addEventListener("playing",()=>{setLiveState(true);start();syncFullscreenControls()});
+ video.addEventListener("pause",pause);
+ video.addEventListener("ended",pause);
+ video.addEventListener("emptied",reset);
+ render();
 })();
 </script>
 </html>
