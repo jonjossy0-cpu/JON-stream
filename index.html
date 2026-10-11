@@ -854,7 +854,8 @@ img.jon-ad-media{
 .tv-fullscreen-bottom button:hover,.tv-fullscreen-bottom select:hover{border-color:#64adff;background:rgba(25,118,210,.88)}
 .tv-fullscreen-bottom button:focus-visible,.tv-fullscreen-bottom select:focus-visible{outline:3px solid #fff;outline-offset:3px;box-shadow:0 0 0 5px rgba(25,118,210,.8)}
 .tv-fullscreen-bottom label{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:11px;background:rgba(0,0,0,.25);color:#dce8f7;font-size:12px;font-weight:850;pointer-events:auto}
-#tvVideoFrame:fullscreen.tv-controls-hidden .tv-fullscreen-overlay{opacity:0;transition:opacity .25s;pointer-events:none}
+#tvVideoFrame:fullscreen.tv-controls-hidden .tv-fullscreen-overlay{opacity:1;transition:opacity .25s;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.42),transparent 32%)}
+#tvVideoFrame:fullscreen.tv-controls-hidden .tv-fullscreen-status,#tvVideoFrame:fullscreen.tv-controls-hidden .tv-fullscreen-bottom{opacity:0;transition:opacity .25s}
 #tvVideoFrame:fullscreen .tv-fullscreen-overlay{opacity:1;transition:opacity .2s}
 #tvVideoFrame:fullscreen #tvPlayer::-webkit-media-controls{display:none!important}
 @media(max-width:600px){.tv-fullscreen-overlay{padding:10px}.tv-fullscreen-top{align-items:flex-start;gap:8px}.tv-fullscreen-brand{gap:8px;max-width:70vw;padding:7px 10px 7px 7px;border-radius:12px}.tv-fullscreen-brand-mark{flex-basis:32px;width:32px;height:32px;border-radius:9px;font-size:11px}.tv-fullscreen-brand-copy small{font-size:8px;letter-spacing:1px}.tv-fullscreen-status{gap:5px}.tv-fullscreen-bottom{gap:5px;padding:7px;border-radius:13px}.tv-fullscreen-bottom button,.tv-fullscreen-bottom select{min-height:35px;padding:6px 8px;font-size:11px}.tv-fullscreen-bottom label{font-size:10px}}
