@@ -840,6 +840,7 @@ img.jon-ad-media{
 #tvVideoFrame:fullscreen{width:100vw;height:100vh;max-height:100vh;min-height:100vh;border-radius:0;overflow:hidden;background:#000}
 #tvVideoFrame:fullscreen #tvPlayer{width:100%;height:100%;max-height:100%;object-fit:contain}
 #tvVideoFrame:fullscreen .tv-fullscreen-overlay{display:flex}
+#tvVideoFrame:not(:fullscreen) .tv-fullscreen-channel-nav{display:none!important}
 /* Keep the fullscreen feature set available inside the normal channel-list player too. */
 #tvVideoFrame:not(:fullscreen) .tv-fullscreen-overlay{display:flex;padding:clamp(6px,1.2vw,14px);background:linear-gradient(180deg,rgba(0,0,0,.55),transparent 28%,transparent 48%,rgba(0,0,0,.78));}
 /* In the embedded player, auto-hide the overlay after 4 seconds; keep the separate controls below the player available. */
@@ -1069,6 +1070,8 @@ img.jon-ad-media{
      </div>
     </div>
     <div class="tv-fullscreen-bottom">
+     <button type="button" class="tv-fullscreen-channel-nav" onclick="previousTV();if(window.jonShowTVFullscreenOverlay)window.jonShowTVFullscreenOverlay()" aria-label="Previous TV channel">⏮ PREVIOUS</button>
+     <button type="button" class="tv-fullscreen-channel-nav" onclick="nextTV();if(window.jonShowTVFullscreenOverlay)window.jonShowTVFullscreenOverlay()" aria-label="Next TV channel">NEXT ⏭</button>
      <button type="button" onclick="toggleTVPlay()" id="tvFullscreenPlay">▶ Play</button>
      <button type="button" onclick="toggleTVMute()" id="tvFullscreenMute">🔊 Sound</button>
      <label>Quality <select id="tvFullscreenQuality" onchange="setTVManualQuality(this.value)"><option value="-1">Auto</option></select></label>
