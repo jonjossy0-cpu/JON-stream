@@ -70,3 +70,50 @@ dependencies {
     tvImplementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
     tvImplementation 'androidx.browser:browser:1.8.0'
 }
+
+/*
+ * Generate fullscreen channel controls only for Mobile APK 7.1.
+ * The shared source HTML remains unchanged for Android TV APK 8.0.
+ */
+android.sourceSets.mobile.assets.srcDir(layout.buildDirectory.dir("generated/mobile/assets"))
+
+def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenControls") {
+    def sourceFile = layout.projectDirectory.file("src/main/assets/index.html")
+    def outputFile = layout.buildDirectory.file("generated/mobile/assets/index.html")
+    inputs.file(sourceFile)
+    outputs.file(outputFile)
+
+    doLast {
+        def html = sourceFile.asFile.getText("UTF-8")
+        def bottomMarker = '    <div class="tv-fullscreen-bottom">\n'
+        if (html.count(bottomMarker) != 1) {
+            throw new GradleException("Expected one fullscreen bottom bar in the base HTML.")
+        }
+        if (html.contains('id="tvFullscreenPrevious"') || html.contains('id="tvFullscreenNext"')) {
+            throw new GradleException("Fullscreen channel controls already exist in the base HTML.")
+        }
+
+        def controls = bottomMarker +
+                '     <button type="button" onclick="previousTV()" id="tvFullscreenPrevious" aria-label="Previous channel" title="Previous channel">⏮</button>\n' +
+                '     <button type="button" onclick="nextTV()" id="tvFullscreenNext" aria-label="Next channel" title="Next channel">⏭</button>\n'
+        html = html.replace(bottomMarker, controls)
+
+        def style = '\n<style id="jonMobileFullscreenChannelNav">\n' +
+                '/* Compact fullscreen channel navigation: icons only, minimal space. */\n' +
+                '#tvVideoFrame .tv-fullscreen-bottom #tvFullscreenPrevious,\n' +
+                '#tvVideoFrame .tv-fullscreen-bottom #tvFullscreenNext{min-width:34px;width:34px;min-height:32px;padding:4px;font-size:15px;line-height:1;flex:0 0 34px}\n' +
+                '</style>\n'
+        if (!html.contains("</head>")) {
+            throw new GradleException("Missing HTML head closing tag.")
+        }
+        html = html.replace("</head>", style + "</head>")
+
+        def target = outputFile.get().asFile
+        target.parentFile.mkdirs()
+        target.setText(html, "UTF-8")
+    }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn(prepareMobileFullscreenControls)
+}
