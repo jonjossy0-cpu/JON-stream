@@ -3778,7 +3778,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
  window.addEventListener("jon-tv-quality-updated",syncFullscreenControls);
  const mainQuality=document.getElementById("tvQualitySelect");
  if(mainQuality)mainQuality.addEventListener("change",syncFullscreenControls);
- if(playerTitle&&window.MutationObserver)new MutationObserver(syncChannelName).observe(playerTitle,{childList:true,subtree:true,characterData:true});
+ if(playerTitle&&window.MutationObserver)new MutationObserver(()=>{syncChannelName();const fullscreenActive=!!(frame&&(document.fullscreenElement===frame||document.webkitFullscreenElement===frame));if(fullscreenActive)showOverlay();}).observe(playerTitle,{childList:true,subtree:true,characterData:true});
  syncFullscreenControls();
  video.addEventListener("playing",()=>{setLiveState(true);start();syncFullscreenControls()});
  video.addEventListener("pause",pause);
