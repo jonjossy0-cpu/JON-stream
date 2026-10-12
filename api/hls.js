@@ -104,6 +104,15 @@ function rewritePlaylist(body, baseUrl) {
   }).join("\n");
 }
 
+async function cancelResponseBody(response) {
+  if (!response.body) return;
+  try {
+    await response.body.cancel();
+  } catch (_) {
+    // The upstream may already have closed the redirect response body.
+  }
+}
+
 async function fetchAllowedTarget(initialTarget, options) {
   let target = new URL(initialTarget.toString());
 
@@ -125,6 +134,7 @@ async function fetchAllowedTarget(initialTarget, options) {
     if (!location) return { response, finalTarget: target };
 
     if (redirects === MAX_REDIRECTS) {
+      await cancelResponseBody(response);
       throw new Error("Too many upstream redirects");
     }
 
@@ -132,14 +142,18 @@ async function fetchAllowedTarget(initialTarget, options) {
     try {
       nextTarget = new URL(location, target);
     } catch (_) {
+      await cancelResponseBody(response);
       throw new Error("Invalid upstream redirect");
     }
 
     // Validate the destination before issuing the redirected request.
     if (!isAllowed(nextTarget)) {
+      await cancelResponseBody(response);
       throw new Error("Redirect destination not allowed");
     }
 
+    // Do not leave intermediate redirect bodies unread while following the chain.
+    await cancelResponseBody(response);
     target = nextTarget;
   }
 
@@ -210,7 +224,10 @@ export default async function handler(req, res) {
     }
 
     res.statusCode = upstream.status;
-    if (req.method === "HEAD") return res.end();
+    if (req.method === "HEAD") {
+      await cancelResponseBody(upstream);
+      return res.end();
+    }
 
     // Stream media instead of buffering the entire segment in memory.
     if (upstream.body) {
