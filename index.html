@@ -580,7 +580,7 @@ audio,video{
  opacity:1 !important;
 }
 
-</style>
+\n/* Compact fullscreen channel navigation: icons only, minimal space. */\n#tvVideoFrame .tv-fullscreen-bottom #tvFullscreenPrevious,\n#tvVideoFrame .tv-fullscreen-bottom #tvFullscreenNext{min-width:34px;width:34px;min-height:32px;padding:4px;font-size:15px;line-height:1;flex:0 0 34px}\n</style>
 
 <style id="jonGithubMediaFix">.jonMediaHeroImage{visibility:visible!important}.jonMediaHeroImage.show{visibility:visible!important;opacity:1!important}.jon-ad-media{visibility:visible!important}</style>
 <style id="jonLandscapeReadMoreFix">
@@ -1069,6 +1069,8 @@ img.jon-ad-media{
      </div>
     </div>
     <div class="tv-fullscreen-bottom">
+     <button type="button" onclick="previousTV()" id="tvFullscreenPrevious" aria-label="Previous channel" title="Previous channel">⏮</button>
+     <button type="button" onclick="nextTV()" id="tvFullscreenNext" aria-label="Next channel" title="Next channel">⏭</button>
      <button type="button" onclick="toggleTVPlay()" id="tvFullscreenPlay">▶ Play</button>
      <button type="button" onclick="toggleTVMute()" id="tvFullscreenMute">🔊 Sound</button>
      <label>Quality <select id="tvFullscreenQuality" onchange="setTVManualQuality(this.value)"><option value="-1">Auto</option></select></label>
@@ -2591,6 +2593,9 @@ function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  document.getElementById("tvPlayerBox").style.display="block";
  document.getElementById("tvPlayerBox").classList.add("tv-display-persistent");
  document.getElementById("tvPlayerTitle").innerHTML="📺 "+escapeHTML(name);tvStatus("🔄 Connecting...");
+  /* Reveal the existing fullscreen controls after a channel change, then retain their normal auto-hide. */
+  const fullscreenFrame=document.getElementById("tvVideoFrame");
+  if(fullscreenFrame&&(document.fullscreenElement===fullscreenFrame||document.webkitFullscreenElement===fullscreenFrame)&&typeof window.jonShowTVFullscreenOverlay==="function")window.jonShowTVFullscreenOverlay();
  tvDiag("diagSource",tvSourceIndex===0?"Primary":"Backup "+tvSourceIndex);if(resetRetry)tvRetryAttempt=0;clearTimeout(tvReconnectTimer);cleanupPreviousTV();
  let source=tvSourceList[tvSourceIndex]||currentTV.url;
  if(!source){tvStatus("⚠️ No stream source");return}
