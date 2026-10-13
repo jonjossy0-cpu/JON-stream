@@ -8,7 +8,8 @@ const ALLOWED_HOSTS = new Set([
   "63.141.239.226",
   "stream8.cinerama.uz",
   "38.252.238.18",
-  "45.162.64.114"
+  "45.162.64.114",
+  "stream.telfazalive.com"
 ]);
 
 const MAX_REDIRECTS = 3;
@@ -42,7 +43,8 @@ const ALLOWED_ENDPOINTS = new Set([
   "63.141.239.226:81",
   "stream8.cinerama.uz:443",
   "38.252.238.18:8000",
-  "45.162.64.114:80"
+  "45.162.64.114:80",
+  "stream.telfazalive.com:443"
 ]);
 
 function isAllowed(url) {
