@@ -98,6 +98,31 @@ function absolutize(value, base) {
   }
 }
 
+// Some signed HLS sources put their session/auth values on the master
+// playlist URL but omit them from relative media-playlist and segment URLs.
+// Carry those values forward only to same-origin child URLs.
+function absolutizeWithAuth(value, base) {
+  const absolute = absolutize(value, base);
+  if (!absolute) return null;
+
+  try {
+    const child = new URL(absolute);
+    const parent = new URL(base);
+
+    if (child.origin === parent.origin) {
+      for (const key of ["nimblesessionid", "wmsAuthSign"]) {
+        if (!child.searchParams.has(key) && parent.searchParams.has(key)) {
+          child.searchParams.set(key, parent.searchParams.get(key));
+        }
+      }
+    }
+
+    return child.toString();
+  } catch (_) {
+    return absolute;
+  }
+}
+
 function proxiedUrl(target) {
   return "/hls?url=" + encodeURIComponent(target);
 }
@@ -118,7 +143,7 @@ function upstreamHeaders(request, target) {
 
 function rewriteUriAttributes(line, base) {
   return line.replace(/URI="([^"]+)"/g, (match, value) => {
-    const absolute = absolutize(value, base);
+    const absolute = absolutizeWithAuth(value, base);
     if (!absolute) return match;
 
     try {
@@ -141,7 +166,7 @@ function rewritePlaylist(body, base) {
       return rewriteUriAttributes(line, base);
     }
 
-    const absolute = absolutize(trimmed, base);
+    const absolute = absolutizeWithAuth(trimmed, base);
     if (!absolute) return line;
 
     try {
