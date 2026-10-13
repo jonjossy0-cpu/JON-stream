@@ -12,7 +12,12 @@ function corsHeaders() {
 }
 
 function isAllowed(url) {
+  const allowedPort =
+    (url.protocol === "http:" && (url.port === "" || url.port === "80")) ||
+    (url.protocol === "https:" && (url.port === "" || url.port === "443"));
+
   return (url.protocol === "http:" || url.protocol === "https:") &&
+    allowedPort &&
     ALLOWED_HOSTS.has(url.hostname) &&
     !url.username && !url.password;
 }
