@@ -3815,8 +3815,8 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   var checkTimer = null;
 
   function likelyDockedDevTools(){
-    // Desktop-only heuristic; avoid mobile layouts and normal phone/tablet resizing.
-    if (!window.matchMedia || !window.matchMedia('(min-width: 900px)').matches) return false;
+    // Desktop-only heuristic: use outerWidth, not innerWidth/media queries. Docked DevTools shrinks innerWidth and can disable an inner-width gate.
+    if (window.outerWidth < 900) return false;
     var widthGap = Math.abs(window.outerWidth - window.innerWidth);
     var heightGap = Math.abs(window.outerHeight - window.innerHeight);
     return widthGap > 220 || heightGap > 220;
