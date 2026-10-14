@@ -3801,8 +3801,8 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 </script>
 
 <!-- JON Stream best-effort DevTools response.
-     Browser-side detection is heuristic and cannot reliably detect every DevTools setup.
-     On likely docked desktop DevTools, stop playback and cover app content without changing channel data. -->
+     Detection is heuristic; browsers do not expose a reliable DevTools-open API.
+     This guard covers common desktop shortcuts and likely docked DevTools sizing. -->
 <script>
 (function jonInspectGuard(){
   'use strict';
@@ -3811,16 +3811,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 
   var triggered = false;
   var suspiciousSamples = 0;
-  var overlay = null;
   var checkTimer = null;
-
-  function likelyDockedDevTools(){
-    // Desktop-only heuristic: use outerWidth, not innerWidth/media queries. Docked DevTools shrinks innerWidth and can disable an inner-width gate.
-    if (window.outerWidth < 900) return false;
-    var widthGap = Math.abs(window.outerWidth - window.innerWidth);
-    var heightGap = Math.abs(window.outerHeight - window.innerHeight);
-    return widthGap > 220 || heightGap > 220;
-  }
 
   function stopMedia(){
     document.querySelectorAll('video,audio').forEach(function(media){
@@ -3831,9 +3822,10 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   function activateGuard(){
     if (triggered) return;
     triggered = true;
+    if (checkTimer) window.clearInterval(checkTimer);
     stopMedia();
 
-    overlay = document.createElement('div');
+    var overlay = document.createElement('div');
     overlay.setAttribute('role', 'alert');
     overlay.setAttribute('aria-live', 'assertive');
     overlay.style.cssText = [
@@ -3846,18 +3838,40 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     (document.body || document.documentElement).appendChild(overlay);
   }
 
+  function likelyDockedDevTools(){
+    var widthGap = Math.abs((window.outerWidth || 0) - (window.innerWidth || 0));
+    var heightGap = Math.abs((window.outerHeight || 0) - (window.innerHeight || 0));
+    // Lower threshold than the previous version; no desktop-width gate, so small windows are checked too.
+    return widthGap > 140 || heightGap > 180;
+  }
+
   function check(){
     if (triggered) return;
     if (likelyDockedDevTools()) {
       suspiciousSamples += 1;
-      if (suspiciousSamples >= 3) activateGuard();
+      if (suspiciousSamples >= 2) activateGuard();
     } else {
       suspiciousSamples = 0;
     }
   }
 
+  // Catch common keyboard ways of opening DevTools; opening it from a browser menu may not emit these keys.
+  window.addEventListener('keydown', function(event){
+    var key = (event.key || '').toLowerCase();
+    var modifier = event.ctrlKey || event.metaKey;
+    var inspectShortcut =
+      key === 'f12' ||
+      (modifier && event.shiftKey && (key === 'i' || key === 'j' || key === 'c')) ||
+      (event.metaKey && event.altKey && (key === 'i' || key === 'j' || key === 'c'));
+    if (inspectShortcut) {
+      event.preventDefault();
+      event.stopPropagation();
+      activateGuard();
+    }
+  }, true);
+
   window.addEventListener('resize', check, {passive:true});
-  checkTimer = window.setInterval(check, 1200);
+  checkTimer = window.setInterval(check, 900);
   check();
 })();
 </script>
