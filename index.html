@@ -3913,8 +3913,8 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   if(!show)return;
   track.textContent=text+"   •   "+text+"   •   ";
   const minutes=({"1m":1,"2m":2,"3m":3,"5m":5,"8m":8,"10m":10})[settings.speed]||5;
-  /* Keep long headlines readable: duration scales with rendered width at a maximum of 6 px/second. The duplicated track means one message takes at least the selected number of minutes to pass. */
-  const duration=Math.max(minutes*120,track.scrollWidth/6);
+  /* Keep long headlines readable: selected speed always affects duration, and longer messages add extra time. */
+  const duration=minutes*60+track.scrollWidth/6;
   track.style.animationDuration=duration+"s";
   const url=String(settings.logoUrl||"").trim();
   if(url&&validUrl(url)){if(logo.getAttribute("src")!==url)logo.src=url;logo.style.display="block";logo.onerror=()=>{logo.style.display="none"}}
