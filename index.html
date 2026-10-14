@@ -473,6 +473,13 @@ audio,video{
  background:#fff;
  flex-shrink:0;
 }
+.tv-logo-fallback{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ font-size:24px;
+ color:#263750;
+}
 
 .quality{
  display:flex;
@@ -2298,7 +2305,7 @@ function renderTV(list){
   const fav=tvFavorites.includes(channel.url);
 
   const logoHTML=channel.logo
-   ? `<img class="tv-logo" src="${escapeHTML(channel.logo)}" alt="" onerror="this.style.display='none'">`
+    ? `<img class="tv-logo" src="${escapeHTML(channel.logo)}" alt="${escapeHTML(channel.name)} logo" referrerpolicy="no-referrer" decoding="async" onerror="this.onerror=null;this.style.display='none';const p=document.createElement('div');p.className='tv-logo tv-logo-fallback';p.textContent='📺';this.after(p)">`
    : `<div class="tv-logo" style="display:flex;align-items:center;justify-content:center;font-size:24px">📺</div>`;
 
   card.innerHTML=`
