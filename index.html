@@ -3884,7 +3884,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 #jonFullscreenNewsTicker .jon-ticker-logo{width:25px;height:25px;flex:0 0 25px;object-fit:contain;border-radius:3px;display:none}
 #jonFullscreenNewsTicker .jon-ticker-label{flex:0 0 auto;background:#e31b23;color:#fff;font-weight:800;font-size:10px;letter-spacing:.5px;padding:5px 7px;border-radius:2px}
 #jonFullscreenNewsTicker .jon-ticker-viewport{flex:1;min-width:0;overflow:hidden;white-space:nowrap}
-#jonFullscreenNewsTicker .jon-ticker-track{display:inline-block;min-width:max-content;padding-left:100%;font-size:15px;font-weight:600;line-height:32px;animation:jonTickerScroll 28s linear infinite}
+#jonFullscreenNewsTicker .jon-ticker-track{display:inline-block;min-width:max-content;padding-left:100%;font-size:15px;font-weight:600;line-height:32px;animation:jonTickerScroll 60s linear infinite}
 @keyframes jonTickerScroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 @media(max-width:600px){#jonFullscreenNewsTicker{height:30px;padding:0 6px;gap:6px}#jonFullscreenNewsTicker .jon-ticker-logo{width:20px;height:20px;flex-basis:20px}#jonFullscreenNewsTicker .jon-ticker-track{font-size:13px;line-height:26px}}
 @media(prefers-reduced-motion:reduce){#jonFullscreenNewsTicker .jon-ticker-track{animation-duration:60s}}
@@ -3903,7 +3903,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
  const viewport=document.createElement("div");viewport.className="jon-ticker-viewport";
  const track=document.createElement("span");track.className="jon-ticker-track";
  viewport.appendChild(track);bar.append(logo,label,viewport);frame.appendChild(bar);
- let settings={enabled:false,text:"",logoUrl:""};
+ let settings={enabled:false,text:"",logoUrl:"",speed:"slow"};
  function validUrl(value){try{const u=new URL(value);return u.protocol==="https:"||u.protocol==="http:"}catch(_){return false}}
  function render(){
   const active=document.fullscreenElement===frame||document.webkitFullscreenElement===frame;
@@ -3912,11 +3912,12 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   bar.classList.toggle("jon-ticker-visible",show);
   if(!show)return;
   track.textContent=text+"   •   "+text+"   •   ";
+  track.style.animationDuration=({slow:"60s",normal:"40s",fast:"28s"})[settings.speed]||"60s";
   const url=String(settings.logoUrl||"").trim();
   if(url&&validUrl(url)){if(logo.getAttribute("src")!==url)logo.src=url;logo.style.display="block";logo.onerror=()=>{logo.style.display="none"}}
   else{logo.removeAttribute("src");logo.style.display="none";logo.onerror=null}
  }
- function update(data){const next=data&&data.settings&&data.settings.newsTicker||{};settings={enabled:next.enabled===true,text:typeof next.text==="string"?next.text:"",logoUrl:typeof next.logoUrl==="string"?next.logoUrl:""};render()}
+ function update(data){const next=data&&data.settings&&data.settings.newsTicker||{};settings={enabled:next.enabled===true,text:typeof next.text==="string"?next.text:"",logoUrl:typeof next.logoUrl==="string"?next.logoUrl:"",speed:["slow","normal","fast"].includes(next.speed)?next.speed:"slow"};render()}
  window.addEventListener("jon-firebase-data",event=>update(event.detail));
  document.addEventListener("fullscreenchange",render);
  document.addEventListener("webkitfullscreenchange",render);
