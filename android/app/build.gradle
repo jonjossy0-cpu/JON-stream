@@ -106,7 +106,15 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (!html.contains("</head>")) {
             throw new GradleException("Missing HTML head closing tag.")
         }
-        html = html.replace("</head>", style + "</head>")
+        html = html.replace("</head>", style + ' <link rel="stylesheet" href="jon-news-ticker.css">\n' + "</head>")
+
+        if (html.count("</html>") != 1) {
+            throw new GradleException("Expected one HTML closing tag before injecting the mobile news ticker.")
+        }
+        if (html.contains("jon-news-ticker.js")) {
+            throw new GradleException("Mobile news ticker script is already injected.")
+        }
+        html = html.replace("</html>", ' <script src="jon-news-ticker.js"></script>\n</html>')
 
         def target = outputFile.get().asFile
         target.parentFile.mkdirs()
