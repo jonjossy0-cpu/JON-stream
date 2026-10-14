@@ -3884,10 +3884,10 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 #jonFullscreenNewsTicker .jon-ticker-logo{width:25px;height:25px;flex:0 0 25px;object-fit:contain;border-radius:3px;display:none}
 #jonFullscreenNewsTicker .jon-ticker-label{flex:0 0 auto;background:#e31b23;color:#fff;font-weight:800;font-size:10px;letter-spacing:.5px;padding:5px 7px;border-radius:2px}
 #jonFullscreenNewsTicker .jon-ticker-viewport{flex:1;min-width:0;overflow:hidden;white-space:nowrap}
-#jonFullscreenNewsTicker .jon-ticker-track{display:inline-block;min-width:max-content;padding-left:100%;font-size:15px;font-weight:600;line-height:32px;animation:jonTickerScroll 180s linear infinite}
+#jonFullscreenNewsTicker .jon-ticker-track{display:inline-block;min-width:max-content;padding-left:100%;font-size:15px;font-weight:600;line-height:32px;animation:jonTickerScroll 600s linear infinite}
 @keyframes jonTickerScroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 @media(max-width:600px){#jonFullscreenNewsTicker{height:30px;padding:0 6px;gap:6px}#jonFullscreenNewsTicker .jon-ticker-logo{width:20px;height:20px;flex-basis:20px}#jonFullscreenNewsTicker .jon-ticker-track{font-size:13px;line-height:26px}}
-@media(prefers-reduced-motion:reduce){#jonFullscreenNewsTicker .jon-ticker-track{animation-duration:180s}}
+@media(prefers-reduced-motion:reduce){#jonFullscreenNewsTicker .jon-ticker-track{animation-duration:600s}}
 </style>
 <script id="jonFullscreenNewsTickerJS">
 (function(){
@@ -3903,7 +3903,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
  const viewport=document.createElement("div");viewport.className="jon-ticker-viewport";
  const track=document.createElement("span");track.className="jon-ticker-track";
  viewport.appendChild(track);bar.append(logo,label,viewport);frame.appendChild(bar);
- let settings={enabled:false,text:"",logoUrl:"",speed:"3m"};
+ let settings={enabled:false,text:"",logoUrl:"",speed:"5m"};
  function validUrl(value){try{const u=new URL(value);return u.protocol==="https:"||u.protocol==="http:"}catch(_){return false}}
  function render(){
   const active=document.fullscreenElement===frame||document.webkitFullscreenElement===frame;
@@ -3912,12 +3912,12 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   bar.classList.toggle("jon-ticker-visible",show);
   if(!show)return;
   track.textContent=text+"   •   "+text+"   •   ";
-  track.style.animationDuration=({"1m":"60s","2m":"120s","3m":"180s","5m":"300s"})[settings.speed]||"180s";
+  const minutes=({"1m":1,"2m":2,"3m":3,"5m":5,"10m":10})[settings.speed]||5;\n  /* Keep long headlines readable: duration scales with rendered width at a maximum of 6 px/second. The duplicated track means one message takes at least the selected number of minutes to pass. */\n  const duration=Math.max(minutes*120,track.scrollWidth/6);\n  track.style.animationDuration=duration+"s";
   const url=String(settings.logoUrl||"").trim();
   if(url&&validUrl(url)){if(logo.getAttribute("src")!==url)logo.src=url;logo.style.display="block";logo.onerror=()=>{logo.style.display="none"}}
   else{logo.removeAttribute("src");logo.style.display="none";logo.onerror=null}
  }
- function update(data){const next=data&&data.settings&&data.settings.newsTicker||{};settings={enabled:next.enabled===true,text:typeof next.text==="string"?next.text:"",logoUrl:typeof next.logoUrl==="string"?next.logoUrl:"",speed:["1m","2m","3m","5m"].includes(next.speed)?next.speed:"3m"};render()}
+ function update(data){const next=data&&data.settings&&data.settings.newsTicker||{};settings={enabled:next.enabled===true,text:typeof next.text==="string"?next.text:"",logoUrl:typeof next.logoUrl==="string"?next.logoUrl:"",speed:["1m","2m","3m","5m","10m"].includes(next.speed)?next.speed:"5m"};render()}
  window.addEventListener("jon-firebase-data",event=>update(event.detail));
  document.addEventListener("fullscreenchange",render);
  document.addEventListener("webkitfullscreenchange",render);
