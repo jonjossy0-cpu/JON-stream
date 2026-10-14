@@ -154,18 +154,44 @@ export default async function handler(req, res) {
       return res.end(rewritePlaylist(body, finalTarget.toString()));
     }
 
-    const buffer = Buffer.from(await upstream.arrayBuffer());
-
+    // Stream media bytes instead of buffering an entire segment in memory.
+    // This keeps large HLS segments from multiplying memory use under load.
     for (const name of ["content-length", "content-range", "accept-ranges", "etag", "last-modified"]) {
       const value = upstream.headers.get(name);
       if (value) res.setHeader(name, value);
     }
 
     res.statusCode = upstream.status;
-    if (req.method === "HEAD") return res.end();
-    return res.end(buffer);
+    if (req.method === "HEAD" || !upstream.body) {
+      try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
+      return res.end();
+    }
+
+    const reader = upstream.body.getReader();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (!res.write(Buffer.from(value))) {
+          await new Promise((resolve, reject) => {
+            const onDrain = () => { cleanup(); resolve(); };
+            const onClose = () => { cleanup(); reject(new Error("Client disconnected")); };
+            const cleanup = () => {
+              res.off("drain", onDrain);
+              res.off("close", onClose);
+            };
+            res.once("drain", onDrain);
+            res.once("close", onClose);
+          });
+        }
+      }
+      return res.end();
+    } finally {
+      try { reader.releaseLock(); } catch (_) {}
+    }
   } catch (error) {
     Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
+    if (res.headersSent) return res.destroy();
     return res.status(502).send("Gateway upstream error");
   }
 }
