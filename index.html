@@ -1652,7 +1652,7 @@ function renderFavorites(){
   div.className="station";
 
   const logoHTML=station.logo
-   ? `<img class="radio-logo" src="${escapeHTML(station.logo)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+    ? `<img class="radio-logo" src="${escapeHTML(station.logo)}" alt="${escapeHTML(station.name)} logo" loading="lazy" referrerpolicy="no-referrer" decoding="async" onerror="this.onerror=null;this.style.display='none';const p=document.createElement('div');p.className='radio-logo radio-logo-fallback';p.textContent='📻';this.after(p)">`
    : `<div class="radio-logo radio-logo-fallback">📻</div>`;
 
   div.innerHTML=`
@@ -1692,7 +1692,7 @@ function renderStations(list){
   div.className="station";
 
   const logoHTML=station.logo
-   ? `<img class="radio-logo" src="${escapeHTML(station.logo)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+    ? `<img class="radio-logo" src="${escapeHTML(station.logo)}" alt="${escapeHTML(station.name)} logo" loading="lazy" referrerpolicy="no-referrer" decoding="async" onerror="this.onerror=null;this.style.display='none';const p=document.createElement('div');p.className='radio-logo radio-logo-fallback';p.textContent='📻';this.after(p)">`
    : `<div class="radio-logo radio-logo-fallback">📻</div>`;
 
   div.innerHTML=`
