@@ -3799,4 +3799,67 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
  render();
 })();
 </script>
+
+<!-- JON Stream best-effort DevTools response.
+     Browser-side detection is heuristic and cannot reliably detect every DevTools setup.
+     On likely docked desktop DevTools, stop playback and cover app content without changing channel data. -->
+<script>
+(function jonInspectGuard(){
+  'use strict';
+  if (window.__JON_INSPECT_GUARD__) return;
+  window.__JON_INSPECT_GUARD__ = true;
+
+  var triggered = false;
+  var suspiciousSamples = 0;
+  var overlay = null;
+  var checkTimer = null;
+
+  function likelyDockedDevTools(){
+    // Desktop-only heuristic; avoid mobile layouts and normal phone/tablet resizing.
+    if (!window.matchMedia || !window.matchMedia('(min-width: 900px)').matches) return false;
+    var widthGap = Math.abs(window.outerWidth - window.innerWidth);
+    var heightGap = Math.abs(window.outerHeight - window.innerHeight);
+    return widthGap > 220 || heightGap > 220;
+  }
+
+  function stopMedia(){
+    document.querySelectorAll('video,audio').forEach(function(media){
+      try { media.pause(); } catch (_) {}
+    });
+  }
+
+  function activateGuard(){
+    if (triggered) return;
+    triggered = true;
+    stopMedia();
+
+    overlay = document.createElement('div');
+    overlay.setAttribute('role', 'alert');
+    overlay.setAttribute('aria-live', 'assertive');
+    overlay.style.cssText = [
+      'position:fixed','inset:0','z-index:2147483647',
+      'display:flex','align-items:center','justify-content:center',
+      'padding:24px','background:#07111f','color:#fff',
+      'font:700 18px Arial,Helvetica,sans-serif','text-align:center'
+    ].join(';');
+    overlay.textContent = 'JON Stream security protection activated. Close Developer Tools and reload the page to continue.';
+    (document.body || document.documentElement).appendChild(overlay);
+  }
+
+  function check(){
+    if (triggered) return;
+    if (likelyDockedDevTools()) {
+      suspiciousSamples += 1;
+      if (suspiciousSamples >= 3) activateGuard();
+    } else {
+      suspiciousSamples = 0;
+    }
+  }
+
+  window.addEventListener('resize', check, {passive:true});
+  checkTimer = window.setInterval(check, 1200);
+  check();
+})();
+</script>
+
 </html>
