@@ -168,8 +168,17 @@ export default async function handler(req, res) {
     }
 
     const reader = upstream.body.getReader();
+    let clientDisconnected = false;
+    const onResponseClose = () => {
+      if (!res.writableEnded) {
+        clientDisconnected = true;
+        reader.cancel().catch(() => {});
+      }
+    };
+    res.on("close", onResponseClose);
+
     try {
-      while (true) {
+      while (!clientDisconnected) {
         const { done, value } = await reader.read();
         if (done) break;
         if (!res.write(Buffer.from(value))) {
@@ -185,8 +194,10 @@ export default async function handler(req, res) {
           });
         }
       }
+      if (clientDisconnected) return;
       return res.end();
     } finally {
+      res.off("close", onResponseClose);
       try { reader.releaseLock(); } catch (_) {}
     }
   } catch (error) {
