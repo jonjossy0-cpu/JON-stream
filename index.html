@@ -887,6 +887,7 @@ img.jon-ad-media{
 #tvVideoFrame:fullscreen #tvPlayer::-webkit-media-controls{display:none!important}
 @media(max-width:600px){.tv-fullscreen-overlay{padding:10px}.tv-fullscreen-top{align-items:flex-start;gap:8px}.tv-fullscreen-brand{gap:8px;max-width:70vw;padding:7px 10px 7px 7px;border-radius:12px}.tv-fullscreen-brand-copy small{font-size:8px;letter-spacing:1px}.tv-fullscreen-status{gap:5px}.tv-fullscreen-bottom{gap:5px;padding:7px;border-radius:13px}.tv-fullscreen-bottom button,.tv-fullscreen-bottom select{min-height:35px;padding:6px 8px;font-size:11px}.tv-fullscreen-bottom label{font-size:10px}}
 </style>
+<style id="jonTelfazAliveEmbedSupport">#tvVideoFrame{position:relative;overflow:hidden}#tvVideoFrame>iframe{display:block}</style>
 </head>
 
 <body>
@@ -2050,6 +2051,7 @@ window.addEventListener("keydown",e=>{
 });
 
 const tvPlayer=document.getElementById("tvPlayer");
+let tvEmbedFrame=null;
 let hls=null;
 let currentTV=null;
 let tvReconnectTimer=null;
@@ -2492,7 +2494,9 @@ function updateTVDiagnostics(){
 }
 function stopTVTimers(){clearTimeout(tvRetryTimer);clearTimeout(tvAbrCapTimer);clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);tvRetryTimer=tvDiagnosticsTimer=tvStallTimer=tvAbrCapTimer=null}
 function destroyTVEngine(){stopTVTimers();if(hls){try{hls.destroy()}catch(_){}hls=null}if(window.jonMpegtsPlayer){try{window.jonMpegtsPlayer.destroy()}catch(_){}window.jonMpegtsPlayer=null}if(window.jonDashPlayer){try{window.jonDashPlayer.reset()}catch(_){}window.jonDashPlayer=null}}
-function cleanupPreviousTV(){destroyTVEngine();try{tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load()}catch(_){}}
+function cleanupPreviousTV(){destroyTVEngine();if(tvEmbedFrame){try{tvEmbedFrame.remove()}catch(_){}tvEmbedFrame=null}tvPlayer.style.display="";const overlay=document.getElementById("tvFullscreenOverlay");if(overlay)overlay.style.display="";try{tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load()}catch(_){}}
+function isJONEmbedPage(url){try{const u=new URL(String(url||""));return u.protocol==="https:"&&u.hostname==="telfazalive.com"&&u.pathname.startsWith("/embed/")}catch(_){return false}}
+function loadTVEmbedPage(url,name){const frame=document.getElementById("tvVideoFrame");if(!frame)return false;cleanupPreviousTV();tvEmbedFrame=document.createElement("iframe");tvEmbedFrame.src=url;tvEmbedFrame.title=String(name||"TV channel")+" embedded player";tvEmbedFrame.allow="autoplay; encrypted-media; picture-in-picture; fullscreen";tvEmbedFrame.allowFullscreen=true;tvEmbedFrame.referrerPolicy="strict-origin-when-cross-origin";tvEmbedFrame.setAttribute("loading","eager");tvEmbedFrame.style.cssText="position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;";frame.appendChild(tvEmbedFrame);tvPlayer.style.display="none";const overlay=document.getElementById("tvFullscreenOverlay");if(overlay)overlay.style.display="none";currentTV.embedMode=true;tvStatus("🔄 Loading embedded player…");tvDiag("diagSource","Embedded player");return true}
 function buildTVSources(channel){
  const candidates=[];
  if(channel&&channel.url)candidates.push(channel.url);
@@ -2611,6 +2615,7 @@ function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
    if(gateway&&gateway!==source){/* gateway already applied */}
    else{tvStatus("⚠️ "+kind.toUpperCase()+" needs an HLS/HTTP gateway on Android/WebView");tvDiag("diagSource",kind.toUpperCase()+" — gateway required");return}
  }
+ if(isJONEmbedPage(source)){loadTVEmbedPage(source,name);return}
  tvStartupTimer=setTimeout(()=>{
   if(!currentTV||startupAttemptId!==tvPlayAttemptId)return;
   if(tvPlayer.paused&&tvPlayer.readyState>=2){tvNeedTapToPlay();return}
@@ -2661,7 +2666,7 @@ function nextTV(){if(!filteredTV.length)return;let n=currentTVIndex<0?0:currentT
 function previousTV(){if(!filteredTV.length)return;let n=currentTVIndex<=0?filteredTV.length-1:currentTVIndex-1;const c=filteredTV[n];playTVStream(c.url,c.name,n)}
 function toggleTVMute(){tvPlayer.muted=!tvPlayer.muted}
 function stopTV(){clearTimeout(tvReconnectTimer);clearTimeout(tvStartupTimer);tvPlayAttemptId++;currentTV=null;tvSourceList=[];destroyTVEngine();tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load();resetTVPerformance("");document.getElementById("tvPlayerTitle").innerHTML="📺 TV stopped";tvStatus("⚪ Stopped");tvDiag("diagSource","None");tvDiag("diagBuffer","0s")}
-async function fullscreenTV(){const v=document.getElementById("tvPlayer");const fs=document.fullscreenElement||document.webkitFullscreenElement;if(!v)return;if(fs){try{if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)await document.webkitExitFullscreen()}catch(_){}}else{try{if(v.requestFullscreen)await v.requestFullscreen();else if(v.webkitRequestFullscreen)await v.webkitRequestFullscreen()}catch(_){}}}
+async function fullscreenTV(){const v=document.getElementById("tvPlayer");const target=currentTV&&currentTV.embedMode?document.getElementById("tvVideoFrame"):v;const fs=document.fullscreenElement||document.webkitFullscreenElement;if(!target)return;if(fs){try{if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)await document.webkitExitFullscreen()}catch(_){}}else{try{if(target.requestFullscreen)await target.requestFullscreen();else if(target.webkitRequestFullscreen)await target.webkitRequestFullscreen()}catch(_){}}}
 
 /* TV QUALITY */
 function updateQuality(){
