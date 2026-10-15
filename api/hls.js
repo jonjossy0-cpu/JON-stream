@@ -12,9 +12,18 @@ function corsHeaders() {
 }
 
 function isAllowed(url) {
-  const allowedPort =
+  const standardPort =
     (url.protocol === "http:" && (url.port === "" || url.port === "80")) ||
     (url.protocol === "https:" && (url.port === "" || url.port === "443"));
+
+  // MBC 2/4 use HTTP on port 8080 at this explicitly allowlisted host.
+  // Keep the exception host-specific; never allow arbitrary nonstandard ports.
+  const approvedMbcPort =
+    url.protocol === "http:" &&
+    url.hostname === "154.58.202.18" &&
+    url.port === "8080";
+
+  const allowedPort = standardPort || approvedMbcPort;
 
   return (url.protocol === "http:" || url.protocol === "https:") &&
     allowedPort &&
