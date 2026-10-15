@@ -58,7 +58,13 @@ jobs:
             exit 1
           fi
 
-          if git log --all -G"$patterns" --format= -- . ':!*.md' ':!.github/workflows/security-audit.yml' | grep -q .; then
+          # Inspect added lines from all historical patches. The workflow's
+          # patterns= definition is excluded from this historical pass because
+          # it intentionally contains regex examples, not credentials.
+          if git log --all -p --format= -- . ':!*.md' \
+              | grep -E '^\\+[^+]' \
+              | grep -vE '^\\+.*patterns=' \
+              | grep -E "$patterns"; then
             echo "Potential hard-coded credential detected in Git history. Rotate/revoke it before merging."
             exit 1
           fi
