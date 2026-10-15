@@ -14,6 +14,14 @@ const ALLOWED_HOSTS = new Set([
   "rpn.bozztv.com"
 ]);
 
+// Fixed EBS entry points avoid requiring users to paste encoded source URLs.
+// HLS child playlists and segments still use the guarded /hls proxy route.
+const EBS_CHANNELS = new Map([
+  ["/ebs/tv", "https://bozztv.com/ebstv/ebstv/tracks-v1a1/mono.ts.m3u8"],
+  ["/ebs/cinema", "https://bozztv.com/ebstv/ebscinema/tracks-v1a1/mono.ts.m3u8"],
+  ["/ebs/muzika", "https://bozztv.com/ebstv/ebsmusika/tracks-v1a1/mono.ts.m3u8"]
+]);
+
 const MAX_REDIRECTS = 3;
 const MAX_URL_LENGTH = 4096;
 const MAX_PLAYLIST_BYTES = 1_000_000;
@@ -199,7 +207,8 @@ async function handle(request) {
     });
   }
 
-  if (incoming.pathname !== "/hls") {
+  const ebsSource = EBS_CHANNELS.get(incoming.pathname);
+  if (incoming.pathname !== "/hls" && !ebsSource) {
     return new Response("JON Stream HLS Gateway - ONLINE", {
       status: 200,
       headers: {
@@ -212,7 +221,7 @@ async function handle(request) {
   const rate = checkRateLimit(request);
   if (!rate.allowed) return rateLimitResponse(rate.retryAfter);
 
-  const raw = incoming.searchParams.get("url");
+  const raw = ebsSource || incoming.searchParams.get("url");
   if (!raw) {
     return new Response("Missing url", { status: 400, headers: corsHeaders() });
   }
