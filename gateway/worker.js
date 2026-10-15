@@ -9,7 +9,9 @@ const ALLOWED_HOSTS = new Set([
   "stream8.cinerama.uz",
   "38.252.238.18",
   "45.162.64.114",
-  "stream.telfazalive.com"
+  "stream.telfazalive.com",
+  "bozztv.com",
+  "rpn.bozztv.com"
 ]);
 
 const MAX_REDIRECTS = 3;
@@ -44,7 +46,9 @@ const ALLOWED_ENDPOINTS = new Set([
   "stream8.cinerama.uz:443",
   "38.252.238.18:8000",
   "45.162.64.114:80",
-  "stream.telfazalive.com:443"
+  "stream.telfazalive.com:443",
+  "bozztv.com:443",
+  "rpn.bozztv.com:443"
 ]);
 
 function isAllowed(url) {
