@@ -62,8 +62,8 @@ jobs:
           # patterns= definition is excluded from this historical pass because
           # it intentionally contains regex examples, not credentials.
           if git log --all -p --format= -- . ':!*.md' \
-              | grep -E '^\\+[^+]' \
-              | grep -vE '^\\+.*patterns=' \
+              | grep -E '^\+[^+]' \
+              | grep -vE '^\+.*patterns=' \
               | grep -E "$patterns"; then
             echo "Potential hard-coded credential detected in Git history. Rotate/revoke it before merging."
             exit 1
