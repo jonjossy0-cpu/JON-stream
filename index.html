@@ -3861,13 +3861,19 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     var modifier = event.ctrlKey || event.metaKey;
     var inspectShortcut =
       key === 'f12' ||
-      (modifier && event.shiftKey && (key === 'i' || key === 'j' || key === 'c')) ||
+      (modifier && event.shiftKey && (key === 'i' || key === 'j' || key === 'c' || key === 'k' || key === 'e' || key === 'm')) ||
       (event.metaKey && event.altKey && (key === 'i' || key === 'j' || key === 'c'));
     if (inspectShortcut) {
       event.preventDefault();
       event.stopPropagation();
       activateGuard();
     }
+  }, true);
+
+  // Discourage the browser context menu, which commonly exposes an Inspect shortcut.
+  // This is a deterrent only; it is not a security boundary.
+  window.addEventListener('contextmenu', function(event){
+    event.preventDefault();
   }, true);
 
   window.addEventListener('resize', check, {passive:true});
