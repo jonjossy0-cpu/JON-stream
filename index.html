@@ -3820,18 +3820,27 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   }
 
   function exitPage(){
-    // Try to close the tab when browser policy permits; otherwise leave the site
-    // for a blank document. Browsers may refuse window.close() on user-opened tabs.
+    // First try to close the tab. Browsers often refuse to close tabs opened
+    // directly by the user, so retain the existing security overlay as fallback.
     try { window.close(); } catch (_) {}
     window.setTimeout(function(){
-      try {
-        if (!window.closed && window.location.href !== 'about:blank') {
-          window.location.replace('about:blank');
-        }
-      } catch (_) {
-        // If navigation is blocked, the fallback cannot be guaranteed.
-      }
+      if (window.closed) return;
+      showSecurityOverlay();
     }, 80);
+  }
+
+  function showSecurityOverlay(){
+    var overlay = document.createElement('div');
+    overlay.setAttribute('role', 'alert');
+    overlay.setAttribute('aria-live', 'assertive');
+    overlay.style.cssText = [
+      'position:fixed','inset:0','z-index:2147483647',
+      'display:flex','align-items:center','justify-content:center',
+      'padding:24px','background:#07111f','color:#fff',
+      'font:700 18px Arial,Helvetica,sans-serif','text-align:center'
+    ].join(';');
+    overlay.textContent = 'JON Stream security protection activated. Close Developer Tools and reload the page to continue.';
+    (document.body || document.documentElement).appendChild(overlay);
   }
 
   function activateGuard(){
