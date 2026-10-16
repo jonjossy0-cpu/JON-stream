@@ -3970,7 +3970,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   });
   return result;
  }
- function hide(){box.classList.remove("jon-sponsor-visible");image.onload=null;image.onerror=null;image.removeAttribute("src")}
+ function hide(){box.classList.remove("jon-sponsor-visible");box.style.display="none";image.onload=null;image.onerror=null;image.removeAttribute("src")}
  function clearTimers(){if(photoTimer!==null){clearTimeout(photoTimer);photoTimer=null}if(cycleTimer!==null){clearTimeout(cycleTimer);cycleTimer=null}}
  function showNext(run,attempts=0){
   if(run!==token||!isFullscreen()||!settings.enabled||!settings.photos.length){hide();return}
@@ -3986,7 +3986,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   image.onload=()=>{
    if(settled||run!==token)return;
    settled=true;
-   box.classList.add("jon-sponsor-visible");
+   box.style.display="flex";box.classList.add("jon-sponsor-visible");
    photoTimer=setTimeout(()=>{photoTimer=null;showNext(run)},PHOTO_MS);
   };
   image.onerror=()=>{
