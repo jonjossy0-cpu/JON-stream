@@ -3972,15 +3972,24 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
  }
  function hide(){box.classList.remove("jon-sponsor-visible");image.onload=null;image.onerror=null;image.removeAttribute("src")}
  function clearTimers(){if(photoTimer!==null){clearTimeout(photoTimer);photoTimer=null}if(cycleTimer!==null){clearTimeout(cycleTimer);cycleTimer=null}}
- function showNext(run){
+ function showNext(run,attempts=0){
   if(run!==token||!isFullscreen()||!settings.enabled||!settings.photos.length){hide();return}
-  if(index>=settings.photos.length){hide();return}
-  hide();
+  if(attempts>=settings.photos.length){hide();photoTimer=setTimeout(()=>{photoTimer=null;showNext(run)},PHOTO_MS);return}
+  if(index>=settings.photos.length)index=0;
   const url=settings.photos[index++];
+  hide();
   let settled=false;
-  const fail=()=>{if(settled||run!==token)return;settled=true;showNext(run)};
-  image.onload=()=>{if(settled||run!==token)return;settled=true;box.classList.add("jon-sponsor-visible");photoTimer=setTimeout(()=>{photoTimer=null;showNext(run)},PHOTO_MS)};
-  image.onerror=fail;
+  image.onload=()=>{
+   if(settled||run!==token)return;
+   settled=true;
+   box.classList.add("jon-sponsor-visible");
+   photoTimer=setTimeout(()=>{photoTimer=null;showNext(run)},PHOTO_MS);
+  };
+  image.onerror=()=>{
+   if(settled||run!==token)return;
+   settled=true;
+   showNext(run,attempts+1);
+  };
   image.src=url;
   if(image.complete&&image.naturalWidth>0&&image.naturalHeight>0)image.onload();
  }
@@ -3988,12 +3997,13 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   clearTimers();active=false;hide();
   if(!isFullscreen()||!settings.enabled||!settings.photos.length)return;
   active=true;token++;const run=token;index=0;showNext(run);
-  cycleTimer=setTimeout(()=>{cycleTimer=null;startCycle()},CYCLE_MS);
+  cycleTimer=setTimeout(()=>{cycleTimer=null;if(run===token&&isFullscreen())startCycle()},CYCLE_MS);
  }
  function stop(){token++;clearTimers();active=false;hide()}
  function update(data){
   const next=data&&data.settings&&data.settings.sponsorLogoCarousel||{};
-  const fresh={enabled:next.enabled===true,photos:cleanPhotos(next.photos)};
+  const raw=Array.isArray(next.photos)?next.photos:(typeof next.photos==="string"?next.photos.split(/\r?\n/):[]);
+  const fresh={enabled:next.enabled===true,photos:cleanPhotos(raw)};
   const changed=fresh.enabled!==settings.enabled||fresh.photos.join("\n")!==settings.photos.join("\n");
   settings=fresh;
   if(!settings.enabled||!settings.photos.length){stop();return}
