@@ -3977,7 +3977,8 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   if(attempts>=settings.photos.length){hide();photoTimer=setTimeout(()=>{photoTimer=null;showNext(run)},PHOTO_MS);return}
   if(index>=settings.photos.length)index=0;
   const url=settings.photos[index++];
-  hide();
+  // Keep the sponsor card and SPONSORED label visible while the next logo loads.
+  // Hiding here caused the entire card to disappear between every logo.
   let settled=false;
   image.onload=()=>{
    if(settled||run!==token)return;
