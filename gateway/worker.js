@@ -272,7 +272,7 @@ async function handle(request) {
   if (!raw && !Array.isArray(fixedSource)) {
     return new Response("Missing url", { status: 400, headers: corsHeaders() });
   }
-  if (raw.length > MAX_URL_LENGTH) {
+  if (raw && raw.length > MAX_URL_LENGTH) {
     return new Response("URL too long", { status: 414, headers: corsHeaders() });
   }
 
