@@ -3989,6 +3989,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
  }
  function startCycle(){
    cycleActive=false;
+   if(photoTimer!==null){clearTimeout(photoTimer);photoTimer=null}
    if(cycleTimer!==null){clearTimeout(cycleTimer);cycleTimer=null}
    if(!isFullscreen()||!settings.enabled||!settings.photos.length){hide();return}
    cycleActive=true;
