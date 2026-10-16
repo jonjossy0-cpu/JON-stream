@@ -12,6 +12,7 @@ const ALLOWED_HOSTS = new Set([
   "45.177.114.115",
   "168.197.104.22",
   "170.83.16.50",
+  "cdn-5.nxplay.com.br",
   "stream.telfazalive.com",
   "bozztv.com",
   "rpn.bozztv.com"
@@ -31,7 +32,8 @@ const FIXED_CHANNELS = new Map([
     "http://45.162.64.114/SONY_MOVIES/index.m3u8",
     "http://45.177.114.115/SONY_MOVIES/index.m3u8",
     "http://168.197.104.22/SONY_MOVIES/index.m3u8",
-    "http://170.83.16.50/SONY_MOVIES/index.m3u8"
+    "http://170.83.16.50/SONY_MOVIES/index.m3u8",
+    "https://cdn-5.nxplay.com.br/SONY_MOVIES/index.m3u8"
   ]]
 ]);
 
@@ -70,6 +72,7 @@ const ALLOWED_ENDPOINTS = new Set([
   "45.177.114.115:80",
   "168.197.104.22:80",
   "170.83.16.50:80",
+  "cdn-5.nxplay.com.br:443",
   "stream.telfazalive.com:443",
   "bozztv.com:443",
   "rpn.bozztv.com:443"
