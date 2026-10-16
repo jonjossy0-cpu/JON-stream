@@ -3934,7 +3934,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 #jonFullscreenSponsoredLogo{position:absolute;left:12px;bottom:12px;z-index:120;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:92px;min-height:70px;padding:5px 6px 4px;box-sizing:border-box;border:1px solid rgba(255,255,255,.28);border-radius:8px;background:rgba(5,14,28,.82);box-shadow:0 3px 12px rgba(0,0,0,.24);overflow:hidden;pointer-events:none;opacity:0;visibility:hidden;transform:translateY(calc(100% + 22px));transition:transform .45s ease,opacity .35s ease,visibility .35s;font-family:Arial,sans-serif}
 #jonFullscreenSponsoredLogo.jon-sponsor-visible{opacity:1;visibility:visible;transform:translateY(0)}
 #jonFullscreenSponsoredLogo .jon-sponsor-photo-window{position:relative;width:72px;height:44px;overflow:hidden;display:flex;align-items:center;justify-content:center}
-#jonFullscreenSponsoredLogo .jon-sponsor-photo{display:block;width:100%;height:100%;object-fit:contain;transform:translateX(0);transition:transform .32s ease;filter:none}
+#jonFullscreenSponsoredLogo .jon-sponsor-photo{display:block;width:100%;height:100%;object-fit:contain;transform:translateX(0) rotateY(0deg);transition:transform .38s ease,opacity .25s ease;filter:none;backface-visibility:hidden}
 #jonFullscreenSponsoredLogo .jon-sponsor-label{font-size:8px;line-height:10px;letter-spacing:1px;font-weight:800;color:#fff;text-align:center}
 @media(max-width:600px){#jonFullscreenSponsoredLogo{left:8px;bottom:8px;width:78px;min-height:61px;padding:4px;gap:2px}#jonFullscreenSponsoredLogo .jon-sponsor-photo-window{width:62px;height:37px}#jonFullscreenSponsoredLogo .jon-sponsor-label{font-size:7px;line-height:9px}}
 @media(prefers-reduced-motion:reduce){#jonFullscreenSponsoredLogo,#jonFullscreenSponsoredLogo .jon-sponsor-photo{transition:none}}
@@ -3973,13 +3973,13 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   if(!list.length||!isFullscreen())return;
   photoIndex=index%list.length;
   const url=list[photoIndex];
-  photo.style.transform="translateX(-115%)";
+  photo.style.transform="translateX(-115%) rotateY(-28deg)";
   slideTimer=setTimeout(()=>{
    photo.onerror=()=>{photo.style.opacity="0"};
    photo.onload=()=>{photo.style.opacity="1"};
    photo.src=url;
-   photo.style.transform="translateX(115%)";
-   requestAnimationFrame(()=>requestAnimationFrame(()=>{photo.style.transform="translateX(0)"}));
+   photo.style.transform="translateX(115%) rotateY(28deg)";
+   requestAnimationFrame(()=>requestAnimationFrame(()=>{photo.style.transform="translateX(0) rotateY(0deg)"}));
   },180);
   photoTimer=setTimeout(()=>{
    if(!isFullscreen())return hideBox();
