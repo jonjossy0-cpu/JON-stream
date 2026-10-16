@@ -3976,8 +3976,9 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   if(run!==token||!isFullscreen()||!settings.enabled||!settings.photos.length){hide();return}
   // Once every configured logo has had its 10-second slot, hide the card
   // until the 10-minute cycle timer restarts the carousel.
-  if(attempts>=settings.photos.length){hide();return}
-  if(index>=settings.photos.length)index=0;
+  // index counts logos already attempted in this 10-minute cycle.
+  // Do not wrap to logo 1; startCycle() resets index only when the next cycle is due.
+  if(index>=settings.photos.length){hide();return}
   const url=settings.photos[index++];
   // Keep the sponsor card and SPONSORED label visible while the next logo loads.
   // Hiding here caused the entire card to disappear between every logo.
