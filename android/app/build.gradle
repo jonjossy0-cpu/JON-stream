@@ -92,6 +92,9 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (!sponsorCssFile.asFile.isFile() || !sponsorJsFile.asFile.isFile()) {
             throw new GradleException("Missing Mobile APK sponsor carousel assets.")
         }
+        if (html.contains("jon-sponsor-carousel.js") || html.contains("jon-sponsor-carousel.css")) {
+            throw new GradleException("Mobile sponsor carousel is already injected in the base HTML.")
+        }
         def bottomMarker = '    <div class="tv-fullscreen-bottom">\n'
         if (html.count(bottomMarker) != 1) {
             throw new GradleException("Expected one fullscreen bottom bar in the base HTML.")
@@ -120,9 +123,6 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         }
         if (html.contains("jon-news-ticker.js")) {
             throw new GradleException("Mobile news ticker script is already injected.")
-        }
-        if (html.contains("jon-sponsor-carousel.js") || html.contains("jon-sponsor-carousel.css")) {
-            throw new GradleException("Mobile sponsor carousel is already injected in the base HTML.")
         }
         html = html.replace("</html>", ' <script src="jon-news-ticker.js"></script>\n <script src="jon-sponsor-carousel.js"></script>\n</html>')
 
