@@ -3929,4 +3929,92 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 })();
 </script>
 
+<style id="jonSponsorLogoCarouselCSS">
+#tvVideoFrame{position:relative}
+#jonSponsorLogoCarousel{position:absolute;right:14px;bottom:46px;z-index:90;width:clamp(88px,13vw,126px);height:clamp(112px,20vh,158px);padding:7px 6px 6px;border:1px solid rgba(92,210,255,.9);border-radius:12px;background:linear-gradient(160deg,rgba(88,205,245,.32),rgba(8,43,73,.92));box-shadow:0 8px 24px rgba(0,0,0,.34),inset 0 0 14px rgba(100,220,255,.14);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;opacity:0;transform:translateY(24px) scale(.94);pointer-events:none;overflow:hidden;box-sizing:border-box;transition:opacity .45s ease,transform .55s cubic-bezier(.2,.8,.2,1);animation:jonSponsorGlow 2.8s ease-in-out infinite}
+#jonSponsorLogoCarousel.jon-sponsor-visible{opacity:1;transform:translateY(0) scale(1)}
+#jonSponsorLogoCarousel img{display:block;flex:1 1 auto;min-height:0;min-width:0;max-width:100%;max-height:calc(100% - 22px);width:auto;height:auto;object-fit:contain;animation:jonSponsorLogoFloat 2.4s ease-in-out infinite}
+#jonSponsorLogoCarousel .jon-sponsor-label{position:static;display:block;flex:0 0 auto;max-width:100%;padding:3px 7px;border:1px solid rgba(255,120,120,.7);border-radius:999px;background:linear-gradient(100deg,#c90018,#ff263d,#c90018);background-size:200% 100%;color:#fff;font:900 8px/1.1 Arial,sans-serif;letter-spacing:.9px;text-align:center;box-sizing:border-box;box-shadow:0 0 9px rgba(255,20,45,.45);animation:jonSponsorPulse 1.2s ease-in-out infinite,jonSponsorShine 2s linear infinite}
+@keyframes jonSponsorPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.75;transform:scale(1.07)}}
+@keyframes jonSponsorShine{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@keyframes jonSponsorGlow{0%,100%{box-shadow:0 8px 24px rgba(0,0,0,.34),0 0 0 rgba(65,205,255,0)}50%{box-shadow:0 8px 28px rgba(0,0,0,.4),0 0 18px rgba(65,205,255,.5)}}
+@keyframes jonSponsorLogoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@media(max-width:600px){#jonSponsorLogoCarousel{right:7px;bottom:37px;width:clamp(78px,22vw,106px);height:clamp(98px,18vh,132px);padding:6px 5px 5px;gap:4px;border-radius:10px}#jonSponsorLogoCarousel .jon-sponsor-label{font-size:7px;padding:3px 6px}}
+</style>
+<script id="jonSponsorLogoCarouselJS">
+(function(){
+ "use strict";
+ const frame=document.getElementById("tvVideoFrame");
+ if(!frame)return;
+ const box=document.createElement("div");
+ box.id="jonSponsorLogoCarousel";
+ box.setAttribute("aria-label","Sponsor logos");
+ box.setAttribute("aria-live","off");
+ const image=document.createElement("img");
+ image.alt="Sponsor logo";
+ image.referrerPolicy="no-referrer";
+ const label=document.createElement("span");
+ label.className="jon-sponsor-label";
+ label.textContent="SPONSORED";
+ box.append(image,label);
+ frame.appendChild(box);
+ const PHOTO_MS=10000,CYCLE_MS=600000;
+ let settings={enabled:false,photos:[]},index=0,photoTimer=null,cycleTimer=null,active=false,token=0;
+ const isFullscreen=()=>document.fullscreenElement===frame||document.webkitFullscreenElement===frame;
+ function cleanPhotos(value){
+  if(!Array.isArray(value))return [];
+  const result=[];
+  value.slice(0,20).forEach(item=>{
+   if(typeof item!=="string")return;
+   try{const url=new URL(item.trim());if((url.protocol==="https:"||url.protocol==="http:")&&!result.includes(url.href))result.push(url.href)}catch(_){}
+  });
+  return result;
+ }
+ function hide(){box.classList.remove("jon-sponsor-visible");image.onload=null;image.onerror=null;image.removeAttribute("src")}
+ function clearTimers(){if(photoTimer!==null){clearTimeout(photoTimer);photoTimer=null}if(cycleTimer!==null){clearTimeout(cycleTimer);cycleTimer=null}}
+ function showNext(run,attempts=0){
+  if(run!==token||!isFullscreen()||!settings.enabled||!settings.photos.length){hide();return}
+  if(attempts>=settings.photos.length){hide();photoTimer=setTimeout(()=>{photoTimer=null;showNext(run)},PHOTO_MS);return}
+  if(index>=settings.photos.length)index=0;
+  const url=settings.photos[index++];
+  // Keep the sponsor card and SPONSORED label visible while the next logo loads.
+  // Hiding here caused the entire card to disappear between every logo.
+  let settled=false;
+  image.onload=()=>{
+   if(settled||run!==token)return;
+   settled=true;
+   box.classList.add("jon-sponsor-visible");
+   photoTimer=setTimeout(()=>{photoTimer=null;showNext(run)},PHOTO_MS);
+  };
+  image.onerror=()=>{
+   if(settled||run!==token)return;
+   settled=true;
+   showNext(run,attempts+1);
+  };
+  image.src=url;
+  if(image.complete&&image.naturalWidth>0&&image.naturalHeight>0)image.onload();
+ }
+ function startCycle(){
+  clearTimers();active=false;hide();
+  if(!isFullscreen()||!settings.enabled||!settings.photos.length)return;
+  active=true;token++;const run=token;index=0;showNext(run);
+  cycleTimer=setTimeout(()=>{cycleTimer=null;if(run===token&&isFullscreen())startCycle()},CYCLE_MS);
+ }
+ function stop(){token++;clearTimers();active=false;hide()}
+ function update(data){
+  const next=data&&data.settings&&data.settings.sponsorLogoCarousel||{};
+  const raw=Array.isArray(next.photos)?next.photos:(typeof next.photos==="string"?next.photos.split(/\r?\n/):[]);
+  const fresh={enabled:next.enabled===true,photos:cleanPhotos(raw)};
+  const changed=fresh.enabled!==settings.enabled||fresh.photos.join("\n")!==settings.photos.join("\n");
+  settings=fresh;
+  if(!settings.enabled||!settings.photos.length){stop();return}
+  if(isFullscreen()&&(changed||!active))startCycle();else if(!isFullscreen())stop();
+ }
+ window.addEventListener("jon-firebase-data",event=>update(event.detail));
+ document.addEventListener("fullscreenchange",()=>isFullscreen()?startCycle():stop());
+ document.addEventListener("webkitfullscreenchange",()=>isFullscreen()?startCycle():stop());
+ if(window.__JON_FIREBASE_DATA)update(window.__JON_FIREBASE_DATA);
+})();
+</script>
+
 </html>
