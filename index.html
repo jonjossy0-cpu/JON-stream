@@ -3931,11 +3931,11 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 
 <style id="jonSponsorLogoCarouselCSS">
 #tvVideoFrame{position:relative}
-#jonSponsorLogoCarousel{position:absolute;right:14px;bottom:46px;z-index:90;width:clamp(145px,24vw,230px);max-height:32%;padding:8px;border:1px solid rgba(255,255,255,.28);border-radius:12px;background:rgba(5,12,24,.88);box-shadow:0 8px 28px rgba(0,0,0,.42);display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(120%);pointer-events:none;overflow:hidden;box-sizing:border-box;transition:opacity .35s ease,transform .45s ease}
+#jonSponsorLogoCarousel{position:absolute;right:14px;bottom:46px;z-index:90;width:clamp(104px,17vw,158px);height:clamp(132px,25vh,205px);padding:9px 8px 7px;border:1px solid rgba(92,210,255,.78);border-radius:14px;background:linear-gradient(160deg,rgba(88,205,245,.24),rgba(8,43,73,.88));box-shadow:0 8px 28px rgba(0,0,0,.38),inset 0 0 18px rgba(100,220,255,.08);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;opacity:0;transform:translateY(120%);pointer-events:none;overflow:hidden;box-sizing:border-box;transition:opacity .35s ease,transform .45s ease}
 #jonSponsorLogoCarousel.jon-sponsor-visible{opacity:1;transform:translateY(0)}
-#jonSponsorLogoCarousel img{display:block;max-width:100%;max-height:clamp(65px,19vh,150px);width:auto;height:auto;object-fit:contain}
-#jonSponsorLogoCarousel .jon-sponsor-label{position:absolute;top:4px;left:6px;padding:2px 5px;border-radius:4px;background:rgba(227,27,35,.95);color:#fff;font:800 9px/1.2 Arial,sans-serif;letter-spacing:.5px}
-@media(max-width:600px){#jonSponsorLogoCarousel{right:7px;bottom:37px;width:clamp(120px,34vw,175px);padding:6px;border-radius:9px}#jonSponsorLogoCarousel img{max-height:clamp(55px,15vh,100px)}}
+#jonSponsorLogoCarousel img{display:block;flex:1 1 auto;min-height:0;min-width:0;max-width:100%;max-height:calc(100% - 25px);width:auto;height:auto;object-fit:contain}
+#jonSponsorLogoCarousel .jon-sponsor-label{position:static;display:block;flex:0 0 auto;max-width:100%;padding:4px 8px;border:1px solid rgba(134,231,255,.45);border-radius:999px;background:rgba(45,170,220,.28);color:#eafaff;font:800 9px/1.1 Arial,sans-serif;letter-spacing:1px;text-align:center;box-sizing:border-box}
+@media(max-width:600px){#jonSponsorLogoCarousel{right:7px;bottom:37px;width:clamp(92px,26vw,126px);height:clamp(118px,22vh,165px);padding:7px 6px 6px;gap:5px;border-radius:11px}#jonSponsorLogoCarousel .jon-sponsor-label{font-size:8px;padding:4px 6px}}
 @media(prefers-reduced-motion:reduce){#jonSponsorLogoCarousel{transition:none}}
 </style>
 <script id="jonSponsorLogoCarouselJS">
