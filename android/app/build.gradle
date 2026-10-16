@@ -121,8 +121,9 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (html.contains("jon-news-ticker.js")) {
             throw new GradleException("Mobile news ticker script is already injected.")
         }
-        if (html.contains("jon-sponsor-carousel.js") || html.contains("jon-sponsor-carousel.css")) {
-            throw new GradleException("Mobile sponsor carousel is already injected in the base HTML.")
+        // The CSS link is intentionally inserted above; only reject a duplicate script in the base HTML.
+        if (html.contains("jon-sponsor-carousel.js")) {
+            throw new GradleException("Mobile sponsor carousel script is already injected in the base HTML.")
         }
         html = html.replace("</html>", ' <script src="jon-news-ticker.js"></script>\n <script src="jon-sponsor-carousel.js"></script>\n</html>')
 
