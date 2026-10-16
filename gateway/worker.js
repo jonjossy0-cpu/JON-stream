@@ -22,6 +22,11 @@ const EBS_CHANNELS = new Map([
   ["/ebs/muzika", "https://bozztv.com/ebstv/ebsmusika/tracks-v1a1/mono.ts.m3u8"]
 ]);
 
+// Fixed Sony Movies route; playlist children and segments pass through the guarded /hls endpoint.
+const FIXED_CHANNELS = new Map([
+  ["/sony/movies", "http://45.162.64.114/SONY_MOVIES/index.m3u8"]
+]);
+
 const MAX_REDIRECTS = 3;
 const MAX_URL_LENGTH = 4096;
 const MAX_PLAYLIST_BYTES = 1_000_000;
@@ -208,7 +213,8 @@ async function handle(request) {
   }
 
   const ebsSource = EBS_CHANNELS.get(incoming.pathname);
-  if (incoming.pathname !== "/hls" && !ebsSource) {
+  const fixedSource = FIXED_CHANNELS.get(incoming.pathname);
+  if (incoming.pathname !== "/hls" && !ebsSource && !fixedSource) {
     return new Response("JON Stream HLS Gateway - ONLINE", {
       status: 200,
       headers: {
@@ -221,7 +227,7 @@ async function handle(request) {
   const rate = checkRateLimit(request);
   if (!rate.allowed) return rateLimitResponse(rate.retryAfter);
 
-  const raw = ebsSource || incoming.searchParams.get("url");
+  const raw = ebsSource || fixedSource || incoming.searchParams.get("url");
   if (!raw) {
     return new Response("Missing url", { status: 400, headers: corsHeaders() });
   }
