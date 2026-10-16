@@ -1,4 +1,5 @@
 const ALLOWED_HOSTS = new Set(["88.212.15.19","154.58.202.18","5.9.121.178","23.237.104.106"]);
+const MAX_REDIRECTS = 5;
 
 function corsHeaders() {
   return {
@@ -11,9 +12,23 @@ function corsHeaders() {
 }
 
 function isAllowed(url) {
+  const standardPort =
+    (url.protocol === "http:" && (url.port === "" || url.port === "80")) ||
+    (url.protocol === "https:" && (url.port === "" || url.port === "443"));
+
+  // MBC 2/4 use HTTP on port 8080 at this explicitly allowlisted host.
+  // Keep the exception host-specific; never allow arbitrary nonstandard ports.
+  const approvedMbcPort =
+    url.protocol === "http:" &&
+    url.hostname === "154.58.202.18" &&
+    url.port === "8080";
+
+  const allowedPort = standardPort || approvedMbcPort;
+
   return (url.protocol === "http:" || url.protocol === "https:") &&
-    !url.username && !url.password &&
-    ALLOWED_HOSTS.has(url.hostname);
+    allowedPort &&
+    ALLOWED_HOSTS.has(url.hostname) &&
+    !url.username && !url.password;
 }
 
 function absolutize(value, base) {
@@ -25,7 +40,20 @@ function absolutize(value, base) {
 }
 
 function gatewayUrl(target) {
-  return "https://jon-stream.vercel.app/api/hls?url=" + encodeURIComponent(target);
+  // Vercel sets VERCEL_URL to the hostname of the current deployment.
+  // This keeps preview playlists and their child segments on the same deployment.
+  const deploymentHost =
+    typeof process !== "undefined" && process.env
+      ? process.env.VERCEL_URL
+      : "";
+
+  const gatewayBase =
+    typeof deploymentHost === "string" &&
+    /^[a-z0-9.-]+\.vercel\.app$/i.test(deploymentHost)
+      ? "https://" + deploymentHost
+      : "https://jon-stream.vercel.app";
+
+  return gatewayBase + "/api/hls?url=" + encodeURIComponent(target);
 }
 
 function rewriteUriAttributes(line, baseUrl) {
@@ -38,6 +66,37 @@ function rewriteUriAttributes(line, baseUrl) {
       return 'URI="' + value + '"';
     }
   });
+}
+
+async function readTextLimited(response, maxBytes) {
+  if (!response.body) return "";
+
+  const reader = response.body.getReader();
+  const chunks = [];
+  let total = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        throw new Error("Upstream playlist too large");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder("utf-8").decode(bytes);
 }
 
 function rewritePlaylist(body, baseUrl) {
@@ -57,6 +116,62 @@ function rewritePlaylist(body, baseUrl) {
 
     return rewritten;
   }).join("\n");
+}
+
+async function cancelResponseBody(response) {
+  if (!response.body) return;
+  try {
+    await response.body.cancel();
+  } catch (_) {
+    // The upstream may already have closed the redirect response body.
+  }
+}
+
+async function fetchAllowedTarget(initialTarget, options) {
+  let target = new URL(initialTarget.toString());
+
+  for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects++) {
+    if (!isAllowed(target)) {
+      throw new Error("Upstream host not allowed");
+    }
+
+    const response = await fetch(target.toString(), {
+      ...options,
+      redirect: "manual"
+    });
+
+    if (![301, 302, 303, 307, 308].includes(response.status)) {
+      return { response, finalTarget: target };
+    }
+
+    const location = response.headers.get("location");
+    if (!location) return { response, finalTarget: target };
+
+    if (redirects === MAX_REDIRECTS) {
+      await cancelResponseBody(response);
+      throw new Error("Too many upstream redirects");
+    }
+
+    let nextTarget;
+    try {
+      nextTarget = new URL(location, target);
+    } catch (_) {
+      await cancelResponseBody(response);
+      throw new Error("Invalid upstream redirect");
+    }
+
+    // Validate the destination before issuing the redirected request.
+    if (!isAllowed(nextTarget)) {
+      await cancelResponseBody(response);
+      throw new Error("Redirect destination not allowed");
+    }
+
+    // Do not leave intermediate redirect bodies unread while following the chain.
+    await cancelResponseBody(response);
+    target = nextTarget;
+  }
+
+  throw new Error("Too many upstream redirects");
 }
 
 export default async function handler(req, res) {
@@ -92,69 +207,30 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Validate every redirect destination before making a request to it.
-    // Native redirect:"follow" would contact the next host before we could
-    // enforce the allowlist.
-    let requestUrl = target;
-    let upstream;
-    for (let redirects = 0; redirects <= 5; redirects++) {
-      upstream = await fetch(requestUrl.toString(), {
-        method: req.method,
-        headers: {
-          "User-Agent": req.headers["user-agent"] || "JON-Stream-Gateway",
-          "Accept": req.headers.accept || "*/*",
-          ...(req.headers.range ? { "Range": req.headers.range } : {})
-        },
-        redirect: "manual"
-      });
-
-      const redirectStatus = [301, 302, 303, 307, 308].includes(upstream.status);
-      const location = upstream.headers.get("location");
-      if (!redirectStatus || !location) break;
-
-      if (redirects === 5) {
-        try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
-        Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
-        return res.status(502).send("Too many upstream redirects");
+    const { response: upstream, finalTarget } = await fetchAllowedTarget(target, {
+      method: req.method,
+      headers: {
+        "User-Agent": req.headers["user-agent"] || "JON-Stream-Gateway",
+        "Accept": req.headers.accept || "*/*",
+        ...(req.headers.range ? { "Range": req.headers.range } : {})
       }
+    });
 
-      let nextUrl;
-      try {
-        nextUrl = new URL(location, requestUrl);
-      } catch (_) {
-        try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
-        Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
-        return res.status(502).send("Invalid upstream redirect");
-      }
-
-      if (!isAllowed(nextUrl)) {
-        try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
-        Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
-        return res.status(502).send("Redirected host not allowed");
-      }
-
-      try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
-      requestUrl = nextUrl;
-    }
-
-    const finalTarget = requestUrl;
     const contentType = (upstream.headers.get("content-type") || "").toLowerCase();
     const looksLikePlaylist =
       contentType.includes("mpegurl") ||
       contentType.includes("vnd.apple.mpegurl") ||
-      target.pathname.toLowerCase().endsWith(".m3u8");
+      finalTarget.pathname.toLowerCase().endsWith(".m3u8");
 
     Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
     res.setHeader("Content-Type", looksLikePlaylist ? "application/vnd.apple.mpegurl" : (contentType || "application/octet-stream"));
 
     if (looksLikePlaylist) {
-      const body = await upstream.text();
+      const body = await readTextLimited(upstream, 2 * 1024 * 1024);
       res.statusCode = upstream.status;
       if (req.method === "HEAD") return res.end();
       return res.end(rewritePlaylist(body, finalTarget.toString()));
     }
-
-    const buffer = Buffer.from(await upstream.arrayBuffer());
 
     for (const name of ["content-length", "content-range", "accept-ranges", "etag", "last-modified"]) {
       const value = upstream.headers.get(name);
@@ -162,8 +238,17 @@ export default async function handler(req, res) {
     }
 
     res.statusCode = upstream.status;
-    if (req.method === "HEAD") return res.end();
-    return res.end(buffer);
+    if (req.method === "HEAD") {
+      await cancelResponseBody(upstream);
+      return res.end();
+    }
+
+    // Stream media instead of buffering the entire segment in memory.
+    if (upstream.body) {
+      const { Readable } = await import("node:stream");
+      return Readable.fromWeb(upstream.body).pipe(res);
+    }
+    return res.end();
   } catch (error) {
     Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
     return res.status(502).send("Gateway upstream error");
