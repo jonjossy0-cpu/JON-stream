@@ -3929,4 +3929,101 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 })();
 </script>
 
+<style id="jonSponsorLogoCarouselCSS">
+#tvVideoFrame{position:relative}
+#jonSponsorLogoCarousel{position:absolute;right:14px;bottom:46px;z-index:90;width:clamp(145px,24vw,230px);max-height:32%;padding:8px;border:1px solid rgba(255,255,255,.28);border-radius:12px;background:rgba(5,12,24,.88);box-shadow:0 8px 28px rgba(0,0,0,.42);display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(120%);pointer-events:none;overflow:hidden;box-sizing:border-box;transition:opacity .35s ease,transform .45s ease}
+#jonSponsorLogoCarousel.jon-sponsor-visible{opacity:1;transform:translateY(0)}
+#jonSponsorLogoCarousel img{display:block;max-width:100%;max-height:clamp(65px,19vh,150px);width:auto;height:auto;object-fit:contain}
+#jonSponsorLogoCarousel .jon-sponsor-label{position:absolute;top:4px;left:6px;padding:2px 5px;border-radius:4px;background:rgba(227,27,35,.95);color:#fff;font:800 9px/1.2 Arial,sans-serif;letter-spacing:.5px}
+@media(max-width:600px){#jonSponsorLogoCarousel{right:7px;bottom:37px;width:clamp(120px,34vw,175px);padding:6px;border-radius:9px}#jonSponsorLogoCarousel img{max-height:clamp(55px,15vh,100px)}}
+@media(prefers-reduced-motion:reduce){#jonSponsorLogoCarousel{transition:none}}
+</style>
+<script id="jonSponsorLogoCarouselJS">
+(function(){
+ const frame=document.getElementById("tvVideoFrame");
+ if(!frame)return;
+ const box=document.createElement("div");
+ box.id="jonSponsorLogoCarousel";
+ box.setAttribute("aria-label","Sponsor logos");
+ box.setAttribute("aria-live","off");
+ const label=document.createElement("span");
+ label.className="jon-sponsor-label";
+ label.textContent="SPONSORED";
+ const image=document.createElement("img");
+ image.alt="Sponsor logo";
+ image.referrerPolicy="no-referrer";
+ box.append(label,image);
+ frame.appendChild(box);
+ const TEN_SECONDS=10000, TEN_MINUTES=600000;
+ let settings={enabled:false,photos:[]},photoIndex=0,photoTimer=null,cycleTimer=null,cycleActive=false,renderToken=0;
+ const isFullscreen=()=>document.fullscreenElement===frame||document.webkitFullscreenElement===frame;
+ const cleanPhotos=value=>{
+   if(!Array.isArray(value))return [];
+   return value.slice(0,20).map(v=>{if(typeof v!=="string")return "";try{const u=new URL(v.trim());return (u.protocol==="http:"||u.protocol==="https:")?u.href:""}catch(_){return ""}}).filter(Boolean);
+ };
+ function hide(){
+   box.classList.remove("jon-sponsor-visible");
+   image.removeAttribute("src");
+ }
+ function clearTimers(){
+   if(photoTimer!==null){clearInterval(photoTimer);photoTimer=null}
+   if(cycleTimer!==null){clearTimeout(cycleTimer);cycleTimer=null}
+ }
+ function showPhoto(token){
+   if(token!==renderToken||!isFullscreen()||!settings.enabled||!settings.photos.length){hide();return}
+   if(photoIndex>=settings.photos.length){
+     if(photoTimer!==null){clearInterval(photoTimer);photoTimer=null}
+     hide();
+     return;
+   }
+   const url=settings.photos[photoIndex++];
+   image.onerror=()=>{
+     if(token!==renderToken)return;
+     if(photoIndex<settings.photos.length)showPhoto(token);
+     else {if(photoTimer!==null){clearInterval(photoTimer);photoTimer=null}hide()}
+   };
+   image.onload=()=>{if(token===renderToken&&isFullscreen())box.classList.add("jon-sponsor-visible")};
+   image.src=url;
+   /* A cached image may already be complete by the time handlers are observed. */
+   if(image.complete&&image.naturalWidth>0)box.classList.add("jon-sponsor-visible");
+ }
+ function startCycle(){
+   cycleActive=false;
+   if(cycleTimer!==null){clearTimeout(cycleTimer);cycleTimer=null}
+   if(!isFullscreen()||!settings.enabled||!settings.photos.length){hide();return}
+   cycleActive=true;
+   renderToken++;
+   const token=renderToken;
+   photoIndex=0;
+   showPhoto(token);
+   if(settings.photos.length>1){
+     photoTimer=setInterval(()=>showPhoto(token),TEN_SECONDS);
+   }else{
+     photoTimer=setTimeout(()=>{photoTimer=null;hide()},TEN_SECONDS);
+   }
+   cycleTimer=setTimeout(()=>{cycleTimer=null;startCycle()},TEN_MINUTES);
+ }
+ function stop(){
+   renderToken++;
+   clearTimers();
+   cycleActive=false;
+   hide();
+ }
+ function update(data){
+   const next=data&&data.settings&&data.settings.sponsorLogoCarousel||{};
+   const nextSettings={enabled:next.enabled===true,photos:cleanPhotos(next.photos)};
+   const changed=nextSettings.enabled!==settings.enabled||nextSettings.photos.join("\n")!==settings.photos.join("\n");
+   settings=nextSettings;
+   if(!settings.enabled||!settings.photos.length){stop();return}
+   if(isFullscreen()&&(changed||!cycleActive))startCycle();
+   else if(!isFullscreen())stop();
+ }
+ window.addEventListener("jon-firebase-data",event=>update(event.detail));
+ document.addEventListener("fullscreenchange",()=>{if(isFullscreen())startCycle();else stop()});
+ document.addEventListener("webkitfullscreenchange",()=>{if(isFullscreen())startCycle();else stop()});
+ if(window.__JON_FIREBASE_DATA)update(window.__JON_FIREBASE_DATA);
+ else hide();
+})();
+</script>
+
 </html>
