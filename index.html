@@ -3974,7 +3974,9 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
  function clearTimers(){if(photoTimer!==null){clearTimeout(photoTimer);photoTimer=null}if(cycleTimer!==null){clearTimeout(cycleTimer);cycleTimer=null}}
  function showNext(run,attempts=0){
   if(run!==token||!isFullscreen()||!settings.enabled||!settings.photos.length){hide();return}
-  if(attempts>=settings.photos.length){hide();photoTimer=setTimeout(()=>{photoTimer=null;showNext(run)},PHOTO_MS);return}
+  // Once every configured logo has had its 10-second slot, hide the card
+  // until the 10-minute cycle timer restarts the carousel.
+  if(attempts>=settings.photos.length){hide();return}
   if(index>=settings.photos.length)index=0;
   const url=settings.photos[index++];
   // Keep the sponsor card and SPONSORED label visible while the next logo loads.
