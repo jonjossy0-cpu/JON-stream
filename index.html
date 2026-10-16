@@ -3942,10 +3942,21 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 </style>
 <script id="jonSponsorLogoCarouselJS">
 (function(){
- const frame=document.getElementById("tvVideoFrame");if(!frame)return;
- const box=document.createElement("div");box.id="jonSponsorLogoCarousel";box.setAttribute("aria-label","Sponsor logos");box.setAttribute("aria-live","off");
- const image=document.createElement("img");image.alt="Sponsor logo";image.referrerPolicy="no-referrer";
- const label=document.createElement("span");label.className="jon-sponsor-label";label.textContent="SPONSORED";box.append(image,label);frame.appendChild(box);
+ "use strict";
+ const frame=document.getElementById("tvVideoFrame");
+ if(!frame)return;
+ const box=document.createElement("div");
+ box.id="jonSponsorLogoCarousel";
+ box.setAttribute("aria-label","Sponsor logos");
+ box.setAttribute("aria-live","off");
+ const image=document.createElement("img");
+ image.alt="Sponsor logo";
+ image.referrerPolicy="no-referrer";
+ const label=document.createElement("span");
+ label.className="jon-sponsor-label";
+ label.textContent="SPONSORED";
+ box.append(image,label);
+ frame.appendChild(box);
  const PHOTO_MS=10000,CYCLE_MS=600000;
  let settings={enabled:false,photos:[]},index=0,photoTimer=null,cycleTimer=null,active=false,token=0;
  const isFullscreen=()=>document.fullscreenElement===frame||document.webkitFullscreenElement===frame;
@@ -3958,18 +3969,19 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   });
   return result;
  }
- function hide(){box.classList.remove("jon-sponsor-visible");image.removeAttribute("src");image.onload=null;image.onerror=null}
+ function hide(){box.classList.remove("jon-sponsor-visible");image.onload=null;image.onerror=null;image.removeAttribute("src")}
  function clearTimers(){if(photoTimer!==null){clearTimeout(photoTimer);photoTimer=null}if(cycleTimer!==null){clearTimeout(cycleTimer);cycleTimer=null}}
  function showNext(run){
   if(run!==token||!isFullscreen()||!settings.enabled||!settings.photos.length){hide();return}
   if(index>=settings.photos.length){hide();return}
   hide();
-  const url=settings.photos[index++];let settled=false;
-  function advance(){if(settled||run!==token)return;settled=true;photoTimer=setTimeout(()=>{photoTimer=null;showNext(run)},PHOTO_MS)}
-  image.onload=()=>{if(run!==token||settled)return;box.classList.add("jon-sponsor-visible");advance()};
-  image.onerror=()=>{if(run!==token||settled)return;settled=true;showNext(run)};
+  const url=settings.photos[index++];
+  let settled=false;
+  const fail=()=>{if(settled||run!==token)return;settled=true;showNext(run)};
+  image.onload=()=>{if(settled||run!==token)return;settled=true;box.classList.add("jon-sponsor-visible");photoTimer=setTimeout(()=>{photoTimer=null;showNext(run)},PHOTO_MS)};
+  image.onerror=fail;
   image.src=url;
-  if(image.complete&&image.naturalWidth>0){box.classList.add("jon-sponsor-visible");advance()}
+  if(image.complete&&image.naturalWidth>0&&image.naturalHeight>0)image.onload();
  }
  function startCycle(){
   clearTimers();active=false;hide();
@@ -3989,7 +4001,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
  window.addEventListener("jon-firebase-data",event=>update(event.detail));
  document.addEventListener("fullscreenchange",()=>isFullscreen()?startCycle():stop());
  document.addEventListener("webkitfullscreenchange",()=>isFullscreen()?startCycle():stop());
- if(window.__JON_FIREBASE_DATA)update(window.__JON_FIREBASE_DATA);else hide();
+ if(window.__JON_FIREBASE_DATA)update(window.__JON_FIREBASE_DATA);
 })();
 </script>
 
