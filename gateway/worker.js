@@ -9,6 +9,9 @@ const ALLOWED_HOSTS = new Set([
   "stream8.cinerama.uz",
   "38.252.238.18",
   "45.162.64.114",
+  "45.177.114.115",
+  "168.197.104.22",
+  "170.83.16.50",
   "stream.telfazalive.com",
   "bozztv.com",
   "rpn.bozztv.com"
@@ -24,7 +27,12 @@ const EBS_CHANNELS = new Map([
 
 // Fixed Sony Movies route; playlist children and segments pass through the guarded /hls endpoint.
 const FIXED_CHANNELS = new Map([
-  ["/sony/movies", "http://45.162.64.114/SONY_MOVIES/index.m3u8"]
+  ["/sony/movies", [
+    "http://45.162.64.114/SONY_MOVIES/index.m3u8",
+    "http://45.177.114.115/SONY_MOVIES/index.m3u8",
+    "http://168.197.104.22/SONY_MOVIES/index.m3u8",
+    "http://170.83.16.50/SONY_MOVIES/index.m3u8"
+  ]]
 ]);
 
 const MAX_REDIRECTS = 3;
@@ -59,6 +67,9 @@ const ALLOWED_ENDPOINTS = new Set([
   "stream8.cinerama.uz:443",
   "38.252.238.18:8000",
   "45.162.64.114:80",
+  "45.177.114.115:80",
+  "168.197.104.22:80",
+  "170.83.16.50:80",
   "stream.telfazalive.com:443",
   "bozztv.com:443",
   "rpn.bozztv.com:443"
@@ -198,6 +209,36 @@ async function fetchAllowed(target, request) {
   return { tooManyRedirects: true };
 }
 
+async function fetchFixedChannel(sources, request) {
+  let lastResult = null;
+
+  for (const source of sources) {
+    let target;
+    try {
+      target = new URL(source);
+    } catch (_) {
+      continue;
+    }
+
+    if (!isAllowed(target)) continue;
+
+    try {
+      const result = await fetchAllowed(target, request);
+      lastResult = result;
+
+      // Try the next known mirror if this one rejects the request or is unavailable.
+      if (result.response && result.response.ok) {
+        return { ...result, finalUrl: result.finalUrl || target.toString() };
+      }
+      if (result.blockedRedirect || result.tooManyRedirects) continue;
+    } catch (_) {
+      // A failed mirror should not prevent trying the remaining allowlisted mirrors.
+    }
+  }
+
+  return lastResult || { response: new Response("All Sony Movies mirrors failed", { status: 502 }), finalUrl: sources[0] };
+}
+
 async function handle(request) {
   const incoming = new URL(request.url);
 
@@ -227,33 +268,40 @@ async function handle(request) {
   const rate = checkRateLimit(request);
   if (!rate.allowed) return rateLimitResponse(rate.retryAfter);
 
-  const raw = ebsSource || fixedSource || incoming.searchParams.get("url");
-  if (!raw) {
+  const raw = ebsSource || (Array.isArray(fixedSource) ? null : fixedSource) || incoming.searchParams.get("url");
+  if (!raw && !Array.isArray(fixedSource)) {
     return new Response("Missing url", { status: 400, headers: corsHeaders() });
   }
-  if (raw.length > MAX_URL_LENGTH) {
+  if (raw && raw.length > MAX_URL_LENGTH) {
     return new Response("URL too long", { status: 414, headers: corsHeaders() });
   }
 
   let target;
-  try {
-    target = new URL(raw);
-  } catch (_) {
-    return new Response("Invalid url", { status: 400, headers: corsHeaders() });
+  if (!Array.isArray(fixedSource)) {
+    try {
+      target = new URL(raw);
+    } catch (_) {
+      return new Response("Invalid url", { status: 400, headers: corsHeaders() });
+    }
   }
 
-  if (!isAllowed(target)) {
+  if (!Array.isArray(fixedSource) && !isAllowed(target)) {
     return new Response("Host or port not allowed", { status: 403, headers: corsHeaders() });
   }
 
   let result;
   try {
-    result = await fetchAllowed(target, request);
+    result = Array.isArray(fixedSource)
+      ? await fetchFixedChannel(fixedSource, request)
+      : await fetchAllowed(target, request);
   } catch (_) {
     return new Response("Upstream connection failed", {
       status: 502,
       headers: corsHeaders()
     });
+  }
+  if (Array.isArray(fixedSource)) {
+    try { target = new URL(result.finalUrl || fixedSource[0]); } catch (_) { target = new URL(fixedSource[0]); }
   }
 
   if (result.blockedRedirect) {
