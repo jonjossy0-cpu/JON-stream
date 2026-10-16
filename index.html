@@ -3940,90 +3940,54 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 </style>
 <script id="jonSponsorLogoCarouselJS">
 (function(){
- const frame=document.getElementById("tvVideoFrame");
- if(!frame)return;
- const box=document.createElement("div");
- box.id="jonSponsorLogoCarousel";
- box.setAttribute("aria-label","Sponsor logos");
- box.setAttribute("aria-live","off");
- const label=document.createElement("span");
- label.className="jon-sponsor-label";
- label.textContent="SPONSORED";
- const image=document.createElement("img");
- image.alt="Sponsor logo";
- image.referrerPolicy="no-referrer";
- box.append(label,image);
- frame.appendChild(box);
- const TEN_SECONDS=10000, TEN_MINUTES=600000;
- let settings={enabled:false,photos:[]},photoIndex=0,photoTimer=null,cycleTimer=null,cycleActive=false,renderToken=0;
+ const frame=document.getElementById("tvVideoFrame");if(!frame)return;
+ const box=document.createElement("div");box.id="jonSponsorLogoCarousel";box.setAttribute("aria-label","Sponsor logos");box.setAttribute("aria-live","off");
+ const image=document.createElement("img");image.alt="Sponsor logo";image.referrerPolicy="no-referrer";
+ const label=document.createElement("span");label.className="jon-sponsor-label";label.textContent="SPONSORED";box.append(image,label);frame.appendChild(box);
+ const PHOTO_MS=10000,CYCLE_MS=600000;
+ let settings={enabled:false,photos:[]},index=0,photoTimer=null,cycleTimer=null,active=false,token=0;
  const isFullscreen=()=>document.fullscreenElement===frame||document.webkitFullscreenElement===frame;
- const cleanPhotos=value=>{
-   if(!Array.isArray(value))return [];
-   return value.slice(0,20).map(v=>{if(typeof v!=="string")return "";try{const u=new URL(v.trim());return (u.protocol==="http:"||u.protocol==="https:")?u.href:""}catch(_){return ""}}).filter(Boolean);
- };
- function hide(){
-   box.classList.remove("jon-sponsor-visible");
-   image.removeAttribute("src");
+ function cleanPhotos(value){
+  if(!Array.isArray(value))return [];
+  const result=[];
+  value.slice(0,20).forEach(item=>{
+   if(typeof item!=="string")return;
+   try{const url=new URL(item.trim());if((url.protocol==="https:"||url.protocol==="http:")&&!result.includes(url.href))result.push(url.href)}catch(_){}
+  });
+  return result;
  }
- function clearTimers(){
-   if(photoTimer!==null){clearInterval(photoTimer);photoTimer=null}
-   if(cycleTimer!==null){clearTimeout(cycleTimer);cycleTimer=null}
- }
- function showPhoto(token){
-   if(token!==renderToken||!isFullscreen()||!settings.enabled||!settings.photos.length){hide();return}
-   if(photoIndex>=settings.photos.length){
-     if(photoTimer!==null){clearInterval(photoTimer);photoTimer=null}
-     hide();
-     return;
-   }
-   const url=settings.photos[photoIndex++];
-   image.onerror=()=>{
-     if(token!==renderToken)return;
-     if(photoIndex<settings.photos.length)showPhoto(token);
-     else {if(photoTimer!==null){clearInterval(photoTimer);photoTimer=null}hide()}
-   };
-   image.onload=()=>{if(token===renderToken&&isFullscreen())box.classList.add("jon-sponsor-visible")};
-   image.src=url;
-   /* A cached image may already be complete by the time handlers are observed. */
-   if(image.complete&&image.naturalWidth>0)box.classList.add("jon-sponsor-visible");
+ function hide(){box.classList.remove("jon-sponsor-visible");image.removeAttribute("src");image.onload=null;image.onerror=null}
+ function clearTimers(){if(photoTimer!==null){clearTimeout(photoTimer);photoTimer=null}if(cycleTimer!==null){clearTimeout(cycleTimer);cycleTimer=null}}
+ function showNext(run){
+  if(run!==token||!isFullscreen()||!settings.enabled||!settings.photos.length){hide();return}
+  if(index>=settings.photos.length){hide();return}
+  hide();
+  const url=settings.photos[index++];let settled=false;
+  function advance(){if(settled||run!==token)return;settled=true;photoTimer=setTimeout(()=>{photoTimer=null;showNext(run)},PHOTO_MS)}
+  image.onload=()=>{if(run!==token||settled)return;box.classList.add("jon-sponsor-visible");advance()};
+  image.onerror=()=>{if(run!==token||settled)return;settled=true;showNext(run)};
+  image.src=url;
+  if(image.complete&&image.naturalWidth>0){box.classList.add("jon-sponsor-visible");advance()}
  }
  function startCycle(){
-   cycleActive=false;
-   if(photoTimer!==null){clearTimeout(photoTimer);photoTimer=null}
-   if(cycleTimer!==null){clearTimeout(cycleTimer);cycleTimer=null}
-   if(!isFullscreen()||!settings.enabled||!settings.photos.length){hide();return}
-   cycleActive=true;
-   renderToken++;
-   const token=renderToken;
-   photoIndex=0;
-   showPhoto(token);
-   if(settings.photos.length>1){
-     photoTimer=setInterval(()=>showPhoto(token),TEN_SECONDS);
-   }else{
-     photoTimer=setTimeout(()=>{photoTimer=null;hide()},TEN_SECONDS);
-   }
-   cycleTimer=setTimeout(()=>{cycleTimer=null;startCycle()},TEN_MINUTES);
+  clearTimers();active=false;hide();
+  if(!isFullscreen()||!settings.enabled||!settings.photos.length)return;
+  active=true;token++;const run=token;index=0;showNext(run);
+  cycleTimer=setTimeout(()=>{cycleTimer=null;startCycle()},CYCLE_MS);
  }
- function stop(){
-   renderToken++;
-   clearTimers();
-   cycleActive=false;
-   hide();
- }
+ function stop(){token++;clearTimers();active=false;hide()}
  function update(data){
-   const next=data&&data.settings&&data.settings.sponsorLogoCarousel||{};
-   const nextSettings={enabled:next.enabled===true,photos:cleanPhotos(next.photos)};
-   const changed=nextSettings.enabled!==settings.enabled||nextSettings.photos.join("\n")!==settings.photos.join("\n");
-   settings=nextSettings;
-   if(!settings.enabled||!settings.photos.length){stop();return}
-   if(isFullscreen()&&(changed||!cycleActive))startCycle();
-   else if(!isFullscreen())stop();
+  const next=data&&data.settings&&data.settings.sponsorLogoCarousel||{};
+  const fresh={enabled:next.enabled===true,photos:cleanPhotos(next.photos)};
+  const changed=fresh.enabled!==settings.enabled||fresh.photos.join("\n")!==settings.photos.join("\n");
+  settings=fresh;
+  if(!settings.enabled||!settings.photos.length){stop();return}
+  if(isFullscreen()&&(changed||!active))startCycle();else if(!isFullscreen())stop();
  }
  window.addEventListener("jon-firebase-data",event=>update(event.detail));
- document.addEventListener("fullscreenchange",()=>{if(isFullscreen())startCycle();else stop()});
- document.addEventListener("webkitfullscreenchange",()=>{if(isFullscreen())startCycle();else stop()});
- if(window.__JON_FIREBASE_DATA)update(window.__JON_FIREBASE_DATA);
- else hide();
+ document.addEventListener("fullscreenchange",()=>isFullscreen()?startCycle():stop());
+ document.addEventListener("webkitfullscreenchange",()=>isFullscreen()?startCycle():stop());
+ if(window.__JON_FIREBASE_DATA)update(window.__JON_FIREBASE_DATA);else hide();
 })();
 </script>
 
