@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - mainv
+      - security/inspect-tab-exit
   workflow_dispatch:
 
 permissions:

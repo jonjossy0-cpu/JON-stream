@@ -3819,12 +3819,17 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     });
   }
 
-  function activateGuard(){
-    if (triggered) return;
-    triggered = true;
-    if (checkTimer) window.clearInterval(checkTimer);
-    stopMedia();
+  function exitPage(){
+    // First try to close the tab. Browsers often refuse to close tabs opened
+    // directly by the user, so retain the existing security overlay as fallback.
+    try { window.close(); } catch (_) {}
+    window.setTimeout(function(){
+      if (window.closed) return;
+      showSecurityOverlay();
+    }, 80);
+  }
 
+  function showSecurityOverlay(){
     var overlay = document.createElement('div');
     overlay.setAttribute('role', 'alert');
     overlay.setAttribute('aria-live', 'assertive');
@@ -3836,6 +3841,14 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     ].join(';');
     overlay.textContent = 'JON Stream security protection activated. Close Developer Tools and reload the page to continue.';
     (document.body || document.documentElement).appendChild(overlay);
+  }
+
+  function activateGuard(){
+    if (triggered) return;
+    triggered = true;
+    if (checkTimer) window.clearInterval(checkTimer);
+    stopMedia();
+    exitPage();
   }
 
   function likelyDockedDevTools(){
@@ -3861,13 +3874,19 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     var modifier = event.ctrlKey || event.metaKey;
     var inspectShortcut =
       key === 'f12' ||
-      (modifier && event.shiftKey && (key === 'i' || key === 'j' || key === 'c')) ||
+      (modifier && event.shiftKey && (key === 'i' || key === 'j' || key === 'c' || key === 'k' || key === 'e' || key === 'm')) ||
       (event.metaKey && event.altKey && (key === 'i' || key === 'j' || key === 'c'));
     if (inspectShortcut) {
       event.preventDefault();
       event.stopPropagation();
       activateGuard();
     }
+  }, true);
+
+  // Discourage the browser context menu, which commonly exposes an Inspect shortcut.
+  // This is a deterrent only; it is not a security boundary.
+  window.addEventListener('contextmenu', function(event){
+    event.preventDefault();
   }, true);
 
   window.addEventListener('resize', check, {passive:true});
