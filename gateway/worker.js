@@ -258,7 +258,8 @@ async function handle(request) {
 
   const ebsSource = EBS_CHANNELS.get(incoming.pathname);
   const fixedSource = FIXED_CHANNELS.get(incoming.pathname);
-  if (incoming.pathname !== "/hls" && !ebsSource && !fixedSource) {
+  const isCnArabia = incoming.pathname === "/cnarabia";
+  if (incoming.pathname !== "/hls" && !ebsSource && !fixedSource && !isCnArabia) {
     return new Response("JON Stream HLS Gateway - ONLINE", {
       status: 200,
       headers: {
@@ -271,7 +272,31 @@ async function handle(request) {
   const rate = checkRateLimit(request);
   if (!rate.allowed) return rateLimitResponse(rate.retryAfter);
 
-  const raw = ebsSource || (Array.isArray(fixedSource) ? null : fixedSource) || incoming.searchParams.get("url");
+  let raw = ebsSource || (Array.isArray(fixedSource) ? null : fixedSource) || incoming.searchParams.get("url");
+  if (isCnArabia) {
+    // Obtain a fresh signed playlist URL on each request; hard-coded signatures expire.
+    let signResponse;
+    try {
+      signResponse = await fetch("https://telfazalive.com/api/hls/sign?streamId=%2Fgl%2FCNArabia.m3u8", {
+        headers: {
+          "Accept": "application/json",
+          "User-Agent": request.headers.get("User-Agent") || "Mozilla/5.0",
+          "Referer": "https://telfazalive.com/"
+        }
+      });
+    } catch (_) {
+      return new Response("CN Arabia signing service unavailable", { status: 502, headers: corsHeaders() });
+    }
+    if (!signResponse.ok) {
+      return new Response("CN Arabia signing request failed: HTTP " + signResponse.status, { status: 502, headers: corsHeaders() });
+    }
+    let signed;
+    try { signed = await signResponse.json(); } catch (_) {
+      return new Response("Invalid CN Arabia signing response", { status: 502, headers: corsHeaders() });
+    }
+    raw = signed && typeof signed.url === "string" ? signed.url : null;
+    if (!raw) return new Response("CN Arabia signing response has no URL", { status: 502, headers: corsHeaders() });
+  }
   if (!raw && !Array.isArray(fixedSource)) {
     return new Response("Missing url", { status: 400, headers: corsHeaders() });
   }
