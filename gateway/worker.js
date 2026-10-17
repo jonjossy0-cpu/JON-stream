@@ -14,6 +14,7 @@ const ALLOWED_HOSTS = new Set([
   "170.83.16.50",
   "cdn-5.nxplay.com.br",
   "stream.telfazalive.com",
+  "live-uae-next.spacetoongo.com",
   "bozztv.com",
   "rpn.bozztv.com"
 ]);
@@ -74,6 +75,7 @@ const ALLOWED_ENDPOINTS = new Set([
   "170.83.16.50:80",
   "cdn-5.nxplay.com.br:443",
   "stream.telfazalive.com:443",
+  "live-uae-next.spacetoongo.com:443",
   "bozztv.com:443",
   "rpn.bozztv.com:443"
 ]);
