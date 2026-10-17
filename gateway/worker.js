@@ -129,6 +129,26 @@ function absolutize(value, base) {
   }
 }
 
+// Some signed HLS sources put session/auth parameters on the master playlist URL
+// but omit them from relative child-playlist and segment URLs. Carry only the
+// known auth parameters to same-origin children, never to a different host.
+function inheritAuthParams(childValue, base) {
+  try {
+    const child = new URL(childValue);
+    const parent = new URL(base);
+    if (child.origin !== parent.origin) return child.toString();
+
+    for (const key of ["nimblesessionid", "wmsAuthSign"]) {
+      if (!child.searchParams.has(key) && parent.searchParams.has(key)) {
+        child.searchParams.set(key, parent.searchParams.get(key));
+      }
+    }
+    return child.toString();
+  } catch (_) {
+    return childValue;
+  }
+}
+
 function proxiedUrl(target) {
   return "/hls?url=" + encodeURIComponent(target);
 }
@@ -153,7 +173,7 @@ function rewriteUriAttributes(line, base) {
     if (!absolute) return match;
 
     try {
-      const url = new URL(absolute);
+      const url = new URL(inheritAuthParams(absolute, base));
       return isAllowed(url)
         ? 'URI="' + proxiedUrl(url.toString()) + '"'
         : match;
@@ -176,7 +196,7 @@ function rewritePlaylist(body, base) {
     if (!absolute) return line;
 
     try {
-      const url = new URL(absolute);
+      const url = new URL(inheritAuthParams(absolute, base));
       return isAllowed(url) ? proxiedUrl(url.toString()) : line;
     } catch (_) {
       return line;
