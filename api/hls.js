@@ -24,34 +24,34 @@ function absolutize(value, base) {
   }
 }
 
-function gatewayUrl(target) {
-  return "https://jon-stream.vercel.app/api/hls?url=" + encodeURIComponent(target);
+function gatewayUrl(target, gatewayOrigin) {
+  return gatewayOrigin + "/api/hls?url=" + encodeURIComponent(target);
 }
 
-function rewriteUriAttributes(line, baseUrl) {
+function rewriteUriAttributes(line, baseUrl, gatewayOrigin) {
   return line.replace(/URI="([^"]+)"/gi, (_, value) => {
     const absolute = absolutize(value, baseUrl);
     try {
       const u = new URL(absolute);
-      return isAllowed(u) ? 'URI="' + gatewayUrl(absolute) + '"' : 'URI="' + absolute + '"';
+      return isAllowed(u) ? 'URI="' + gatewayUrl(absolute, gatewayOrigin) + '"' : 'URI="' + absolute + '"';
     } catch (_) {
       return 'URI="' + value + '"';
     }
   });
 }
 
-function rewritePlaylist(body, baseUrl) {
+function rewritePlaylist(body, baseUrl, gatewayOrigin) {
   return body.split(/\r?\n/).map(line => {
     const trimmed = line.trim();
     if (!trimmed) return line;
 
-    let rewritten = rewriteUriAttributes(line, baseUrl);
+    let rewritten = rewriteUriAttributes(line, baseUrl, gatewayOrigin);
 
     if (!trimmed.startsWith("#")) {
       const absolute = absolutize(trimmed, baseUrl);
       try {
         const u = new URL(absolute);
-        if (isAllowed(u)) rewritten = gatewayUrl(absolute);
+        if (isAllowed(u)) rewritten = gatewayUrl(absolute, gatewayOrigin);
       } catch (_) {}
     }
 
@@ -151,7 +151,11 @@ export default async function handler(req, res) {
       const body = await upstream.text();
       res.statusCode = upstream.status;
       if (req.method === "HEAD") return res.end();
-      return res.end(rewritePlaylist(body, finalTarget.toString()));
+      const requestHost = String(req.headers.host || "");
+      const gatewayOrigin = /^jon-stream(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(requestHost)
+        ? "https://" + requestHost
+        : "https://jon-stream.vercel.app";
+      return res.end(rewritePlaylist(body, finalTarget.toString(), gatewayOrigin));
     }
 
     const buffer = Buffer.from(await upstream.arrayBuffer());
