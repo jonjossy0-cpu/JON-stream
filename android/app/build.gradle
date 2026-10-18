@@ -110,6 +110,8 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
 
         def style = '\n<style id="jonMobileFullscreenChannelNav">\n' +
                 '/* Compact fullscreen channel navigation: icons only, minimal space. */\n' +
+                '/* Mobile APK only: keep the TV player box black until the selected channel starts playing. */\n' +
+                '#tvVideoFrame.jon-mobile-tv-waiting .tv-fullscreen-overlay{display:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important}\n' +
                 '#tvVideoFrame .tv-fullscreen-bottom #tvFullscreenPrevious,\n' +
                 '#tvVideoFrame .tv-fullscreen-bottom #tvFullscreenNext{min-width:34px;width:34px;min-height:32px;padding:4px;font-size:15px;line-height:1;flex:0 0 34px}\n' +
                 '</style>\n'
@@ -124,7 +126,8 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (html.contains("jon-news-ticker.js")) {
             throw new GradleException("Mobile news ticker script is already injected.")
         }
-        html = html.replace("</html>", ' <script src="jon-news-ticker.js"></script>\n <script src="jon-sponsor-carousel.js"></script>\n</html>')
+        html = html.replace("</html>", ' <script src="jon-news-ticker.js"></script>\\n <script src="jon-sponsor-carousel.js"></script>\\n' +
+                '<script id="jonMobileBlackStartupScreen">(function(){var frame=document.getElementById("tvVideoFrame"),video=document.getElementById("tvPlayer");if(!frame||!video)return;var original=window.playTVStream;if(typeof original==="function"){window.playTVStream=function(){frame.classList.add("jon-mobile-tv-waiting");return original.apply(this,arguments)}}var clearWaiting=function(){if(!video.paused&&video.readyState>=2)frame.classList.remove("jon-mobile-tv-waiting")};video.addEventListener("playing",clearWaiting);video.addEventListener("loadeddata",clearWaiting)})();</script>\\n</html>')
 
         def target = outputFile.get().asFile
         target.parentFile.mkdirs()
