@@ -15,7 +15,8 @@ const ALLOWED_HOSTS = new Set([
   "cdn-5.nxplay.com.br",
   "stream.telfazalive.com",
   "bozztv.com",
-  "rpn.bozztv.com"
+  "rpn.bozztv.com",
+  "amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv"
 ]);
 
 // Fixed EBS entry points avoid requiring users to paste encoded source URLs.
@@ -23,7 +24,8 @@ const ALLOWED_HOSTS = new Set([
 const EBS_CHANNELS = new Map([
   ["/ebs/tv", "https://bozztv.com/ebstv/ebstv/tracks-v1a1/mono.ts.m3u8"],
   ["/ebs/cinema", "https://bozztv.com/ebstv/ebscinema/tracks-v1a1/mono.ts.m3u8"],
-  ["/ebs/muzika", "https://bozztv.com/ebstv/ebsmusika/tracks-v1a1/mono.ts.m3u8"]
+  ["/ebs/muzika", "https://bozztv.com/ebstv/ebsmusika/tracks-v1a1/mono.ts.m3u8"],
+  ["/great/christmas", "https://amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv/playlist/amg01753-narrativeuk-greatchristmas-lggb/playlist.m3u8"]
 ]);
 
 // Fixed Sony Movies route; playlist children and segments pass through the guarded /hls endpoint.
@@ -75,7 +77,8 @@ const ALLOWED_ENDPOINTS = new Set([
   "cdn-5.nxplay.com.br:443",
   "stream.telfazalive.com:443",
   "bozztv.com:443",
-  "rpn.bozztv.com:443"
+  "rpn.bozztv.com:443",
+  "amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv:443"
 ]);
 
 function isAllowed(url) {
