@@ -7,6 +7,7 @@ const ALLOWED_ENDPOINTS = new Set([
   "amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv:443"
 ]);
 const MAX_PLAYLIST_BYTES = 1_000_000;
+const MAX_URL_LENGTH = 4096;
 
 function corsHeaders() {
   return {
@@ -111,6 +112,10 @@ export default async function handler(req, res) {
   if (!raw) {
     Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
     return res.status(400).send("Missing url");
+  }
+  if (raw.length > MAX_URL_LENGTH) {
+    Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
+    return res.status(414).send("URL too long");
   }
 
   let target;
