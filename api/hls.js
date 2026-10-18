@@ -173,7 +173,7 @@ export default async function handler(req, res) {
     // enforce the allowlist.
     let requestUrl = target;
     let upstream;
-    for (let redirects = 0; redirects <= 5; redirects++) {
+    for (let redirects = 0; redirects <= 3; redirects++) {
       upstream = await fetch(requestUrl.toString(), {
         method: req.method,
         headers: {
@@ -188,7 +188,7 @@ export default async function handler(req, res) {
       const location = upstream.headers.get("location");
       if (!redirectStatus || !location) break;
 
-      if (redirects === 5) {
+      if (redirects === 3) {
         try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
         Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
         return res.status(502).send("Too many upstream redirects");
