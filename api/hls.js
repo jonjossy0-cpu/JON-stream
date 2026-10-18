@@ -33,7 +33,7 @@ function rewriteUriAttributes(line, baseUrl) {
     const absolute = absolutize(value, baseUrl);
     try {
       const u = new URL(absolute);
-      return isAllowed(u) ? 'URI="' + gatewayUrl(absolute) + '"' : 'URI="' + absolute + '"';
+      return isAllowed(u) ? 'URI="' + gatewayUrl(absolute, gatewayOrigin) + '"' : 'URI="' + absolute + '"';
     } catch (_) {
       return 'URI="' + value + '"';
     }
