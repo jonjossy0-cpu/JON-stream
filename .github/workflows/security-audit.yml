@@ -52,7 +52,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          patterns='-----BEGIN (RSA|OPENSSH|EC|DSA|PGP) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN PRIVATE KEY-----|"private_key"[[:space:]]*:[[:space:]]*"-----BEGIN'
+          # Split the literal PEM marker so this scanner does not match its own rule.
+          private_key_header='-----BEGIN '"PRIVATE KEY-----"
+          patterns='-----BEGIN (RSA|OPENSSH|EC|DSA|PGP) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|'"$private_key_header"'|"private_key"[[:space:]]*:[[:space:]]*"-----BEGIN'
 
           if git grep -nE -e "$patterns" -- . ':!*.md'; then
             echo "Potential hard-coded credential detected in the current tree."
@@ -65,7 +67,7 @@ jobs:
             fi
           fi
 
-          history_matches="$(git log --all -G"$patterns" --format= -- . ':!*.md')"
+          history_matches="$(git log --all -G"$patterns" --format= -- . ':!*.md' ':!.github/workflows/security-audit.yml')"
           if [ -n "$history_matches" ]; then
             echo "Potential hard-coded credential detected in Git history. Rotate/revoke it before merging."
             exit 1
