@@ -134,7 +134,7 @@ jobs:
           const workerSource = fs.readFileSync("gateway/worker.js", "utf8");
           const apiLoop = apiSource.match(/for \(let redirects = 0; redirects <= (\d+); redirects\+\+\)/);
           const apiReject = apiSource.match(/if \(redirects === (\d+)\)/);
-          const workerLimit = workerSource.match(/const MAX_REDIRECTS = (\d+););
+          const workerLimit = workerSource.match(/const MAX_REDIRECTS = (\d+);/);
           if (!apiLoop || !apiReject || !workerLimit ||
               apiLoop[1] !== apiReject[1] || apiLoop[1] !== workerLimit[1]) {
             throw new Error("HLS redirect limits do not match between Vercel API and Cloudflare Worker");
