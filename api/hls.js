@@ -53,6 +53,28 @@ function rewriteUriAttributes(line, baseUrl, gatewayOrigin) {
   });
 }
 
+async function readBoundedText(response, maxBytes) {
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const chunks = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(Buffer.from(value));
+    }
+    return Buffer.concat(chunks, total).toString("utf8");
+  } finally {
+    try { reader.releaseLock(); } catch (_) {}
+  }
+}
+
 function rewritePlaylist(body, baseUrl, gatewayOrigin) {
   return body.split(/\r?\n/).map(line => {
     const trimmed = line.trim();
@@ -166,12 +188,14 @@ export default async function handler(req, res) {
         try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
         return res.status(413).send("Playlist too large");
       }
-      const body = await upstream.text();
-      if (Buffer.byteLength(body, "utf8") > MAX_PLAYLIST_BYTES) {
-        return res.status(413).send("Playlist too large");
+      if (req.method === "HEAD") {
+        try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
+        res.statusCode = upstream.status;
+        return res.end();
       }
+      const body = await readBoundedText(upstream, MAX_PLAYLIST_BYTES);
+      if (body === null) return res.status(413).send("Playlist too large");
       res.statusCode = upstream.status;
-      if (req.method === "HEAD") return res.end();
       const requestHost = String(req.headers.host || "");
       const gatewayOrigin = /^jon-stream(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(requestHost)
         ? "https://" + requestHost
