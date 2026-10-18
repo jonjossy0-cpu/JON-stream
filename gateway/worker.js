@@ -22,9 +22,18 @@ const ALLOWED_HOSTS = new Set([
 // Fixed EBS entry points avoid requiring users to paste encoded source URLs.
 // HLS child playlists and segments still use the guarded /hls proxy route.
 const EBS_CHANNELS = new Map([
-  ["/ebs/tv", "https://rpn.bozztv.com/ebstv/ebstv/index.m3u8"],
-  ["/ebs/cinema", "https://rpn.bozztv.com/ebstv/ebscinema/index.m3u8"],
-  ["/ebs/muzika", "https://rpn.bozztv.com/ebstv/ebsmusika/index.m3u8"],
+  ["/ebs/tv", [
+    "https://rpn.bozztv.com/ebstv/ebstv/index.m3u8",
+    "https://bozztv.com/ebstv/ebstv/tracks-v1a1/mono.ts.m3u8"
+  ]],
+  ["/ebs/cinema", [
+    "https://rpn.bozztv.com/ebstv/ebscinema/index.m3u8",
+    "https://bozztv.com/ebstv/ebscinema/tracks-v1a1/mono.ts.m3u8"
+  ]],
+  ["/ebs/muzika", [
+    "https://rpn.bozztv.com/ebstv/ebsmusika/index.m3u8",
+    "https://bozztv.com/ebstv/ebsmusika/tracks-v1a1/mono.ts.m3u8"
+  ]],
   ["/great/christmas", "https://amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv/playlist/amg01753-narrativeuk-greatchristmas-lggb/playlist.m3u8"]
 ]);
 
@@ -261,6 +270,8 @@ async function handle(request) {
 
   const ebsSource = EBS_CHANNELS.get(incoming.pathname);
   const fixedSource = FIXED_CHANNELS.get(incoming.pathname);
+  const sourceList = Array.isArray(ebsSource) ? ebsSource :
+    (Array.isArray(fixedSource) ? fixedSource : null);
   if (incoming.pathname !== "/hls" && !ebsSource && !fixedSource) {
     return new Response("JON Stream HLS Gateway - ONLINE", {
       status: 200,
@@ -274,8 +285,8 @@ async function handle(request) {
   const rate = checkRateLimit(request);
   if (!rate.allowed) return rateLimitResponse(rate.retryAfter);
 
-  const raw = ebsSource || (Array.isArray(fixedSource) ? null : fixedSource) || incoming.searchParams.get("url");
-  if (!raw && !Array.isArray(fixedSource)) {
+  const raw = sourceList ? null : (ebsSource || fixedSource || incoming.searchParams.get("url"));
+  if (!raw && !sourceList) {
     return new Response("Missing url", { status: 400, headers: corsHeaders() });
   }
   if (raw && raw.length > MAX_URL_LENGTH) {
@@ -283,7 +294,7 @@ async function handle(request) {
   }
 
   let target;
-  if (!Array.isArray(fixedSource)) {
+  if (!sourceList) {
     try {
       target = new URL(raw);
     } catch (_) {
@@ -291,14 +302,14 @@ async function handle(request) {
     }
   }
 
-  if (!Array.isArray(fixedSource) && !isAllowed(target)) {
+  if (!sourceList && !isAllowed(target)) {
     return new Response("Host or port not allowed", { status: 403, headers: corsHeaders() });
   }
 
   let result;
   try {
-    result = Array.isArray(fixedSource)
-      ? await fetchFixedChannel(fixedSource, request)
+    result = sourceList
+      ? await fetchFixedChannel(sourceList, request)
       : await fetchAllowed(target, request);
   } catch (_) {
     return new Response("Upstream connection failed", {
@@ -306,8 +317,8 @@ async function handle(request) {
       headers: corsHeaders()
     });
   }
-  if (Array.isArray(fixedSource)) {
-    try { target = new URL(result.finalUrl || fixedSource[0]); } catch (_) { target = new URL(fixedSource[0]); }
+  if (sourceList) {
+    try { target = new URL(result.finalUrl || sourceList[0]); } catch (_) { target = new URL(sourceList[0]); }
   }
 
   if (result.blockedRedirect) {
