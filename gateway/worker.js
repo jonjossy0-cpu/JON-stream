@@ -28,6 +28,7 @@ const EBS_CHANNELS = new Map([
 
 // Fixed Sony Movies route; playlist children and segments pass through the guarded /hls endpoint.
 const FIXED_CHANNELS = new Map([
+  ["/nickelodeon", "https://stream8.cinerama.uz/1500/playlist.m3u8"],
   ["/sony/movies", [
     "http://45.162.64.114/SONY_MOVIES/index.m3u8",
     "http://45.177.114.115/SONY_MOVIES/index.m3u8",
