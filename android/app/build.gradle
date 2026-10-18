@@ -112,7 +112,6 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
                 '/* Compact fullscreen channel navigation: icons only, minimal space. */\n' +
                 '/* Mobile only: cover the native gray play placeholder with a black frame until real playback starts. */\n' +
                 '#tvVideoFrame{background:#000!important}\n' +
-                '#tvVideoFrame.jon-mobile-black-placeholder #tvPlayer{opacity:0!important}\n' +
                 '#tvVideoFrame.jon-mobile-black-placeholder .tv-fullscreen-overlay{display:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important}\n' +
                 '#tvVideoFrame .tv-fullscreen-bottom #tvFullscreenPrevious,\n' +
                 '#tvVideoFrame .tv-fullscreen-bottom #tvFullscreenNext{min-width:34px;width:34px;min-height:32px;padding:4px;font-size:15px;line-height:1;flex:0 0 34px}\n' +
@@ -134,7 +133,7 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         }
         html = html.replace(playMarker, playMarker + '\n document.getElementById("tvVideoFrame")?.classList.add("jon-mobile-black-placeholder");')
         html = html.replace("</html>", ' <script src="jon-news-ticker.js"></script>\n <script src="jon-sponsor-carousel.js"></script>\n' +
-                '<script id="jonMobileBlackPlaceholder">(function(){var frame=document.getElementById("tvVideoFrame"),video=document.getElementById("tvPlayer");if(!frame||!video)return;frame.classList.add("jon-mobile-black-placeholder");video.addEventListener("playing",function(){frame.classList.remove("jon-mobile-black-placeholder")});video.addEventListener("emptied",function(){frame.classList.add("jon-mobile-black-placeholder")});})();</script>\n</html>')
+                '<script id="jonMobileBlackPlaceholder">(function(){var frame=document.getElementById("tvVideoFrame"),video=document.getElementById("tvPlayer");if(!frame||!video)return;function waiting(){frame.classList.add("jon-mobile-black-placeholder");video.controls=false}function playing(){frame.classList.remove("jon-mobile-black-placeholder");video.controls=true}waiting();video.addEventListener("playing",playing);video.addEventListener("emptied",waiting);})();</script>\n</html>')
 
         def target = outputFile.get().asFile
         target.parentFile.mkdirs()
