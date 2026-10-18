@@ -224,30 +224,9 @@ async function fetchAllowed(target, request) {
   return { tooManyRedirects: true };
 }
 
-async function fetchFixedChannel(sources, request, raceMirrors = false) {
-  // EBS mirrors are requested concurrently so a slow/rejecting first mirror
-  // does not delay playback when another known mirror is ready sooner.
-  if (raceMirrors) {
-    const attempts = sources.map(async source => {
-      const target = new URL(source);
-      if (!isAllowed(target)) throw new Error("Mirror not allowlisted");
-      const result = await fetchAllowed(target, request);
-      if (result.response && result.response.ok) {
-        return { ...result, finalUrl: result.finalUrl || target.toString() };
-      }
-      throw new Error("Mirror returned a non-success response");
-    });
-    try {
-      return await Promise.any(attempts);
-    } catch (_) {
-      return {
-        response: new Response("All EBS mirrors failed", { status: 502 }),
-        finalUrl: sources[0]
-      };
-    }
-  }
-
+async function fetchFixedChannel(sources, request) {
   let lastResult = null;
+
   for (const source of sources) {
     let target;
     try {
@@ -255,10 +234,14 @@ async function fetchFixedChannel(sources, request, raceMirrors = false) {
     } catch (_) {
       continue;
     }
+
     if (!isAllowed(target)) continue;
+
     try {
       const result = await fetchAllowed(target, request);
       lastResult = result;
+
+      // Try the next known mirror if this one rejects the request or is unavailable.
       if (result.response && result.response.ok) {
         return { ...result, finalUrl: result.finalUrl || target.toString() };
       }
@@ -267,6 +250,7 @@ async function fetchFixedChannel(sources, request, raceMirrors = false) {
       // A failed mirror should not prevent trying the remaining allowlisted mirrors.
     }
   }
+
   return lastResult || { response: new Response("All Sony Movies mirrors failed", { status: 502 }), finalUrl: sources[0] };
 }
 
@@ -325,7 +309,7 @@ async function handle(request) {
   let result;
   try {
     result = sourceList
-      ? await fetchFixedChannel(sourceList, request, Boolean(ebsSource))
+      ? await fetchFixedChannel(sourceList, request)
       : await fetchAllowed(target, request);
   } catch (_) {
     return new Response("Upstream connection failed", {
