@@ -54,12 +54,19 @@ jobs:
           set -euo pipefail
           patterns='-----BEGIN (RSA|OPENSSH|EC|DSA|PGP) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN PRIVATE KEY-----|"private_key"[[:space:]]*:[[:space:]]*"-----BEGIN'
 
-          if git grep -nE "$patterns" -- . ':!*.md'; then
+          if git grep -nE -e "$patterns" -- . ':!*.md'; then
             echo "Potential hard-coded credential detected in the current tree."
             exit 1
+          else
+            scan_status=$?
+            if [ "$scan_status" -gt 1 ]; then
+              echo "Secret scan failed while reading the current tree (exit $scan_status)." >&2
+              exit "$scan_status"
+            fi
           fi
 
-          if git log --all -G "$patterns" --format= -- . ':!*.md' | grep -q .; then
+          history_matches="$(git log --all -G"$patterns" --format= -- . ':!*.md')"
+          if [ -n "$history_matches" ]; then
             echo "Potential hard-coded credential detected in Git history. Rotate/revoke it before merging."
             exit 1
           fi
