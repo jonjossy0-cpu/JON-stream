@@ -25,7 +25,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if git grep -nE '-----BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}' -- . ':!*.md'; then
+          if git grep -nE -e '-----BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}' -- . ':!*.md'; then
             echo "Potential hard-coded secret detected. Remove it before building."
             exit 1
           fi
@@ -51,7 +51,15 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Build unsigned PR APKs
+        if: github.event_name == 'pull_request'
+        working-directory: android
+        run: |
+          set -euo pipefail
+          gradle :app:assembleMobileDebug :app:assembleTvDebug
+
       - name: Prepare release signing keystore
+        if: github.ref == 'refs/heads/mainv' && github.event_name != 'pull_request'
         shell: bash
         env:
           JON_RELEASE_KEYSTORE_B64_PART1: ${{ secrets.JON_RELEASE_KEYSTORE_B64_PART1 }}
@@ -69,6 +77,7 @@ jobs:
           test -s "${RUNNER_TEMP}/jon-stream-release.jks"
 
       - name: Build signed Release APK
+        if: github.ref == 'refs/heads/mainv' && github.event_name != 'pull_request'
         working-directory: android
         env:
           JON_RELEASE_STORE_FILE: ${{ runner.temp }}/jon-stream-release.jks
@@ -83,6 +92,7 @@ jobs:
           gradle :app:assembleMobileRelease :app:assembleTvRelease
 
       - name: Upload signed Release APK
+        if: github.ref == 'refs/heads/mainv' && github.event_name != 'pull_request'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: JON-Stream-Mobile-and-TV-APKs
