@@ -1,4 +1,12 @@
 const ALLOWED_HOSTS = new Set(["88.212.15.19","154.58.202.18","5.9.121.178","23.237.104.106","amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv"]);
+const ALLOWED_ENDPOINTS = new Set([
+  "88.212.15.19:80", "88.212.15.19:443",
+  "154.58.202.18:80", "154.58.202.18:443",
+  "5.9.121.178:80", "5.9.121.178:443",
+  "23.237.104.106:80", "23.237.104.106:443",
+  "amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv:443"
+]);
+const MAX_PLAYLIST_BYTES = 1_000_000;
 
 function corsHeaders() {
   return {
@@ -10,10 +18,15 @@ function corsHeaders() {
   };
 }
 
+function endpointKey(url) {
+  return `${url.hostname}:${url.port || (url.protocol === "https:" ? "443" : "80")}`;
+}
+
 function isAllowed(url) {
   return (url.protocol === "http:" || url.protocol === "https:") &&
     !url.username && !url.password &&
-    ALLOWED_HOSTS.has(url.hostname);
+    ALLOWED_HOSTS.has(url.hostname) &&
+    ALLOWED_ENDPOINTS.has(endpointKey(url));
 }
 
 function absolutize(value, base) {
@@ -148,7 +161,15 @@ export default async function handler(req, res) {
     res.setHeader("Content-Type", looksLikePlaylist ? "application/vnd.apple.mpegurl" : (contentType || "application/octet-stream"));
 
     if (looksLikePlaylist) {
+      const lengthHeader = Number(upstream.headers.get("content-length") || 0);
+      if (lengthHeader > MAX_PLAYLIST_BYTES) {
+        try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
+        return res.status(413).send("Playlist too large");
+      }
       const body = await upstream.text();
+      if (Buffer.byteLength(body, "utf8") > MAX_PLAYLIST_BYTES) {
+        return res.status(413).send("Playlist too large");
+      }
       res.statusCode = upstream.status;
       if (req.method === "HEAD") return res.end();
       const requestHost = String(req.headers.host || "");
@@ -158,16 +179,20 @@ export default async function handler(req, res) {
       return res.end(rewritePlaylist(body, finalTarget.toString(), gatewayOrigin));
     }
 
-    const buffer = Buffer.from(await upstream.arrayBuffer());
-
     for (const name of ["content-length", "content-range", "accept-ranges", "etag", "last-modified"]) {
       const value = upstream.headers.get(name);
       if (value) res.setHeader(name, value);
     }
 
     res.statusCode = upstream.status;
-    if (req.method === "HEAD") return res.end();
-    return res.end(buffer);
+    if (req.method === "HEAD") {
+      try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
+      return res.end();
+    }
+    if (!upstream.body) return res.end();
+    // Stream media instead of buffering the full segment in function memory.
+    const { Readable } = await import("node:stream");
+    return Readable.fromWeb(upstream.body).pipe(res);
   } catch (error) {
     Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
     return res.status(502).send("Gateway upstream error");
