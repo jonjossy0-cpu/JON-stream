@@ -14,6 +14,7 @@ const ALLOWED_HOSTS = new Set([
   "170.83.16.50",
   "cdn-5.nxplay.com.br",
   "stream.telfazalive.com",
+  "edge.novastream.et",
   "bozztv.com",
   "rpn.bozztv.com",
   "amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv"
@@ -85,6 +86,7 @@ const ALLOWED_ENDPOINTS = new Set([
   "170.83.16.50:80",
   "cdn-5.nxplay.com.br:443",
   "stream.telfazalive.com:443",
+  "edge.novastream.et:443",
   "bozztv.com:443",
   "rpn.bozztv.com:443",
   "amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv:443"
@@ -135,7 +137,21 @@ function rateLimitResponse(retryAfter) {
 
 function absolutize(value, base) {
   try {
-    return new URL(value, base).toString();
+    const baseUrl = new URL(base);
+    const target = new URL(value, baseUrl);
+    // NovaStream signs HLS entry playlists with query parameters. Some child
+    // playlists/segments are relative and rely on the same signature query.
+    // Preserve it only for relative NovaStream URLs that do not specify one.
+    const isRelative = !/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(value);
+    if (
+      isRelative &&
+      baseUrl.hostname === "edge.novastream.et" &&
+      !target.search &&
+      baseUrl.search
+    ) {
+      target.search = baseUrl.search;
+    }
+    return target.toString();
   } catch (_) {
     return null;
   }
