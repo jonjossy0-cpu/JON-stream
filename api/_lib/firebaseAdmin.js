@@ -52,7 +52,10 @@ function setCors(req, res) {
     "https://jonjossy0-cpu.github.io",
     "https://jon-stream.vercel.app"
   ]);
-  if (allowedOrigins.has(origin)) {
+  // Permit only this project's Vercel preview hostnames, never arbitrary origins.
+  const isProjectPreview = /^https:\/\/jon-stream-[a-z0-9-]+-jonjossy0-5772\.vercel\.app$/.test(origin);
+  const isAllowed = allowedOrigins.has(origin) || isProjectPreview;
+  if (isAllowed) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
@@ -60,7 +63,7 @@ function setCors(req, res) {
     res.setHeader("Access-Control-Max-Age", "600");
   }
   if (req.method === "OPTIONS") {
-    if (!allowedOrigins.has(origin)) {
+    if (!isAllowed) {
       res.status(403).end();
       return true;
     }
