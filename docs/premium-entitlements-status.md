@@ -54,4 +54,6 @@ Do not merge until the blocking items are closed and the deployed Preview is ver
 - Added authenticated endpoint `/api/subscription/fullscreen-preferences` on the feature branch.
 - `GET` returns the signed-in verified user's saved preferences; `POST` accepts boolean `sponsorAds` and/or `newsTicker` values.
 - Preferences are stored in `subscriptionProfiles/{uid}.fullscreenPreferences`. Defaults are both ON. Requests require a verified email and active entitlement or unexpired trial.
-- **Not yet complete:** the fullscreen player controls have not been connected to this endpoint, and the saved preferences have not been applied to the News Ticker/Sponsored overlay in the web player. Do not describe the ON/OFF feature as user-ready until the UI wiring and Preview tests are complete.
+- Connected Premium-only Sponsored and News ON/OFF buttons in the TV fullscreen control row. The controls load/save preferences through the authenticated endpoint, apply CSS visibility to the fullscreen overlays, and default to ON.
+- The Vercel Preview for the UI commit `a8b048a6a9a5e7434e245891645eff567b622fdb` reached `READY`.
+- **Preview functional verification remains blocked:** the Vercel connection returned 403 when fetching the protected deployment, so actual sign-in, persistence, and overlay behavior could not be tested against Preview. Do not call the feature fully verified until those tests pass.
