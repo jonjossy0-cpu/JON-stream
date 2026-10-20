@@ -1,6 +1,7 @@
-const { getServices, requireUser, requireAdmin, sendError } = require("../_lib/firebaseAdmin");
+const { getServices, requireUser, requireAdmin, sendError, setCors } = require("../_lib/firebaseAdmin");
 
 module.exports = async function handler(req, res) {
+  if (setCors(req, res)) return;
   res.setHeader("Cache-Control", "no-store");
   try {
     const { db, FieldValue } = getServices();
