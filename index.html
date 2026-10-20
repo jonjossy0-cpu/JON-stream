@@ -3840,7 +3840,7 @@ if(authPanel){
  $("jonAccountSignout").addEventListener("click",async()=>{setBusy(true);try{await signOut(auth);}catch(e){message("Sign out failed: "+(e.code||e.message),true);}finally{setBusy(false);}});
 }
 </script>
-</body>
+
 <script id="jonStreamCompatibilityPatch">
 (function(){
   "use strict";
@@ -4239,5 +4239,5 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
  onAuthStateChanged(auth,nextUser=>{user=nextUser;refresh();});
 })();
 </script>
-
+</body>
 </html>
