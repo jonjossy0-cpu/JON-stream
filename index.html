@@ -3011,7 +3011,7 @@ loadTV();
      Additive only: existing UI, TV, Radio and player stay intact.
 ===================================================== --><style>
 #jonLiveUpdates{display:none;margin:14px 0;gap:10px;flex-direction:column}
-#jonLiveUpdates.jon-bottom-ad{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:9990;width:min(680px,calc(100vw - 24px));max-height:70vh;overflow-x:auto;overflow-y:auto;margin:0;padding:0;gap:8px;box-sizing:border-box;filter:drop-shadow(0 10px 28px rgba(0,0,0,.24));scrollbar-width:thin;touch-action:pan-x pan-y}
+#jonLiveUpdates.jon-bottom-ad{position:fixed;left:50%!important;right:auto!important;bottom:12px;transform:translateX(-50%)!important;margin-left:0!important;margin-right:0!important;z-index:9990;width:min(680px,calc(100vw - 24px));max-height:70vh;overflow-x:auto;overflow-y:auto;margin:0;padding:0;gap:8px;box-sizing:border-box;filter:drop-shadow(0 10px 28px rgba(0,0,0,.24));scrollbar-width:thin;touch-action:pan-x pan-y}
 body.jon-ad-visible{padding-bottom:245px}
 #jonLiveUpdates.jon-bottom-ad .jon-ad-card{position:relative}
 .jon-ad-desc.is-collapsed{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -4194,7 +4194,7 @@ if(authPanel){
 #jonPremiumFullscreenPreferencesUI button{font:600 11px/1.2 system-ui,sans-serif;border:1px solid rgba(255,255,255,.35);border-radius:7px;background:rgba(12,25,40,.92);color:#fff;padding:6px 8px;cursor:pointer}
 #jonPremiumFullscreenPreferencesUI[hidden]{display:none!important}
 </style>
-<script type="module" id="jonPremiumFullscreenPreferencesUI">
+<script type="module" id="jonPremiumFullscreenPreferencesModule">
 import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 (() => {
