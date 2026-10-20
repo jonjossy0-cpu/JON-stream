@@ -33,6 +33,11 @@ jobs:
             { name: "EBS Cinema HLS", url: "https://jon-stream.jonjossy0.workers.dev/ebs/cinema", kind: "hls" },
             { name: "EBS Muzika HLS", url: "https://jon-stream.jonjossy0.workers.dev/ebs/muzika", kind: "hls" },
             { name: "Sony Movies HLS", url: "https://jon-stream.jonjossy0.workers.dev/sony/movies", kind: "hls" },
+            { name: "Sony source 1", url: "https://jon-stream.jonjossy0.workers.dev/hls?url=http%3A%2F%2F45.162.64.114%2FSONY_MOVIES%2Findex.m3u8", kind: "hls" },
+            { name: "Sony source 2", url: "https://jon-stream.jonjossy0.workers.dev/hls?url=http%3A%2F%2F45.177.114.115%2FSONY_MOVIES%2Findex.m3u8", kind: "hls" },
+            { name: "Sony source 3", url: "https://jon-stream.jonjossy0.workers.dev/hls?url=http%3A%2F%2F168.197.104.22%2FSONY_MOVIES%2Findex.m3u8", kind: "hls" },
+            { name: "Sony source 4", url: "https://jon-stream.jonjossy0.workers.dev/hls?url=http%3A%2F%2F170.83.16.50%2FSONY_MOVIES%2Findex.m3u8", kind: "hls" },
+            { name: "Sony source 5", url: "https://jon-stream.jonjossy0.workers.dev/hls?url=https%3A%2F%2Fcdn-5.nxplay.com.br%2FSONY_MOVIES%2Findex.m3u8", kind: "hls" },
             { name: "Great Christmas HLS", url: "https://jon-stream.jonjossy0.workers.dev/great/christmas", kind: "hls" }
           ];
 
