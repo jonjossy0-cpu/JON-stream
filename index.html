@@ -306,6 +306,8 @@ audio,video{
  gap:9px;
 }
 
+.jon-access-tier{display:inline-flex;align-items:center;margin-top:5px;padding:4px 7px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.25px;line-height:1.2}.jon-access-tier.free{color:#86efac;background:#14532d;border:1px solid #166534}.jon-access-tier.premium{color:#fde68a;background:#78350f;border:1px solid #92400e}
+
 .station-info,.tv-info{
  flex:1;
  min-width:0;
@@ -893,6 +895,7 @@ img.jon-ad-media{
 #tvVideoFrame:fullscreen .tv-fullscreen-overlay{opacity:1;transition:opacity .2s}
 #tvVideoFrame:fullscreen #tvPlayer::-webkit-media-controls{display:none!important}
 @media(max-width:600px){.tv-fullscreen-overlay{padding:10px}.tv-fullscreen-top{align-items:flex-start;gap:8px}.tv-fullscreen-brand{gap:8px;max-width:70vw;padding:7px 10px 7px 7px;border-radius:12px}.tv-fullscreen-brand-copy small{font-size:8px;letter-spacing:1px}.tv-fullscreen-status{gap:5px}.tv-fullscreen-bottom{gap:5px;padding:7px;border-radius:13px}.tv-fullscreen-bottom button,.tv-fullscreen-bottom select{min-height:35px;padding:6px 8px;font-size:11px}.tv-fullscreen-bottom label{font-size:10px}}
+.jon-account-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:15px;margin:14px 0}.jon-account-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}.jon-account-head span,.jon-account-note{font-size:12px;color:var(--muted)}.jon-account-panel label{display:block;font-size:12px;font-weight:700;margin:9px 0 4px}.jon-account-panel input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:14px}.jon-account-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.jon-account-secondary{background:#263750}.jon-account-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}.jon-account-row span{color:var(--muted)}.jon-account-row strong{text-align:right;overflow-wrap:anywhere}.jon-account-error{color:#fca5a5;font-size:12px;white-space:pre-wrap}
 </style>
 </head>
 
@@ -913,6 +916,26 @@ img.jon-ad-media{
  <button id="radioModeBtn" class="active" onclick="setMode('radio')">📻 RADIO</button>
  <button id="tvModeBtn" onclick="setMode('tv')">📺 TV</button>
 </div>
+
+<section id="jonAccountPanel" class="jon-account-panel">
+ <div class="jon-account-head"><strong>👤 My Profile / Premium</strong><span id="jonAccountState">Not signed in</span></div>
+ <div id="jonAccountSignedOut">
+  <p class="jon-account-note">Sign up or sign in with your email to manage your Premium subscription.</p>
+  <label for="jonAccountEmail">Email address</label><input id="jonAccountEmail" type="email" autocomplete="email" placeholder="name@example.com">
+  <label for="jonAccountPassword">Password</label><input id="jonAccountPassword" type="password" autocomplete="current-password" placeholder="At least 6 characters">
+  <div class="jon-account-actions"><button id="jonAccountSignup" type="button">Create account</button><button id="jonAccountSignin" type="button" class="jon-account-secondary">Sign in</button></div>
+ </div>
+ <div id="jonAccountSignedIn" hidden>
+  <div class="jon-account-row"><span>Email</span><strong id="jonProfileEmail">—</strong></div>
+  <div class="jon-account-row"><span>Email verification</span><strong id="jonProfileVerified">—</strong></div>
+  <div class="jon-account-row"><span>Subscription</span><strong id="jonProfilePlan">Checking…</strong></div>
+  <div class="jon-account-row"><span>Time remaining</span><strong id="jonProfileRemaining">Checking…</strong></div>
+  <div class="jon-account-row"><span>Payment</span><strong id="jonProfilePayment">—</strong></div>
+  <p id="jonAccountMessage" class="jon-account-note" aria-live="polite"></p>
+  <div class="jon-account-actions"><button id="jonResendVerification" type="button" class="jon-account-secondary">Resend verification</button><button id="jonAccountSignout" type="button" class="jon-account-secondary">Sign out</button></div>
+ </div>
+ <p id="jonAccountError" class="jon-account-error" role="status" aria-live="polite"></p>
+</section>
 
 <div class="brand">
  <img data-logo class="logo" alt="JON FM ETHIOPIA">
@@ -1701,6 +1724,7 @@ function renderStations(list){
    <div class="station-info">
     <div class="station-name">${escapeHTML(station.name)}</div>
     <div class="station-status">🔴 Live Stream</div>
+    <span class="jon-access-tier ${String(station.accessTier||"free").toLowerCase()==="premium"?"premium":"free"}">${String(station.accessTier||"free").toLowerCase()==="premium"?"PREMIUM / PAID":"FREE"}</span>
    </div>
    <button class="station-play" onclick="selectStation(${index})">▶</button>
    <button class="favorite-btn ${fav?"active":""}" onclick="toggleFavorite(${index})">${fav?"★":"☆"}</button>
@@ -2316,6 +2340,7 @@ function renderTV(list){
    <div class="tv-info">
     <div class="tv-name">${escapeHTML(channel.name)}</div>
     <div class="tv-country">${escapeHTML(channel.country||channel.group||"TV Channel")}</div>
+    <span class="jon-access-tier ${String(channel.accessTier||"free").toLowerCase()==="premium"?"premium":"free"}">${String(channel.accessTier||"free").toLowerCase()==="premium"?"PREMIUM / PAID":"FREE"}</span>
    </div>
 
    <span class="tv-stream-health testing" data-tv-health="${escapeHTML(channel.url)}" title="Checking TV stream…">●</span>
@@ -3685,6 +3710,67 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 })();
 </script>
 
+
+<script type="module">
+import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, signOut, reload } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+const authPanel=document.getElementById("jonAccountPanel");
+if(authPanel){
+ const auth=getAuth(getApp());
+ const $=id=>document.getElementById(id);
+ const message=(text,isError=false)=>{ $("jonAccountError").textContent=text||""; $("jonAccountError").style.color=isError?"#fca5a5":"#86efac"; };
+ const setBusy=(busy)=>["jonAccountSignup","jonAccountSignin","jonResendVerification","jonAccountSignout"].forEach(id=>{const el=$(id);if(el)el.disabled=busy;});
+ async function showSubscription(user){
+   $("jonProfileEmail").textContent=user.email||"—";
+   $("jonProfileVerified").textContent=user.emailVerified?"Verified":"Not verified";
+   $("jonProfilePlan").textContent=user.emailVerified?"Subscription status unavailable":"Verify your email first";
+   $("jonProfileRemaining").textContent="Not available yet";
+   $("jonProfilePayment").textContent="Telebirr setup pending";
+   $("jonAccountMessage").textContent=user.emailVerified
+    ?"Your account is ready. Trial dates and paid access will show here once secure subscription validation is connected."
+    :"Please verify your email to activate the account. Trial time will only begin after server-side verification.";
+   try{
+     const token=await user.getIdToken();
+     const response=await fetch("/api/subscription/status",{headers:{Authorization:"Bearer "+token}});
+     if(response.ok){
+       const data=await response.json();
+       $("jonProfilePlan").textContent=data.planLabel||data.status||"No active subscription";
+       $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
+       $("jonProfilePayment").textContent=data.paymentLabel||"—";
+       $("jonAccountMessage").textContent=data.message||$("jonAccountMessage").textContent;
+     }
+   }catch(e){console.info("Subscription status endpoint is not available yet.");}
+ }
+ onAuthStateChanged(auth,async user=>{
+   $("jonAccountState").textContent=user?(user.emailVerified?"Signed in":"Verify email"):"Not signed in";
+   $("jonAccountSignedOut").hidden=!!user;
+   $("jonAccountSignedIn").hidden=!user;
+   message("");
+   if(user)await showSubscription(user);
+ });
+ $("jonAccountSignup").addEventListener("click",async()=>{
+   const email=$("jonAccountEmail").value.trim(),password=$("jonAccountPassword").value;
+   if(!email||password.length<6){message("Enter a valid email and a password with at least 6 characters.",true);return;}
+   setBusy(true);message("Creating account…");
+   try{const cred=await createUserWithEmailAndPassword(auth,email,password);await sendEmailVerification(cred.user);message("Account created. Open the verification email sent to "+email+".");}
+   catch(e){message("Sign up failed: "+(e.code||e.message),true);}
+   finally{setBusy(false);}
+ });
+ $("jonAccountSignin").addEventListener("click",async()=>{
+   const email=$("jonAccountEmail").value.trim(),password=$("jonAccountPassword").value;
+   if(!email||!password){message("Enter your email and password.",true);return;}
+   setBusy(true);message("Signing in…");
+   try{const cred=await signInWithEmailAndPassword(auth,email,password);await reload(cred.user);if(!cred.user.emailVerified)message("Please verify your email. Use Resend verification below.");}
+   catch(e){message("Sign in failed: "+(e.code||e.message),true);}
+   finally{setBusy(false);}
+ });
+ $("jonResendVerification").addEventListener("click",async()=>{
+   const user=auth.currentUser;if(!user){message("Sign in first.",true);return;}
+   setBusy(true);try{await sendEmailVerification(user);message("Verification email sent.");}catch(e){message("Could not send verification: "+(e.code||e.message),true);}finally{setBusy(false);}
+ });
+ $("jonAccountSignout").addEventListener("click",async()=>{setBusy(true);try{await signOut(auth);}catch(e){message("Sign out failed: "+(e.code||e.message),true);}finally{setBusy(false);}});
+}
+</script>
 </body>
 <script id="jonStreamCompatibilityPatch">
 (function(){
