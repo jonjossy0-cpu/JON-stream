@@ -54,7 +54,8 @@ jobs:
               const body = await response.text();
               const elapsedMs = Date.now() - started;
               if (!response.ok) {
-                return { name: target.name, url: target.url, ok: false, status: response.status, elapsedMs, detail: "HTTP status was not successful" };
+                const diagnostic = body.replace(/\s+/g, " ").trim().slice(0, 160);
+                return { name: target.name, url: target.url, ok: false, status: response.status, elapsedMs, detail: diagnostic || "HTTP status was not successful" };
               }
               if (target.kind === "gateway" && !body.includes("JON Stream HLS Gateway - ONLINE")) {
                 return { name: target.name, url: target.url, ok: false, status: response.status, elapsedMs, detail: "Gateway health text did not match" };
