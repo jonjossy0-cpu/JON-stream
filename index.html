@@ -997,8 +997,7 @@ img.jon-ad-media{
    <div class="more-controls-title">⚙️ Radio More Controls</div>
    <div class="more-control-grid">
     <button type="button" onclick="toggleMute()">🔊 MUTE</button>
-    <button type="button" onclick="startTimer(30)">⏱️ SLEEP 30 MIN</button>
-    <button type="button" onclick="cancelTimer()">⏹️ CANCEL TIMER</button>
+    <button type="button" onclick="startTimer(30)">⏱️ SLEEP 30 MIN</button>    <button type="button" onclick="cancelTimer()">⏹️ CANCEL TIMER</button>
     <button type="button" onclick="toggleDiagnostics('radio')">📊 DIAGNOSTICS</button>
    </div>
   </div>
@@ -1316,6 +1315,13 @@ let previousVolume=.8;
 let favorites=JSON.parse(localStorage.getItem("jonRadioFavorites")||"[]");
 
 function selectStation(index){
+ const requestedStation=stations[index];
+ if(requestedStation&&String(requestedStation.accessTier||"free").toLowerCase()==="premium"&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
+  if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
+  radioStatus.innerHTML="🔒 Premium access required";
+  return;
+ }
+
  clearTimeout(radioAdvancedRetryTimer);
  radioAdvancedRetryTimer=null;
  radioAdvancedRetryAttempts=0;
@@ -1997,8 +2003,7 @@ function applySavedTVOrder(list){
  if(!order.length)return list.slice();
  const pos=new Map();
  order.forEach((identity,index)=>{if(!pos.has(identity))pos.set(identity,index);});
- return list.slice().sort((a,b)=>{
-  const ia=getTVChannelOrderId(a),ib=getTVChannelOrderId(b);
+ return list.slice().sort((a,b)=>{  const ia=getTVChannelOrderId(a),ib=getTVChannelOrderId(b);
   const pa=pos.has(ia)?pos.get(ia):Number.MAX_SAFE_INTEGER;
   const pb=pos.has(ib)?pos.get(ib):Number.MAX_SAFE_INTEGER;
   return pa-pb;
@@ -2628,6 +2633,13 @@ function jonGatewayForChannel(channel,kind){
  return "";
 }
 function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
+ const requestedChannel=filteredTV[index]||tvChannels.find(c=>c.url===url);
+ if(requestedChannel&&String(requestedChannel.accessTier||"free").toLowerCase()==="premium"&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
+  if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
+  tvStatus("🔒 Premium access required");
+  return;
+ }
+
  clearTimeout(tvStartupTimer);
  // A new playback attempt must not inherit a delayed retry from the previous channel/source.
  clearTimeout(tvRetryTimer);
@@ -2997,8 +3009,7 @@ loadTV();
 <!-- =====================================================
      JON STREAM LIVE DATA: ADS + NOTIFICATIONS
      Additive only: existing UI, TV, Radio and player stay intact.
-===================================================== -->
-<style>
+===================================================== --><style>
 #jonLiveUpdates{display:none;margin:14px 0;gap:10px;flex-direction:column}
 #jonLiveUpdates.jon-bottom-ad{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:9990;width:min(680px,calc(100vw - 24px));max-height:70vh;overflow-x:auto;overflow-y:auto;margin:0;padding:0;gap:8px;box-sizing:border-box;filter:drop-shadow(0 10px 28px rgba(0,0,0,.24));scrollbar-width:thin;touch-action:pan-x pan-y}
 body.jon-ad-visible{padding-bottom:245px}
@@ -3729,6 +3740,8 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, signOut, reload } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 const authPanel=document.getElementById("jonAccountPanel");
+window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
+
 if(authPanel){
  const auth=getAuth(getApp());
  const $=id=>document.getElementById(id);
@@ -3752,6 +3765,8 @@ if(authPanel){
  };
  const setBusy=(busy)=>["jonAccountSignup","jonAccountSignin","jonResendVerification","jonAccountSignout"].forEach(id=>{const el=$(id);if(el)el.disabled=busy;});
  async function showSubscription(user){
+   window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
+
    $("jonProfileEmail").textContent=user.email||"—";
    $("jonProfileVerified").textContent=user.emailVerified?"Verified":"Not verified";
    $("jonProfilePlan").textContent=user.emailVerified?"Subscription status unavailable":"Verify your email first";
@@ -3764,6 +3779,12 @@ if(authPanel){
      const token=await user.getIdToken();
      const response=await fetch("/api/subscription/status",{headers:{Authorization:"Bearer "+token}});
      if(response.ok){
+       const data=await response.clone().json();
+       window.jonPremiumAccess={ready:true,allowed:data.hasPremium===true,status:String(data.status||"free")};
+       window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+     }
+
+     if(response.ok){
        const data=await response.json();
        $("jonProfilePlan").textContent=data.planLabel||data.status||"No active subscription";
        $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
@@ -3772,7 +3793,17 @@ if(authPanel){
      }
    }catch(e){console.info("Subscription status endpoint is not available yet.");}
  }
+
+ window.jonShowPremiumUpgrade=()=>{
+   if(authPanel)authPanel.hidden=false;
+   const panel=document.getElementById("jonAccountPanel");
+   if(panel&&typeof panel.scrollIntoView==="function")panel.scrollIntoView({behavior:"smooth",block:"center"});
+   const error=document.getElementById("jonAccountError");
+   if(error)error.textContent="This is a Premium channel. Sign in with a verified email and an active 3-day trial or Premium entitlement to continue.";
+ };
  onAuthStateChanged(auth,async user=>{
+   if(!user){window.jonPremiumAccess={ready:true,allowed:false,status:"signed_out"};window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));}
+
    $("jonAccountState").textContent=user?(user.emailVerified?"Signed in":"Verify email"):"Not signed in";
    $("jonAccountSignedOut").hidden=!!user;
    $("jonAccountSignedIn").hidden=!user;
@@ -3997,8 +4028,7 @@ if(authPanel){
     if (triggered) return;
     if (likelyDockedDevTools()) {
       suspiciousSamples += 1;
-      if (suspiciousSamples >= 2) activateGuard();
-    } else {
+      if (suspiciousSamples >= 2) activateGuard();    } else {
       suspiciousSamples = 0;
     }
   }
@@ -4171,6 +4201,60 @@ if(authPanel){
  document.addEventListener("fullscreenchange",()=>isFullscreen()?startCycle():stop());
  document.addEventListener("webkitfullscreenchange",()=>isFullscreen()?startCycle():stop());
  if(window.__JON_FIREBASE_DATA)update(window.__JON_FIREBASE_DATA);
+})();
+</script>
+
+
+<style id="jonPremiumFullscreenPreferencesCSS">
+#tvVideoFrame.jon-hide-news #jonFullscreenNewsTicker{display:none!important}
+#tvVideoFrame.jon-hide-sponsor #jonSponsorLogoCarousel{display:none!important}
+#jonPremiumFullscreenPreferencesUI{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+#jonPremiumFullscreenPreferencesUI button{font:600 11px/1.2 system-ui,sans-serif;border:1px solid rgba(255,255,255,.35);border-radius:7px;background:rgba(12,25,40,.92);color:#fff;padding:6px 8px;cursor:pointer}
+#jonPremiumFullscreenPreferencesUI[hidden]{display:none!important}
+</style>
+<script type="module" id="jonPremiumFullscreenPreferencesUI">
+import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+(() => {
+ const frame=document.getElementById("tvVideoFrame");
+ const controls=document.querySelector("#tvFullscreenOverlay .tv-fullscreen-bottom");
+ if(!frame||!controls)return;
+ const panel=document.createElement("span");
+ panel.id="jonPremiumFullscreenPreferencesUI";
+ panel.hidden=true;
+ panel.innerHTML='<button type="button" data-pref="sponsorAds">Sponsored: ON</button><button type="button" data-pref="newsTicker">News: ON</button>';
+ controls.insertBefore(panel,controls.lastElementChild||null);
+ let user=null, prefs={sponsorAds:true,newsTicker:true}, allowed=false;
+ const buttons=()=>panel.querySelectorAll("button[data-pref]");
+ function apply(){
+  frame.classList.toggle("jon-hide-sponsor",prefs.sponsorAds===false);
+  frame.classList.toggle("jon-hide-news",prefs.newsTicker===false);
+  panel.hidden=!allowed;
+  buttons().forEach(b=>{const k=b.dataset.pref;b.textContent=(k==="sponsorAds"?"Sponsored: ":"News: ")+(prefs[k]===false?"OFF":"ON");b.setAttribute("aria-pressed",String(prefs[k]!==false));});
+ }
+ async function refresh(){
+  allowed=!!(window.jonPremiumAccess&&window.jonPremiumAccess.allowed&&user);
+  if(allowed){
+   try{const token=await user.getIdToken();const res=await fetch("/api/subscription/fullscreen-preferences",{headers:{Authorization:"Bearer "+token}});const data=await res.json();if(res.ok&&data.preferences)prefs=data.preferences;}catch(e){console.warn("Could not load Premium fullscreen preferences");}
+  } else {prefs={sponsorAds:true,newsTicker:true};}
+  apply();
+ }
+ panel.addEventListener("click",async event=>{
+  const button=event.target.closest("button[data-pref]");
+  if(!button||!allowed||!user)return;
+  const key=button.dataset.pref, previous=prefs[key]!==false;
+  prefs={...prefs,[key]:!previous};apply();
+  try{
+   const token=await user.getIdToken();
+   const res=await fetch("/api/subscription/fullscreen-preferences",{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({[key]:prefs[key]})});
+   const data=await res.json();
+   if(!res.ok)throw new Error(data.error||"Could not save preference");
+   prefs=data.preferences||prefs;apply();
+  }catch(error){prefs={...prefs,[key]:previous};apply();window.alert(error.message||"Could not save Premium preference");}
+ });
+ window.addEventListener("jon-premium-access-changed",refresh);
+ const auth=getAuth(getApp());
+ onAuthStateChanged(auth,nextUser=>{user=nextUser;refresh();});
 })();
 </script>
 
