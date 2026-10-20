@@ -1884,13 +1884,15 @@ let tvFilter="all";
 const JON_TV_ORDER_KEY="jonStreamMainvTVChannelOrderV2";
 const JON_TV_ORDER_LEGACY_KEY="jonTVChannelOrder";
 
-/* Use a stable identity per channel, not URL alone: FIFA TV and FIFA+ English
-   intentionally share a stream URL but must remain independently movable. */
+/* Firebase channels use their persistent ID so signed/rotating stream URLs
+   cannot reset their saved position. Built-in channels fall back to name + URL,
+   keeping distinct channels movable even when they share a stream URL. */
 function getTVChannelOrderId(channel){
+ const firebaseId=String(channel&&channel.id!=null?channel.id:"").trim();
+ if(firebaseId)return "firebase:"+firebaseId;
  return JSON.stringify([
   String(channel&&channel.name||""),
-  String(channel&&channel.url||""),
-  String(channel&&channel.id||"")
+  String(channel&&channel.url||"")
  ]);
 }
 
@@ -3245,9 +3247,16 @@ body.jon-ad-visible{padding-bottom:85px}
         backupUrls:Array.isArray(x.backupUrls)?x.backupUrls.filter(isHttpUrl).map(u=>u.trim()):[],
         backupStreams:Array.isArray(x.backupStreams)?x.backupStreams.filter(isHttpUrl).map(u=>u.trim()):[]
       }));
-      const merged=[...tvChannels,...incoming];
+      /* Put fresh Firebase rows first so changed URLs/metadata replace stale
+         copies with the same stable ID. Fall back to name+URL for non-ID rows. */
+      const merged=[...incoming,...tvChannels];
       const seen=new Set();
-      tvChannels=merged.filter(x=>{const k=String(x.url||'').trim(); if(!k||seen.has(k)) return false; seen.add(k); return true;});
+      tvChannels=merged.filter(x=>{
+        const k=getTVChannelOrderId(x);
+        if(!k||seen.has(k))return false;
+        seen.add(k);
+        return true;
+      });
       /* Firebase may arrive after the local order was restored. Always apply
          the saved order again so moved channels keep their positions. */
       reapplySavedTVOrder();
