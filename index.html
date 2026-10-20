@@ -895,7 +895,7 @@ img.jon-ad-media{
 #tvVideoFrame:fullscreen .tv-fullscreen-overlay{opacity:1;transition:opacity .2s}
 #tvVideoFrame:fullscreen #tvPlayer::-webkit-media-controls{display:none!important}
 @media(max-width:600px){.tv-fullscreen-overlay{padding:10px}.tv-fullscreen-top{align-items:flex-start;gap:8px}.tv-fullscreen-brand{gap:8px;max-width:70vw;padding:7px 10px 7px 7px;border-radius:12px}.tv-fullscreen-brand-copy small{font-size:8px;letter-spacing:1px}.tv-fullscreen-status{gap:5px}.tv-fullscreen-bottom{gap:5px;padding:7px;border-radius:13px}.tv-fullscreen-bottom button,.tv-fullscreen-bottom select{min-height:35px;padding:6px 8px;font-size:11px}.tv-fullscreen-bottom label{font-size:10px}}
-.jon-account-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:15px;margin:14px 0}.jon-account-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}.jon-account-head span,.jon-account-note{font-size:12px;color:var(--muted)}.jon-account-panel label{display:block;font-size:12px;font-weight:700;margin:9px 0 4px}.jon-account-panel input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:14px}.jon-account-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.jon-account-secondary{background:#263750}.jon-account-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}.jon-account-row span{color:var(--muted)}.jon-account-row strong{text-align:right;overflow-wrap:anywhere}.jon-account-error{color:#fca5a5;font-size:12px;white-space:pre-wrap}
+.topbar-actions{display:flex;align-items:center;gap:8px}.jon-account-panel[hidden]{display:none!important}.jon-account-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:15px;margin:14px 0}.jon-account-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}.jon-account-head span,.jon-account-note{font-size:12px;color:var(--muted)}.jon-account-panel label{display:block;font-size:12px;font-weight:700;margin:9px 0 4px}.jon-account-panel input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:14px}.jon-account-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.jon-account-secondary{background:#263750}.jon-account-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}.jon-account-row span{color:var(--muted)}.jon-account-row strong{text-align:right;overflow-wrap:anywhere}.jon-account-error{color:#fca5a5;font-size:12px;white-space:pre-wrap}
 </style>
 </head>
 
@@ -904,7 +904,10 @@ img.jon-ad-media{
 
 <div class="topbar">
  <div class="clock" id="clock">🕐 --:--:--</div>
- <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+ <div class="topbar-actions">
+  <button class="theme-btn" id="profileToggleBtn" type="button" onclick="toggleProfilePanel()" aria-label="Open profile" aria-controls="jonAccountPanel" aria-expanded="false" title="Profile">👤</button>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme" title="Theme">🌙</button>
+ </div>
 </div>
 
 <div class="time-panel">
@@ -917,7 +920,7 @@ img.jon-ad-media{
  <button id="tvModeBtn" onclick="setMode('tv')">📺 TV</button>
 </div>
 
-<section id="jonAccountPanel" class="jon-account-panel">
+<section id="jonAccountPanel" class="jon-account-panel" hidden>
  <div class="jon-account-head"><strong>👤 My Profile / Premium</strong><span id="jonAccountState">Not signed in</span></div>
  <div id="jonAccountSignedOut">
   <p class="jon-account-note">Sign up or sign in with your email to manage your Premium subscription.</p>
@@ -1831,6 +1834,17 @@ let savedTheme=localStorage.getItem("jonTheme")||"dark";
 if(savedTheme==="light"){
  document.body.classList.add("light");
  document.getElementById("themeBtn").innerHTML="☀️";
+}
+
+function toggleProfilePanel(){
+ const panel=document.getElementById("jonAccountPanel");
+ const button=document.getElementById("profileToggleBtn");
+ if(!panel||!button)return;
+ const opening=panel.hidden;
+ panel.hidden=!opening;
+ button.setAttribute("aria-expanded",String(opening));
+ button.setAttribute("aria-label",opening?"Close profile":"Open profile");
+ button.title=opening?"Close profile":"Profile";
 }
 
 function toggleTheme(){
