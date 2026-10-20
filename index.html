@@ -3976,8 +3976,6 @@ if(authPanel){
   window.__JON_INSPECT_GUARD__ = true;
 
   var triggered = false;
-  var suspiciousSamples = 0;
-  var checkTimer = null;
 
   function stopMedia(){
     document.querySelectorAll('video,audio').forEach(function(media){
@@ -4017,34 +4015,9 @@ if(authPanel){
     exitPage();
   }
 
-  function isTelegramMiniApp(){
-    // Telegram's embedded WebView can report outer/inner dimensions that look like docked DevTools.
-    // Avoid false positives that stop playback and make the Mini App appear to exit.
-    var ua = navigator.userAgent || '';
-    var params = '';
-    try { params = window.location.search || ''; } catch (_) {}
-    return !!(window.Telegram && window.Telegram.WebApp) ||
-      /Telegram/i.test(ua) ||
-      /(?:^|[?&])tgWebAppPlatform=/i.test(params);
-  }
-
-  function likelyDockedDevTools(){
-    // WebView dimensions are not reliable evidence of Developer Tools.
-    if (isTelegramMiniApp()) return false;
-    var widthGap = Math.abs((window.outerWidth || 0) - (window.innerWidth || 0));
-    var heightGap = Math.abs((window.outerHeight || 0) - (window.innerHeight || 0));
-    // Retain the existing heuristic for regular desktop browsers.
-    return widthGap > 140 || heightGap > 180;
-  }
-
-  function check(){
-    if (triggered) return;
-    if (likelyDockedDevTools()) {
-      suspiciousSamples += 1;
-      if (suspiciousSamples >= 2) activateGuard();    } else {
-      suspiciousSamples = 0;
-    }
-  }
+  // Do not infer Inspect from outer/inner window dimensions.
+  // Those dimensions vary during normal browser resizing and embedded WebViews,
+  // which caused false exits even when Developer Tools was never opened.
 
   // Catch common keyboard ways of opening DevTools; opening it from a browser menu may not emit these keys.
   window.addEventListener('keydown', function(event){
@@ -4067,9 +4040,6 @@ if(authPanel){
     event.preventDefault();
   }, true);
 
-  window.addEventListener('resize', check, {passive:true});
-  checkTimer = window.setInterval(check, 900);
-  check();
 })();
 </script>
 
