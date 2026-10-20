@@ -4013,8 +4013,9 @@ if(authPanel){
     if (triggered) return;
     triggered = true;
     if (checkTimer) window.clearInterval(checkTimer);
-    stopMedia();
-    exitPage();
+    // Do not pause playback or close/cover the app based on a heuristic.
+    // WebViews (including Telegram) can report misleading viewport dimensions.
+    // DevTools detection is not a reliable security boundary.
   }
 
   function isTelegramMiniApp(){
