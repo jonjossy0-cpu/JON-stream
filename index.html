@@ -925,7 +925,7 @@ img.jon-ad-media{
  <div id="jonAccountSignedOut">
   <p class="jon-account-note">Sign up or sign in with your email to manage your Premium subscription.</p>
   <label for="jonAccountEmail">Email address</label><input id="jonAccountEmail" type="email" autocomplete="email" placeholder="name@example.com">
-  <label for="jonAccountPassword">Password</label><input id="jonAccountPassword" type="password" autocomplete="current-password" placeholder="At least 6 characters">
+  <label for="jonAccountPassword">Password</label><input id="jonAccountPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters">
   <div class="jon-account-actions"><button id="jonAccountSignup" type="button">Create account</button><button id="jonAccountSignin" type="button" class="jon-account-secondary">Sign in</button></div>
  </div>
  <div id="jonAccountSignedIn" hidden>
@@ -3733,6 +3733,23 @@ if(authPanel){
  const auth=getAuth(getApp());
  const $=id=>document.getElementById(id);
  const message=(text,isError=false)=>{ $("jonAccountError").textContent=text||""; $("jonAccountError").style.color=isError?"#fca5a5":"#86efac"; };
+ const authErrorText=(error,action)=>{
+   const code=String(error&&error.code||"");
+   const messages={
+     "auth/operation-not-allowed":"Email sign-up is not enabled yet. The site owner must enable Authentication → Sign-in method → Email/Password in the Firebase Console for the jon-stream project.",
+     "auth/unauthorized-domain":"This website domain is not authorized for Firebase sign-in. Add this domain under Firebase Authentication → Settings → Authorized domains.",
+     "auth/email-already-in-use":"This email already has an account. Choose Sign in instead, or use password recovery if needed.",
+     "auth/invalid-email":"Enter a valid email address.",
+     "auth/weak-password":"Choose a stronger password with at least 6 characters.",
+     "auth/invalid-credential":"Email or password is incorrect. Check both and try again.",
+     "auth/user-disabled":"This account has been disabled. Contact JON Stream support.",
+     "auth/too-many-requests":"Too many attempts. Please wait a little and try again.",
+     "auth/network-request-failed":"Network connection failed. Check your internet connection and try again.",
+     "auth/missing-password":"Enter your password.",
+     "auth/invalid-password":"The password is incorrect. Please try again."
+   };
+   return messages[code]||((action||"Request")+" failed ("+(code||"unknown error")+"). Please try again.");
+ };
  const setBusy=(busy)=>["jonAccountSignup","jonAccountSignin","jonResendVerification","jonAccountSignout"].forEach(id=>{const el=$(id);if(el)el.disabled=busy;});
  async function showSubscription(user){
    $("jonProfileEmail").textContent=user.email||"—";
@@ -3766,21 +3783,28 @@ if(authPanel){
    const email=$("jonAccountEmail").value.trim(),password=$("jonAccountPassword").value;
    if(!email||password.length<6){message("Enter a valid email and a password with at least 6 characters.",true);return;}
    setBusy(true);message("Creating account…");
-   try{const cred=await createUserWithEmailAndPassword(auth,email,password);await sendEmailVerification(cred.user);message("Account created. Open the verification email sent to "+email+".");}
-   catch(e){message("Sign up failed: "+(e.code||e.message),true);}
+   try{
+     const cred=await createUserWithEmailAndPassword(auth,email,password);
+     await sendEmailVerification(cred.user);
+     $("jonAccountMessage").textContent="Account created successfully. Open the verification email sent to "+email+" and follow its link. Check Spam/Junk if it does not arrive.";
+     message("");
+   }catch(e){message(authErrorText(e,"Sign up"),true);}
    finally{setBusy(false);}
  });
  $("jonAccountSignin").addEventListener("click",async()=>{
    const email=$("jonAccountEmail").value.trim(),password=$("jonAccountPassword").value;
    if(!email||!password){message("Enter your email and password.",true);return;}
    setBusy(true);message("Signing in…");
-   try{const cred=await signInWithEmailAndPassword(auth,email,password);await reload(cred.user);if(!cred.user.emailVerified)message("Please verify your email. Use Resend verification below.");}
-   catch(e){message("Sign in failed: "+(e.code||e.message),true);}
+   try{
+     const cred=await signInWithEmailAndPassword(auth,email,password);
+     await reload(cred.user);
+     if(!cred.user.emailVerified){$("jonAccountMessage").textContent="Please verify your email. Use Resend verification below.";message("");}
+   }catch(e){message(authErrorText(e,"Sign in"),true);}
    finally{setBusy(false);}
  });
  $("jonResendVerification").addEventListener("click",async()=>{
    const user=auth.currentUser;if(!user){message("Sign in first.",true);return;}
-   setBusy(true);try{await sendEmailVerification(user);message("Verification email sent.");}catch(e){message("Could not send verification: "+(e.code||e.message),true);}finally{setBusy(false);}
+   setBusy(true);try{await sendEmailVerification(user);$("jonAccountMessage").textContent="Verification email sent to "+(user.email||"your email")+". Check Inbox and Spam/Junk.";message("");}catch(e){message(authErrorText(e,"Resend verification"),true);}finally{setBusy(false);}
  });
  $("jonAccountSignout").addEventListener("click",async()=>{setBusy(true);try{await signOut(auth);}catch(e){message("Sign out failed: "+(e.code||e.message),true);}finally{setBusy(false);}});
 }
