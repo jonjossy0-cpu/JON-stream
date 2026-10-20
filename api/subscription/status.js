@@ -23,11 +23,28 @@ module.exports = async function handler(req, res) {
     const profileRef = db.collection("subscriptionProfiles").doc(user.uid);
     const [uidSnap, emailSnap, profileSnap] = await Promise.all([uidRef.get(), emailRef.get(), profileRef.get()]);
     const now = Date.now();
-    const entitlement = uidSnap.exists ? uidSnap.data() : (emailSnap.exists ? emailSnap.data() : {});
-    const expiresAt = entitlement.expiresAt && typeof entitlement.expiresAt.toMillis === "function" ? entitlement.expiresAt.toMillis() : null;
-    const entitlementActive = entitlement.active === true && (
-      entitlement.unlimited === true || (expiresAt !== null && expiresAt > now)
-    );
+    const uidEntitlement = uidSnap.exists ? uidSnap.data() : {};
+    const emailEntitlement = emailSnap.exists ? emailSnap.data() : {};
+    const now = Date.now();
+    const isActive = entitlement => {
+      const expiry = entitlement.expiresAt && typeof entitlement.expiresAt.toMillis === "function"
+        ? entitlement.expiresAt.toMillis()
+        : null;
+      return entitlement.active === true &&
+        (entitlement.unlimited === true || (expiry !== null && expiry > now));
+    };
+    // A stale UID record must not mask a newer active grant made by email.
+    const activeEntitlements = [uidEntitlement, emailEntitlement].filter(isActive);
+    const entitlement = activeEntitlements.find(item => item.unlimited === true) ||
+      activeEntitlements.sort((a, b) => {
+        const aExpiry = a.expiresAt && typeof a.expiresAt.toMillis === "function" ? a.expiresAt.toMillis() : 0;
+        const bExpiry = b.expiresAt && typeof b.expiresAt.toMillis === "function" ? b.expiresAt.toMillis() : 0;
+        return bExpiry - aExpiry;
+      })[0] || {};
+    const expiresAt = entitlement.expiresAt && typeof entitlement.expiresAt.toMillis === "function"
+      ? entitlement.expiresAt.toMillis()
+      : null;
+    const entitlementActive = activeEntitlements.length > 0;
 
     if (entitlementActive) {
       const unlimited = entitlement.unlimited === true;
