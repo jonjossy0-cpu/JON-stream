@@ -4204,4 +4204,58 @@ if(authPanel){
 })();
 </script>
 
+
+<style id="jonPremiumFullscreenPreferencesCSS">
+#tvVideoFrame.jon-hide-news #jonFullscreenNewsTicker{display:none!important}
+#tvVideoFrame.jon-hide-sponsor #jonSponsorLogoCarousel{display:none!important}
+#jonPremiumFullscreenPreferencesUI{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+#jonPremiumFullscreenPreferencesUI button{font:600 11px/1.2 system-ui,sans-serif;border:1px solid rgba(255,255,255,.35);border-radius:7px;background:rgba(12,25,40,.92);color:#fff;padding:6px 8px;cursor:pointer}
+#jonPremiumFullscreenPreferencesUI[hidden]{display:none!important}
+</style>
+<script type="module" id="jonPremiumFullscreenPreferencesUI">
+import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+(() => {
+ const frame=document.getElementById("tvVideoFrame");
+ const controls=document.querySelector("#tvFullscreenOverlay .tv-fullscreen-bottom");
+ if(!frame||!controls)return;
+ const panel=document.createElement("span");
+ panel.id="jonPremiumFullscreenPreferencesUI";
+ panel.hidden=true;
+ panel.innerHTML='<button type="button" data-pref="sponsorAds">Sponsored: ON</button><button type="button" data-pref="newsTicker">News: ON</button>';
+ controls.insertBefore(panel,controls.lastElementChild||null);
+ let user=null, prefs={sponsorAds:true,newsTicker:true}, allowed=false;
+ const buttons=()=>panel.querySelectorAll("button[data-pref]");
+ function apply(){
+  frame.classList.toggle("jon-hide-sponsor",prefs.sponsorAds===false);
+  frame.classList.toggle("jon-hide-news",prefs.newsTicker===false);
+  panel.hidden=!allowed;
+  buttons().forEach(b=>{const k=b.dataset.pref;b.textContent=(k==="sponsorAds"?"Sponsored: ":"News: ")+(prefs[k]===false?"OFF":"ON");b.setAttribute("aria-pressed",String(prefs[k]!==false));});
+ }
+ async function refresh(){
+  allowed=!!(window.jonPremiumAccess&&window.jonPremiumAccess.allowed&&user);
+  if(allowed){
+   try{const token=await user.getIdToken();const res=await fetch("/api/subscription/fullscreen-preferences",{headers:{Authorization:"Bearer "+token}});const data=await res.json();if(res.ok&&data.preferences)prefs=data.preferences;}catch(e){console.warn("Could not load Premium fullscreen preferences");}
+  } else {prefs={sponsorAds:true,newsTicker:true};}
+  apply();
+ }
+ panel.addEventListener("click",async event=>{
+  const button=event.target.closest("button[data-pref]");
+  if(!button||!allowed||!user)return;
+  const key=button.dataset.pref, previous=prefs[key]!==false;
+  prefs={...prefs,[key]:!previous};apply();
+  try{
+   const token=await user.getIdToken();
+   const res=await fetch("/api/subscription/fullscreen-preferences",{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({[key]:prefs[key]})});
+   const data=await res.json();
+   if(!res.ok)throw new Error(data.error||"Could not save preference");
+   prefs=data.preferences||prefs;apply();
+  }catch(error){prefs={...prefs,[key]:previous};apply();window.alert(error.message||"Could not save Premium preference");}
+ });
+ window.addEventListener("jon-premium-access-changed",refresh);
+ const auth=getAuth(getApp());
+ onAuthStateChanged(auth,nextUser=>{user=nextUser;refresh();});
+})();
+</script>
+
 </html>
