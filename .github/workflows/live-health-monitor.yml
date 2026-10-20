@@ -1,0 +1,145 @@
+name: JON Stream Live Health Monitor
+
+on:
+  pull_request:
+    branches: [mainv]
+    paths: [".github/workflows/live-health-monitor.yml"]
+  workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: jon-stream-live-health-monitor
+  cancel-in-progress: true
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check live site, gateway, and fixed HLS routes
+        id: monitor
+        shell: bash
+        run: |
+          node <<'NODE'
+          const targets = [
+            { name: "JON Stream website", url: "https://jon-stream.vercel.app/", kind: "site" },
+            { name: "HLS gateway health", url: "https://jon-stream.jonjossy0.workers.dev/", kind: "gateway" },
+            { name: "EBS TV HLS", url: "https://jon-stream.jonjossy0.workers.dev/ebs/tv", kind: "hls" },
+            { name: "EBS Cinema HLS", url: "https://jon-stream.jonjossy0.workers.dev/ebs/cinema", kind: "hls" },
+            { name: "EBS Muzika HLS", url: "https://jon-stream.jonjossy0.workers.dev/ebs/muzika", kind: "hls" },
+            { name: "Sony Movies HLS", url: "https://jon-stream.jonjossy0.workers.dev/sony/movies", kind: "hls" },
+            { name: "Sony source 1", url: "https://jon-stream.jonjossy0.workers.dev/hls?url=http%3A%2F%2F45.162.64.114%2FSONY_MOVIES%2Findex.m3u8", kind: "hls" },
+            { name: "Sony source 2", url: "https://jon-stream.jonjossy0.workers.dev/hls?url=http%3A%2F%2F45.177.114.115%2FSONY_MOVIES%2Findex.m3u8", kind: "hls" },
+            { name: "Sony source 3", url: "https://jon-stream.jonjossy0.workers.dev/hls?url=http%3A%2F%2F168.197.104.22%2FSONY_MOVIES%2Findex.m3u8", kind: "hls" },
+            { name: "Sony source 4", url: "https://jon-stream.jonjossy0.workers.dev/hls?url=http%3A%2F%2F170.83.16.50%2FSONY_MOVIES%2Findex.m3u8", kind: "hls" },
+            { name: "Sony source 5", url: "https://jon-stream.jonjossy0.workers.dev/hls?url=https%3A%2F%2Fcdn-5.nxplay.com.br%2FSONY_MOVIES%2Findex.m3u8", kind: "hls" },
+            { name: "Great Christmas HLS", url: "https://jon-stream.jonjossy0.workers.dev/great/christmas", kind: "hls" }
+          ];
+
+          async function check(target) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 15000);
+            const started = Date.now();
+            try {
+              const response = await fetch(target.url, {
+                redirect: "follow",
+                signal: controller.signal,
+                headers: { "User-Agent": "JON-Stream-Health-Monitor/1.0", "Accept": "*/*" }
+              });
+              const body = await response.text();
+              const elapsedMs = Date.now() - started;
+              if (!response.ok) {
+                const diagnostic = body.replace(/\s+/g, " ").trim().slice(0, 160);
+                return { name: target.name, url: target.url, ok: false, status: response.status, elapsedMs, detail: diagnostic || "HTTP status was not successful" };
+              }
+              if (target.kind === "gateway" && !body.includes("JON Stream HLS Gateway - ONLINE")) {
+                return { name: target.name, url: target.url, ok: false, status: response.status, elapsedMs, detail: "Gateway health text did not match" };
+              }
+              if (target.kind === "hls" && !body.includes("#EXTM3U")) {
+                return { name: target.name, url: target.url, ok: false, status: response.status, elapsedMs, detail: "Response did not contain an HLS playlist (#EXTM3U)" };
+              }
+              if (target.kind === "site" && body.length < 500) {
+                return { name: target.name, url: target.url, ok: false, status: response.status, elapsedMs, detail: "Website response was unexpectedly short" };
+              }
+              return { name: target.name, url: target.url, ok: true, status: response.status, elapsedMs, detail: target.kind === "hls" ? "HLS playlist returned" : "HTTP response passed basic check" };
+            } catch (error) {
+              return { name: target.name, url: target.url, ok: false, elapsedMs: Date.now() - started, detail: error.name === "AbortError" ? "Timed out after 15 seconds" : String(error.message || error).slice(0, 180) };
+            } finally {
+              clearTimeout(timer);
+            }
+          }
+
+          (async () => {
+            const results = await Promise.all(targets.map(check));
+            const failures = results.filter(item => !item.ok);
+            const report = { checkedAt: new Date().toISOString(), passed: results.length - failures.length, failed: failures.length, results };
+            const fs = await import("node:fs");
+            fs.writeFileSync(process.env.GITHUB_WORKSPACE + "/health-report.json", JSON.stringify(report, null, 2));
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, "# JON Stream live health check\n\n");
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `Checked at: ${report.checkedAt}\n\nPassed: **${report.passed}/${results.length}** · Failed: **${report.failed}**\n\n`);
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, "| Check | Result | HTTP | Time | Details |\n|---|---|---:|---:|---|\n");
+            for (const item of results) {
+              fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `| ${item.name} | ${item.ok ? "PASS" : "FAIL"} | ${item.status ?? "—"} | ${item.elapsedMs} ms | ${item.detail.replaceAll("|", "/")} |\n`);
+            }
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `failed=${failures.length}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `report=${JSON.stringify(report)}\n`);
+            console.log(JSON.stringify(report, null, 2));
+            // PR runs validate monitor code; existing live-channel failures are reported but do not block workflow validation.
+            // Scheduled/manual production runs still fail and open/update the alert issue when any check fails.
+            if (failures.length > 0 && process.env.GITHUB_EVENT_NAME !== "pull_request") process.exitCode = 1;
+          })().catch(error => { console.error(error); process.exitCode = 1; });
+          NODE
+      - name: Create or update one alert issue when checks fail
+        if: always() && github.event_name != 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          MONITOR_REPORT: ${{ steps.monitor.outputs.report }}
+          MONITOR_STEP_OUTCOME: ${{ steps.monitor.outcome }}
+        with:
+          script: |
+            const title = "JON Stream monitor alert";
+            let report;
+            try { report = JSON.parse(process.env.MONITOR_REPORT || "{}"); }
+            catch { report = { checkedAt: new Date().toISOString(), results: [], failed: 1 }; }
+            const { owner, repo } = context.repo;
+            const existing = await github.rest.issues.listForRepo({ owner, repo, state: "open", per_page: 100 });
+            const alert = existing.data.find(issue => issue.title === title && !issue.pull_request);
+            const failures = (report.results || []).filter(item => !item.ok);
+            if (process.env.MONITOR_STEP_OUTCOME !== "success" || failures.length > 0) {
+              const lines = [
+                "Automated JON Stream reachability check detected a problem.",
+                "",
+                `Checked at: ${report.checkedAt || new Date().toISOString()}`,
+                "",
+                "This checks HTTP reachability and basic HLS playlist responses only. It does not prove that video decodes or plays on a phone/TV box.",
+                "",
+                ...(failures.length ? failures.map(item => `- **${item.name}** — ${item.detail}; HTTP ${item.status ?? "unknown"}; ${item.url}`) : ["- The monitor job failed before producing a complete report. See the Actions run logs."]),
+                "",
+                `Workflow run: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`
+              ];
+              const body = lines.join("\n");
+              if (alert) {
+                await github.rest.issues.update({ owner, repo, issue_number: alert.number, body });
+              } else {
+                await github.rest.issues.create({ owner, repo, title, body });
+              }
+            } else if (alert) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: alert.number,
+                body: `Recovery check passed at ${report.checkedAt || new Date().toISOString()}. All configured HTTP/HLS checks are passing again. Playback still requires device testing. The alert is being closed.\n\nWorkflow run: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`
+              });
+              await github.rest.issues.update({ owner, repo, issue_number: alert.number, state: "closed" });
+            }
+      - name: Upload machine-readable health report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon-stream-health-report
+          path: health-report.json
+          if-no-files-found: ignore
+          retention-days: 14
