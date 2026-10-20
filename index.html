@@ -3242,6 +3242,7 @@ body.jon-ad-visible{padding-bottom:85px}
         logo:typeof x.logo==='string'?x.logo:'',
         country:typeof x.country==='string'?x.country:'',
         group:typeof x.category==='string'&&x.category.trim()?x.category.trim():(typeof x.group==='string'&&x.group.trim()?x.group.trim():'TV Channel'),
+        accessTier:String(x.accessTier||'free').toLowerCase()==='premium'?'premium':'free',
         id:x.id==null?'':String(x.id),
         backupUrl:cleanStreamUrl(x.backupUrl),
         backupUrls:Array.isArray(x.backupUrls)?x.backupUrls.filter(isHttpUrl).map(u=>u.trim()):[],
@@ -3268,7 +3269,8 @@ body.jon-ad-visible{padding-bottom:85px}
       const incoming=remote.radio.filter(x=>x&&x.enabled!==false&&typeof x.name==='string'&&x.name.trim()&&isHttpUrl(x.url)).map(x=>({
         name:x.name.trim(),
         url:x.url.trim(),
-        logo:typeof x.logo==='string'?x.logo:''
+        logo:typeof x.logo==='string'?x.logo:'',
+        accessTier:String(x.accessTier||'free').toLowerCase()==='premium'?'premium':'free'
       }));
       const merged=[...stations,...incoming];
       const seen=new Set();
