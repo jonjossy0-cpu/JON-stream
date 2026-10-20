@@ -25,7 +25,6 @@ module.exports = async function handler(req, res) {
     const now = Date.now();
     const uidEntitlement = uidSnap.exists ? uidSnap.data() : {};
     const emailEntitlement = emailSnap.exists ? emailSnap.data() : {};
-    const now = Date.now();
     const isActive = entitlement => {
       const expiry = entitlement.expiresAt && typeof entitlement.expiresAt.toMillis === "function"
         ? entitlement.expiresAt.toMillis()
