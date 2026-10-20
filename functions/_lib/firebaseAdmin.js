@@ -26,15 +26,17 @@ function getServices() {
 
 async function requireUser(req) {
   const header = String(req.headers.authorization || "");
-  const match = header.match(/^Bearer\s+(.+)$/i);
-  if (!match) {
+  const separator = header.indexOf(" ");
+  const scheme = separator >= 0 ? header.slice(0, separator) : "";
+  const token = separator >= 0 ? header.slice(separator + 1).trim() : "";
+  if (scheme.toLowerCase() !== "bearer" || !token || token.includes(" ")) {
     const error = new Error("Authentication required");
     error.status = 401;
     throw error;
   }
   const { auth } = getServices();
   try {
-    return await auth.verifyIdToken(match[1], true);
+    return await auth.verifyIdToken(token, true);
   } catch (_) {
     const error = new Error("Invalid or expired authentication token");
     error.status = 401;
