@@ -1,10 +1,11 @@
 const crypto = require("crypto");
-const { getServices, requireUser, requireAdmin, sendError } = require("../_lib/firebaseAdmin");
+const { getServices, requireUser, requireAdmin, sendError, setCors } = require("../_lib/firebaseAdmin");
 
 const allowedDurations = new Set([7, 30, 90, 365, "unlimited"]);
 const emailKey = email => crypto.createHash("sha256").update(String(email || "").trim().toLowerCase()).digest("hex");
 
 module.exports = async function handler(req, res) {
+  if (setCors(req, res)) return;
   res.setHeader("Cache-Control", "no-store");
   if (!["POST"].includes(req.method)) return res.status(405).json({ error: "Method not allowed" });
   try {
