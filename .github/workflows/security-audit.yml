@@ -52,14 +52,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          patterns='-----BEGIN (RSA|OPENSSH|EC|DSA|PGP) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN PRIVATE KEY-----|"private_key"[[:space:]]*:[[:space:]]*"-----BEGIN'
+          # Split the literal PEM marker so this scanner does not match its own rule.
+          private_key_header='-----BEGIN '"PRIVATE KEY-----"
+          patterns='-----BEGIN (RSA|OPENSSH|EC|DSA|PGP) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|'"$private_key_header"'|"private_key"[[:space:]]*:[[:space:]]*"-----BEGIN'
 
-          if git grep -nE "$patterns" -- . ':!*.md'; then
+          if git grep -nE -e "$patterns" -- . ':!*.md'; then
             echo "Potential hard-coded credential detected in the current tree."
             exit 1
+          else
+            scan_status=$?
+            if [ "$scan_status" -gt 1 ]; then
+              echo "Secret scan failed while reading the current tree (exit $scan_status)." >&2
+              exit "$scan_status"
+            fi
           fi
 
-          if git log --all -G "$patterns" --format= -- . ':!*.md' | grep -q .; then
+          history_matches="$(git log --all -G"$patterns" --format= -- . ':!*.md' ':!.github/workflows/security-audit.yml')"
+          if [ -n "$history_matches" ]; then
             echo "Potential hard-coded credential detected in Git history. Rotate/revoke it before merging."
             exit 1
           fi
@@ -98,3 +107,37 @@ jobs:
             echo "Floating GitHub Actions ref detected. Pin the action to a stable tag or commit SHA."
             exit 1
           fi
+
+      - name: Ensure Vercel and Cloudflare HLS gateway policies match
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require("node:fs");
+
+          function readSet(file, name) {
+            const source = fs.readFileSync(file, "utf8");
+            const match = source.match(new RegExp("const " + name + " = new Set\\(\\[([\\s\\S]*?)\\]\\);"));
+            if (!match) throw new Error(`Could not find ${name} in ${file}`);
+            return [...match[1].matchAll(/"([^"]+)"/g)].map((item) => item[1]).sort();
+          }
+
+          for (const name of ["ALLOWED_HOSTS", "ALLOWED_ENDPOINTS"]) {
+            const api = readSet("api/hls.js", name);
+            const worker = readSet("gateway/worker.js", name);
+            if (JSON.stringify(api) !== JSON.stringify(worker)) {
+              throw new Error(`${name} mismatch between api/hls.js and gateway/worker.js\\nAPI: ${api.join(", ")}\\nWorker: ${worker.join(", ")}`);
+            }
+          }
+
+          const apiSource = fs.readFileSync("api/hls.js", "utf8");
+          const workerSource = fs.readFileSync("gateway/worker.js", "utf8");
+          const apiLoop = apiSource.match(/for \(let redirects = 0; redirects <= (\d+); redirects\+\+\)/);
+          const apiReject = apiSource.match(/if \(redirects === (\d+)\)/);
+          const workerLimit = workerSource.match(/const MAX_REDIRECTS = (\d+);/);
+          if (!apiLoop || !apiReject || !workerLimit ||
+              apiLoop[1] !== apiReject[1] || apiLoop[1] !== workerLimit[1]) {
+            throw new Error("HLS redirect limits do not match between Vercel API and Cloudflare Worker");
+          }
+          console.log("HLS host, port, and redirect policies match.");
+          NODE

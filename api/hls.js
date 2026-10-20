@@ -1,4 +1,49 @@
-const ALLOWED_HOSTS = new Set(["88.212.15.19","154.58.202.18","5.9.121.178","23.237.104.106","amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv"]);
+const ALLOWED_HOSTS = new Set([
+  "88.212.15.19",
+  "154.58.202.18",
+  "5.9.121.178",
+  "23.237.104.106",
+  "45.166.93.156",
+  "stitcher-ipv4.pluto.tv",
+  "amg00627-amg00627c29-rakuten-it-3989.playouts.now.amagi.tv",
+  "appletree-mytimeuk-rakuten.amagi.tv",
+  "63.141.239.226",
+  "stream8.cinerama.uz",
+  "38.252.238.18",
+  "45.162.64.114",
+  "45.177.114.115",
+  "168.197.104.22",
+  "170.83.16.50",
+  "cdn-5.nxplay.com.br",
+  "stream.telfazalive.com",
+  "bozztv.com",
+  "rpn.bozztv.com",
+  "amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv"
+]);
+const ALLOWED_ENDPOINTS = new Set([
+  "88.212.15.19:80", "88.212.15.19:443",
+  "154.58.202.18:80", "154.58.202.18:443",
+  "5.9.121.178:80", "5.9.121.178:443",
+  "23.237.104.106:80", "23.237.104.106:443",
+  "45.166.93.156:80", "45.166.93.156:443", "45.166.93.156:9999",
+  "stitcher-ipv4.pluto.tv:443",
+  "amg00627-amg00627c29-rakuten-it-3989.playouts.now.amagi.tv:443",
+  "appletree-mytimeuk-rakuten.amagi.tv:443",
+  "63.141.239.226:81",
+  "stream8.cinerama.uz:443",
+  "38.252.238.18:8000",
+  "45.162.64.114:80",
+  "45.177.114.115:80",
+  "168.197.104.22:80",
+  "170.83.16.50:80",
+  "cdn-5.nxplay.com.br:443",
+  "stream.telfazalive.com:443",
+  "bozztv.com:443",
+  "rpn.bozztv.com:443",
+  "amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv:443"
+]);
+const MAX_PLAYLIST_BYTES = 1_000_000;
+const MAX_URL_LENGTH = 4096;
 
 function corsHeaders() {
   return {
@@ -10,10 +55,15 @@ function corsHeaders() {
   };
 }
 
+function endpointKey(url) {
+  return `${url.hostname}:${url.port || (url.protocol === "https:" ? "443" : "80")}`;
+}
+
 function isAllowed(url) {
   return (url.protocol === "http:" || url.protocol === "https:") &&
     !url.username && !url.password &&
-    ALLOWED_HOSTS.has(url.hostname);
+    ALLOWED_HOSTS.has(url.hostname) &&
+    ALLOWED_ENDPOINTS.has(endpointKey(url));
 }
 
 function absolutize(value, base) {
@@ -38,6 +88,28 @@ function rewriteUriAttributes(line, baseUrl, gatewayOrigin) {
       return 'URI="' + value + '"';
     }
   });
+}
+
+async function readBoundedText(response, maxBytes) {
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const chunks = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(Buffer.from(value));
+    }
+    return Buffer.concat(chunks, total).toString("utf8");
+  } finally {
+    try { reader.releaseLock(); } catch (_) {}
+  }
 }
 
 function rewritePlaylist(body, baseUrl, gatewayOrigin) {
@@ -77,6 +149,10 @@ export default async function handler(req, res) {
     Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
     return res.status(400).send("Missing url");
   }
+  if (raw.length > MAX_URL_LENGTH) {
+    Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
+    return res.status(414).send("URL too long");
+  }
 
   let target;
   try {
@@ -97,7 +173,7 @@ export default async function handler(req, res) {
     // enforce the allowlist.
     let requestUrl = target;
     let upstream;
-    for (let redirects = 0; redirects <= 5; redirects++) {
+    for (let redirects = 0; redirects <= 3; redirects++) {
       upstream = await fetch(requestUrl.toString(), {
         method: req.method,
         headers: {
@@ -112,7 +188,7 @@ export default async function handler(req, res) {
       const location = upstream.headers.get("location");
       if (!redirectStatus || !location) break;
 
-      if (redirects === 5) {
+      if (redirects === 3) {
         try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
         Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
         return res.status(502).send("Too many upstream redirects");
@@ -148,9 +224,19 @@ export default async function handler(req, res) {
     res.setHeader("Content-Type", looksLikePlaylist ? "application/vnd.apple.mpegurl" : (contentType || "application/octet-stream"));
 
     if (looksLikePlaylist) {
-      const body = await upstream.text();
+      const lengthHeader = Number(upstream.headers.get("content-length") || 0);
+      if (lengthHeader > MAX_PLAYLIST_BYTES) {
+        try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
+        return res.status(413).send("Playlist too large");
+      }
+      if (req.method === "HEAD") {
+        try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
+        res.statusCode = upstream.status;
+        return res.end();
+      }
+      const body = await readBoundedText(upstream, MAX_PLAYLIST_BYTES);
+      if (body === null) return res.status(413).send("Playlist too large");
       res.statusCode = upstream.status;
-      if (req.method === "HEAD") return res.end();
       const requestHost = String(req.headers.host || "");
       const gatewayOrigin = /^jon-stream(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(requestHost)
         ? "https://" + requestHost
@@ -158,16 +244,20 @@ export default async function handler(req, res) {
       return res.end(rewritePlaylist(body, finalTarget.toString(), gatewayOrigin));
     }
 
-    const buffer = Buffer.from(await upstream.arrayBuffer());
-
     for (const name of ["content-length", "content-range", "accept-ranges", "etag", "last-modified"]) {
       const value = upstream.headers.get(name);
       if (value) res.setHeader(name, value);
     }
 
     res.statusCode = upstream.status;
-    if (req.method === "HEAD") return res.end();
-    return res.end(buffer);
+    if (req.method === "HEAD") {
+      try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
+      return res.end();
+    }
+    if (!upstream.body) return res.end();
+    // Stream media instead of buffering the full segment in function memory.
+    const { Readable } = await import("node:stream");
+    return Readable.fromWeb(upstream.body).pipe(res);
   } catch (error) {
     Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
     return res.status(502).send("Gateway upstream error");

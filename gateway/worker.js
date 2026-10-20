@@ -1,5 +1,7 @@
 const ALLOWED_HOSTS = new Set([
   "88.212.15.19",
+  "154.58.202.18",
+  "5.9.121.178",
   "23.237.104.106",
   "45.166.93.156",
   "stitcher-ipv4.pluto.tv",
@@ -52,6 +54,7 @@ const FIXED_CHANNELS = new Map([
 const MAX_REDIRECTS = 3;
 const MAX_URL_LENGTH = 4096;
 const MAX_PLAYLIST_BYTES = 1_000_000;
+const MAX_ERROR_BODY_BYTES = 64_000;
 const RATE_WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 300;
 const requestBuckets = new Map();
@@ -72,6 +75,8 @@ function endpointKey(url) {
 
 const ALLOWED_ENDPOINTS = new Set([
   "88.212.15.19:80", "88.212.15.19:443",
+  "154.58.202.18:80", "154.58.202.18:443",
+  "5.9.121.178:80", "5.9.121.178:443",
   "23.237.104.106:80", "23.237.104.106:443",
   "45.166.93.156:80", "45.166.93.156:443", "45.166.93.156:9999",
   "stitcher-ipv4.pluto.tv:443",
@@ -133,6 +138,34 @@ function rateLimitResponse(retryAfter) {
       ...corsHeaders()
     }
   });
+}
+
+async function readBoundedText(response, maxBytes) {
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const chunks = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        try { await reader.cancel(); } catch (_) {}
+        return null;
+      }
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return new TextDecoder().decode(bytes);
+  } finally {
+    try { reader.releaseLock(); } catch (_) {}
+  }
 }
 
 function absolutize(value, base) {
@@ -365,8 +398,8 @@ async function handle(request) {
       return new Response("Playlist too large", { status: 413, headers: corsHeaders() });
     }
 
-    const body = await upstream.text();
-    if (new TextEncoder().encode(body).byteLength > MAX_PLAYLIST_BYTES) {
+    const body = await readBoundedText(upstream, MAX_PLAYLIST_BYTES);
+    if (body === null) {
       return new Response("Playlist too large", { status: 413, headers: corsHeaders() });
     }
 
@@ -382,7 +415,7 @@ async function handle(request) {
   }
 
   if (!upstream.ok) {
-    const body = request.method === "HEAD" ? "" : await upstream.text();
+    const body = request.method === "HEAD" ? "" : await readBoundedText(upstream, MAX_ERROR_BODY_BYTES);
     return new Response(body || ("Upstream HTTP " + upstream.status), {
       status: upstream.status,
       headers: {
