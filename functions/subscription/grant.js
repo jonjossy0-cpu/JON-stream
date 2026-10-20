@@ -2,6 +2,19 @@ const crypto = require("crypto");
 const { getServices, requireUser, requireAdmin, sendError, setCors } = require("../_lib/firebaseAdmin");
 
 const allowedDurations = new Set([7, 30, 90, 365, "unlimited"]);
+function isValidEmail(value) {
+  if (typeof value !== "string" || value.length > 254) return false;
+  const at = value.indexOf("@");
+  if (at <= 0 || at !== value.lastIndexOf("@") || at > 64 || at === value.length - 1) return false;
+  const domain = value.slice(at + 1);
+  if (!domain.includes(".") || domain.startsWith(".") || domain.endsWith(".")) return false;
+  if (value.includes(" ") || value.includes("\\t") || value.includes("\\n") || value.includes("\\r")) return false;
+  return domain.split(".").every(label =>
+    label.length > 0 && label.length <= 63 &&
+    label[0] !== "-" && label[label.length - 1] !== "-" &&
+    [...label].every(char => /[a-z0-9-]/i.test(char))
+  );
+}
 const emailKey = email => crypto.createHash("sha256").update(String(email || "").trim().toLowerCase()).digest("hex");
 
 module.exports = async function handler(req, res) {
