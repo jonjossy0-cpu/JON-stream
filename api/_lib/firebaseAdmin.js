@@ -46,10 +46,34 @@ function requireAdmin(decoded) {
   }
 }
 
+function setCors(req, res) {
+  const origin = String(req.headers.origin || "");
+  const allowedOrigins = new Set([
+    "https://jonjossy0-cpu.github.io",
+    "https://jon-stream.vercel.app"
+  ]);
+  if (allowedOrigins.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Max-Age", "600");
+  }
+  if (req.method === "OPTIONS") {
+    if (!allowedOrigins.has(origin)) {
+      res.status(403).end();
+      return true;
+    }
+    res.status(204).end();
+    return true;
+  }
+  return false;
+}
+
 function sendError(res, error) {
   const status = Number(error && error.status) || 500;
   if (status === 500) console.error("Premium API error:", error && error.message);
   return res.status(status).json({ error: status === 500 ? "Subscription service is not configured or temporarily unavailable" : error.message });
 }
 
-module.exports = { getServices, requireUser, requireAdmin, sendError };
+module.exports = { getServices, requireUser, requireAdmin, sendError, setCors };
