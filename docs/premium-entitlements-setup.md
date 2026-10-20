@@ -19,15 +19,15 @@ Keep both variables restricted to the server runtime and set them for Preview an
   - `{"action":"revoke","email":"person@example.com"}`
   Durations supported: 7, 30, 90, 365, or `"unlimited"`.
 - `GET /api/subscription/grants` — admin-only list of email grants, expiry, and active status (maximum 500 records).
-- `GET /api/subscription/config` — returns the public Premium price in ETB.
-- `POST /api/subscription/config` — admin-only JSON body such as `{"priceETB":299}`.
+- `GET /api/subscription/config` — returns public `monthlyPriceETB` and `yearlyPriceETB` values in ETB. Defaults are 499 ETB/month and 6,000 ETB/year. The legacy `priceETB` field remains an alias for the monthly price.
+- `POST /api/subscription/config` — admin-only JSON body; supports `{"monthlyPriceETB":499,"yearlyPriceETB":6000}`. Either field may be updated independently. Legacy `{"priceETB":499}` continues to update the monthly price only.
 
 ## Firestore collections
 
 - `premiumEntitlements/{firebaseUid}` — entitlement copy for an already registered account.
 - `premiumEntitlementsByEmail/{sha256-lowercase-email}` — email grant, allowing an admin to grant before the user creates an account.
 - `subscriptionProfiles/{firebaseUid}` — trial start/end, created only after the user's Firebase token confirms a verified email.
-- `subscriptionConfig/public` — public ETB price setting.
+- `subscriptionConfig/public` — public ETB price settings (`monthlyPriceETB`, `yearlyPriceETB`, plus legacy `priceETB` alias).
 
 The API uses Firebase Admin SDK on the server, which bypasses Firestore client rules; all write routes therefore verify a Firebase ID token and enforce `JON_ADMIN_UIDS`.
 
