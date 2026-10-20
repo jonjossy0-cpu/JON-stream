@@ -7,7 +7,7 @@ const emailKey = email => crypto.createHash("sha256").update(String(email || "")
 module.exports = async function handler(req, res) {
   if (setCors(req, res)) return;
   res.setHeader("Cache-Control", "no-store");
-  if (!["POST"].includes(req.method)) return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   try {
     const adminUser = await requireUser(req);
     requireAdmin(adminUser);
@@ -15,8 +15,12 @@ module.exports = async function handler(req, res) {
     const body = req.body && typeof req.body === "object" ? req.body : {};
     const action = String(body.action || "");
     const email = String(body.email || "").trim().toLowerCase();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: "A valid email address is required" });
-    if (!["grant", "extend", "revoke"].includes(action)) return res.status(400).json({ error: "Action must be grant, extend, or revoke" });
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: "A valid email address is required" });
+    }
+    if (!["grant", "extend", "revoke"].includes(action)) {
+      return res.status(400).json({ error: "Action must be grant, extend, or revoke" });
+    }
 
     let targetUser = null;
     try { targetUser = await auth.getUserByEmail(email); }
@@ -37,13 +41,23 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true, action, email, status: "revoked" });
     }
 
-    if (!allowedDurations.has(body.duration)) return res.status(400).json({ error: "Duration must be 7, 30, 90, 365, or unlimited" });
-    const unlimited = body.duration === "unlimited";
-    const existingSnap = await emailRef.get();
-    const existing = existingSnap.exists ? existingSnap.data() : {};
+    if (!allowedDurations.has(body.duration)) {
+      return res.status(400).json({ error: "Duration must be 7, 30, 90, 365, or unlimited" });
+    }
+
+    // Reconcile both UID and email records so extending access cannot shorten a longer grant.
+    const snapshots = await Promise.all(refs.map(ref => ref.get()));
+    const existingRecords = snapshots.map(snap => snap.exists ? snap.data() : {});
+    const existingEmail = existingRecords[0] || {};
     const now = Date.now();
-    const oldExpiry = existing.expiresAt && typeof existing.expiresAt.toMillis === "function" ? existing.expiresAt.toMillis() : now;
-    const startFrom = action === "extend" ? Math.max(now, oldExpiry) : now;
+    const oldExpiry = existingRecords.reduce((latest, record) => {
+      const expiry = record.expiresAt && typeof record.expiresAt.toMillis === "function"
+        ? record.expiresAt.toMillis()
+        : 0;
+      return Math.max(latest, expiry);
+    }, now);
+    const startFrom = action === "extend" ? oldExpiry : now;
+    const unlimited = body.duration === "unlimited";
     const expiresAt = unlimited ? null : Timestamp.fromMillis(startFrom + Number(body.duration) * 86400000);
     const grant = {
       active: true,
@@ -52,7 +66,7 @@ module.exports = async function handler(req, res) {
       email,
       source: "admin_grant",
       grantedBy: adminUser.uid,
-      grantedAt: existing.grantedAt || FieldValue.serverTimestamp(),
+      grantedAt: existingEmail.grantedAt || FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
       revokedAt: FieldValue.delete()
     };
