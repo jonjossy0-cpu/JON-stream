@@ -48,3 +48,10 @@ Do not merge until the blocking items are closed and the deployed Preview is ver
 - Do **not** trust a client-supplied `accessTier`, channel name, or source URL as proof of entitlement. The server must look up a stable channel ID in an authoritative private catalog, verify the user's Firebase ID token and entitlement/trial, and mint a short-lived signed playback ticket bound to that channel/source. The Vercel HLS proxy and Cloudflare Worker must validate the ticket on every playlist, nested playlist, key, and segment request.
 - Before calling the paywall secure, Premium source URLs must be moved out of the public `jonStream/appData` document into a server-only/private catalog (or upstream provider access must be restricted). Public channel metadata can retain only a stable ID and tier. Free playback must remain available without a paid entitlement, including for signed-out users; this requires a server-authorized Free path or preserving the existing public Free routes without accidentally allowing Premium-source URLs.
 - Implementation is intentionally not marked complete yet: this private-source catalog and verified ticket flow must be designed and tested end-to-end first. No production changes or merge are authorized by this continuation.
+
+
+## Premium fullscreen preferences (2026-10-20)
+- Added authenticated endpoint `/api/subscription/fullscreen-preferences` on the feature branch.
+- `GET` returns the signed-in verified user's saved preferences; `POST` accepts boolean `sponsorAds` and/or `newsTicker` values.
+- Preferences are stored in `subscriptionProfiles/{uid}.fullscreenPreferences`. Defaults are both ON. Requests require a verified email and active entitlement or unexpired trial.
+- **Not yet complete:** the fullscreen player controls have not been connected to this endpoint, and the saved preferences have not been applied to the News Ticker/Sponsored overlay in the web player. Do not describe the ON/OFF feature as user-ready until the UI wiring and Preview tests are complete.
