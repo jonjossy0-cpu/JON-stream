@@ -3,14 +3,19 @@ const admin = require("firebase-admin");
 function getAdminApp() {
   if (admin.apps.length) return admin.app();
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  if (!raw) throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON is not configured");
-  let serviceAccount;
-  try {
-    serviceAccount = JSON.parse(raw);
-  } catch (_) {
-    throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON must be valid JSON");
+  if (raw) {
+    let serviceAccount;
+    try {
+      serviceAccount = JSON.parse(raw);
+    } catch (_) {
+      throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON must be valid JSON");
+    }
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+  } else {
+    // Firebase Functions provides Application Default Credentials. Local or
+    // third-party deployments must supply FIREBASE_SERVICE_ACCOUNT_JSON.
+    admin.initializeApp();
   }
-  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
   return admin.app();
 }
 
