@@ -1,6 +1,9 @@
 name: JON Stream Live Health Monitor
 
 on:
+  pull_request:
+    branches: [mainv]
+    paths: [".github/workflows/live-health-monitor.yml"]
   workflow_dispatch:
   schedule:
     - cron: "*/30 * * * *"
@@ -84,7 +87,7 @@ jobs:
           })().catch(error => { console.error(error); process.exitCode = 1; });
           NODE
       - name: Create or update one alert issue when checks fail
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         uses: actions/github-script@v7
         env:
           MONITOR_REPORT: ${{ steps.monitor.outputs.report }}
