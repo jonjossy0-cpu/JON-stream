@@ -21,12 +21,11 @@ Last checked: 2026-10-20
 - Setup documentation updated.
 
 ## Still blocking production merge
-1. Player/Gateway enforcement: currently raw stream/Gateway URLs are not reliably blocked for Free accounts. Client-side gating alone is insufficient.
-2. Authentication integration in the web player: the existing page initializes Firestore but does not yet provide the Firebase Auth flow needed to obtain ID tokens for subscription calls.
-3. Preview API functional tests against the actual Firebase project.
-4. Verify Preview Vercel environment variables `FIREBASE_SERVICE_ACCOUNT_JSON` and `JON_ADMIN_UIDS` are configured; do not place secrets in source control or chat.
-5. Admin UI integration for managing plans/grants/prices.
-6. Telebirr payment verification requires merchant/API credentials and a verified callback flow; do not claim payments are processed until implemented and tested.
+1. **Server/gateway playback enforcement remains blocking.** The web player now blocks Premium selections unless the subscription-status API returns `hasPremium: true`, but this is only a client-side layer. Raw stream URLs and the Vercel/Cloudflare gateway routes still need server-side ticket/entitlement validation to prevent bypass.
+2. Preview API functional tests against the actual Firebase project.
+3. Verify Preview Vercel environment variables `FIREBASE_SERVICE_ACCOUNT_JSON` and `JON_ADMIN_UIDS` are configured; do not place secrets in source control or chat.
+4. Admin UI integration for managing plans/grants/prices.
+5. Telebirr payment verification requires merchant/API credentials and a verified callback flow; do not claim payments are processed until implemented and tested.
 
 ## Fresh code inspection (2026-10-20)
 - Confirmed the web `index.html` already imports Firebase Auth and implements account creation, sign-in, verification email, sign-out, and subscription status display. The earlier wording that no Auth flow exists was inaccurate; the missing piece is enforcing the status at playback and gateway layers.
@@ -38,7 +37,7 @@ Last checked: 2026-10-20
 - PR: https://github.com/jonjossy0-cpu/JON-stream/pull/189
 - Branch: `feature/secure-premium-entitlements`
 - Base: `mainv`
-- Last known head when this status was written: `15aae743f3ec2ff36fa1f4b8008ade729ddb8b79`
-- Vercel check was still pending at last poll; Dependency Review passed; Security Audit and Build JON Stream APK workflows were still running. The APK workflow was triggered by the repository workflow, but this task must not change or merge Mobile/Android TV sources.
+- Latest relevant player-gate commit: `332782723d026bf11b2d4c44993d80c3aeb45f03`.
+- Latest Vercel Preview for this branch was still BUILDING at last poll; Dependency Review, Security Audit, and the repository's APK workflow were running. The APK workflow was auto-triggered by repository CI; this task did not edit APK source/build files. Do not claim the Preview or workflows passed until their final status is checked.
 
 Do not merge until the blocking items are closed and the deployed Preview is verified.
