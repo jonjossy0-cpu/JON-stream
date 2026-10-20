@@ -4093,7 +4093,8 @@ if(authPanel){
   const active=document.fullscreenElement===frame||document.webkitFullscreenElement===frame;
   const text=String(settings.text||"").trim();
   const premium=!!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed);
-  const featureEnabled=premium?settings.premiumEnabled:settings.enabled;\n  const show=!!(active&&featureEnabled&&text);
+  const featureEnabled=premium?settings.premiumEnabled:settings.enabled;
+  const show=!!(active&&featureEnabled&&text);
   bar.classList.toggle("jon-ticker-visible",show);
   if(!show)return;
   track.textContent=text+"   •   "+text+"   •   ";
@@ -4160,7 +4161,8 @@ if(authPanel){
  function clearTimers(){if(photoTimer!==null){clearTimeout(photoTimer);photoTimer=null}if(cycleTimer!==null){clearTimeout(cycleTimer);cycleTimer=null}}
  function showNext(run,attempts=0){
   const premium=!!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed);
-  const featureEnabled=premium?settings.premiumEnabled:settings.enabled;\n  if(run!==token||!isFullscreen()||!featureEnabled||!settings.photos.length){hide();return}
+  const featureEnabled=premium?settings.premiumEnabled:settings.enabled;
+  if(run!==token||!isFullscreen()||!featureEnabled||!settings.photos.length){hide();return}
   // Once every configured logo has had its 10-second slot, hide the card
   // until the 10-minute cycle timer restarts the carousel.
   // index counts logos already attempted in this 10-minute cycle.
@@ -4187,7 +4189,8 @@ if(authPanel){
  function startCycle(){
   clearTimers();active=false;hide();
   const premium=!!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed);
-  const featureEnabled=premium?settings.premiumEnabled:settings.enabled;\n  if(!isFullscreen()||!featureEnabled||!settings.photos.length)return;
+  const featureEnabled=premium?settings.premiumEnabled:settings.enabled;
+  if(!isFullscreen()||!featureEnabled||!settings.photos.length)return;
   active=true;token++;const run=token;index=0;showNext(run);
   cycleTimer=setTimeout(()=>{cycleTimer=null;if(run===token&&isFullscreen())startCycle()},CYCLE_MS);
  }
@@ -4196,7 +4199,7 @@ if(authPanel){
   const next=data&&data.settings&&data.settings.sponsorLogoCarousel||{};
   const raw=Array.isArray(next.photos)?next.photos:(typeof next.photos==="string"?next.photos.split(/\r?\n/):[]);
   const fresh={enabled:next.enabled===true,premiumEnabled:next.premiumEnabled!==false,photos:cleanPhotos(raw)};
-  const changed=fresh.enabled!==settings.enabled||fresh.premiumEnabled!==settings.premiumEnabled||fresh.photos.join("\\n")!==settings.photos.join("\\n");
+  const changed=fresh.enabled!==settings.enabled||fresh.premiumEnabled!==settings.premiumEnabled||fresh.photos.join("\n")!==settings.photos.join("\n");
   settings=fresh;
   const premium=!!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed);
   const featureEnabled=premium?settings.premiumEnabled:settings.enabled;\n  if(!featureEnabled||!settings.photos.length){stop();return}
