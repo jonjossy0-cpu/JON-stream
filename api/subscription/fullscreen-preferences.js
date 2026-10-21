@@ -43,16 +43,18 @@ module.exports = async function handler(req, res) {
     if (!["sponsorAds", "newsTicker"].some(key => Object.prototype.hasOwnProperty.call(body, key))) {
       return res.status(400).json({ error: "Provide sponsorAds and/or newsTicker as a boolean" });
     }
-    const updates = {};
     for (const key of ["sponsorAds", "newsTicker"]) {
       if (Object.prototype.hasOwnProperty.call(body, key)) {
         if (typeof body[key] !== "boolean") return res.status(400).json({ error: key + " must be a boolean" });
         preferences[key] = body[key];
-        updates["fullscreenPreferences." + key] = body[key];
       }
     }
-    updates.updatedAt = FieldValue.serverTimestamp();
-    await profileRef.set(updates, { merge: true });
+    // Store a nested Firestore map. Dotted keys passed to set() can be stored
+    // as literal field names, which would make GET keep returning the defaults.
+    await profileRef.set({
+      fullscreenPreferences: preferences,
+      updatedAt: FieldValue.serverTimestamp()
+    }, { merge: true });
     return res.status(200).json({ ok: true, preferences });
   } catch (error) {
     return sendError(res, error);
