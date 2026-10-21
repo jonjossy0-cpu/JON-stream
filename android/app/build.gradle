@@ -131,7 +131,8 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (html.contains("jon-news-ticker.js")) {
             throw new GradleException("Mobile news ticker script is already injected.")
         }
-        html = html.replace("</html>", ' <script src="jon-news-ticker.js"></script>\n <script src="jon-sponsor-carousel.js"></script>\n <script type="module" src="jon-mobile-subscription.js"></script>\n</html>')
+        def mobileSubscriptionScript = subscriptionJsFile.asFile.getText("UTF-8")
+        html = html.replace("</html>", ' <script src="jon-news-ticker.js"></script>\n <script src="jon-sponsor-carousel.js"></script>\n <script type="module">\n' + mobileSubscriptionScript + '\n</script>\n</html>')
 
         def target = outputFile.get().asFile
         target.parentFile.mkdirs()
