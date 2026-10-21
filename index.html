@@ -3600,7 +3600,7 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
  function showShortcut(){
    if(inTVMode()) btn.classList.add('show');
  }
- function hideShortcut(){btn.classList.remove('show')}
+ function hideShortcut(){if(!inTVMode())btn.classList.remove('show')}
  function goDisplay(){
    if(!inTVMode())return;
    box.classList.add('tv-display-persistent');
