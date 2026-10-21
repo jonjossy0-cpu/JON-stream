@@ -128,34 +128,7 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (html.contains("jon-news-ticker.js")) {
             throw new GradleException("Mobile news ticker script is already injected.")
         }
-        def mobileMbc3Script = ''' <script id="jon-mobile-mbc3-source-fix">
-(function(){
-  try {
-    if (typeof tvChannels === "undefined" || !Array.isArray(tvChannels)) return;
-    var fallbackUrl = "http://154.58.202.18:8080/mbc3/index.m3u8";
-    var channel = tvChannels.find(function(ch){ return /^mbc\\s*3$/i.test(String(ch.name || "").trim()); });
-    if (!channel) {
-      channel = {name:"MBC 3", logo:"", country:"International", group:"Kids", id:"", url:fallbackUrl};
-      tvChannels.push(channel);
-    } else {
-      var oldUrl = String(channel.url || "").trim();
-      if (oldUrl && oldUrl !== fallbackUrl) {
-        var backups = Array.isArray(channel.backupUrls) ? channel.backupUrls.slice() : [];
-        if (backups.indexOf(oldUrl) < 0) backups.unshift(oldUrl);
-        channel.backupUrls = backups;
-      }
-      channel.url = fallbackUrl;
-    }
-    if (typeof filteredTV !== "undefined" && Array.isArray(filteredTV)) {
-      if (!filteredTV.some(function(ch){ return /^mbc\\s*3$/i.test(String(ch.name || "").trim()); })) filteredTV.push(channel);
-      if (typeof renderTV === "function") renderTV(filteredTV);
-    }
-    if (typeof buildCountryFilter === "function") buildCountryFilter();
-  } catch (e) { console.warn("Mobile MBC 3 source setup failed", e); }
-})();
-</script>
-'''
-        html = html.replace("</html>", mobileMbc3Script + '\n <script src="jon-news-ticker.js"></script>\n <script src="jon-sponsor-carousel.js"></script>\n</html>')
+        html = html.replace("</html>", ' <script src="jon-news-ticker.js"></script>\n <script src="jon-sponsor-carousel.js"></script>\n</html>')
 
         def target = outputFile.get().asFile
         target.parentFile.mkdirs()
