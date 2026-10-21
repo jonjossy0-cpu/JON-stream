@@ -1,0 +1,24 @@
+#jonMobileAccountButton{position:fixed;right:14px;bottom:14px;z-index:2147483000;padding:12px 15px;border:1px solid #ff7c82;border-radius:999px;background:#e31b23;color:#fff;font-weight:800;font-size:13px;box-shadow:0 5px 18px #0008;max-width:calc(100vw - 28px)}
+#jonMobileAccountOverlay{display:none;position:fixed;inset:0;z-index:2147483001;background:#000b;padding:14px;align-items:center;justify-content:center;overflow:auto}
+#jonMobileAccountOverlay.is-open{display:flex}
+.jon-mobile-account-dialog{position:relative;width:min(100%,430px);max-height:calc(100dvh - 28px);overflow:auto;background:#101d30;color:#fff;border:1px solid #334660;border-radius:20px;padding:22px;box-shadow:0 15px 50px #0009;font-family:Arial,Helvetica,sans-serif}
+.jon-mobile-account-dialog h2{margin:0 42px 6px 0;font-size:22px}
+.jon-mobile-account-subtitle,.jon-mobile-account-note{font-size:13px;line-height:1.45;color:#bac8da}
+.jon-mobile-account-close{position:absolute;right:14px;top:12px;width:38px;height:38px;padding:0;font-size:26px;background:#29384d;color:#fff}
+.jon-mobile-account-dialog label{display:block;margin:13px 0 6px;font-size:13px;font-weight:700}
+.jon-mobile-account-dialog input{display:block;width:100%;min-height:44px;border:1px solid #536781;border-radius:10px;background:#07111f;color:#fff;padding:10px 12px;font-size:16px;outline-offset:2px}
+.jon-mobile-account-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
+.jon-mobile-account-actions button,.jon-mobile-account-dialog>button:not(.jon-mobile-account-close){min-height:42px;border-radius:10px;font-weight:800}
+#jonMobileSignIn{background:#e31b23;color:#fff}
+#jonMobileCreate{background:#273c56;color:#fff;border:1px solid #536781}
+#jonMobileReset{display:block;margin:9px auto 4px;background:transparent;color:#ffc3c5;padding:8px}
+#jonMobileSubscriptionStatus{margin:12px 0;padding:12px;border-radius:10px;background:#1b2a3e;overflow-wrap:anywhere;font-size:14px;line-height:1.45}
+#jonMobileSubscriptionStatus[data-kind="success"]{border:1px solid #328767}
+#jonMobileSubscriptionStatus[data-kind="warning"]{border:1px solid #aa8239}
+#jonMobileSubscriptionStatus[data-kind="error"]{border:1px solid #bd4a52}
+.jon-mobile-plans{border-top:1px solid #334660;margin-top:15px;padding-top:10px}
+.jon-mobile-plans h3{font-size:16px;margin:5px 0 10px}
+.jon-mobile-plans p{margin:7px 0;font-size:14px}
+#jonMobileSignOut{width:100%;margin-top:8px;background:#27384d;color:#fff}
+.jon-mobile-account-dialog [hidden]{display:none!important}
+@media(max-height:560px){.jon-mobile-account-dialog{padding:15px}.jon-mobile-account-dialog h2{font-size:19px}.jon-mobile-account-dialog label{margin-top:8px}}
