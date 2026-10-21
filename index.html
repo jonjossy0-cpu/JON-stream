@@ -3764,6 +3764,7 @@ if(authPanel){
    return messages[code]||((action||"Request")+" failed ("+(code||"unknown error")+"). Please try again.");
  };
  const setBusy=(busy)=>["jonAccountSignup","jonAccountSignin","jonResendVerification","jonAccountSignout"].forEach(id=>{const el=$(id);if(el)el.disabled=busy;});
+ const subscriptionApiUrl=path=>(location.hostname.endsWith(".vercel.app")?"":"https://jon-stream.vercel.app")+path;
  async function showSubscription(user){
    window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
    window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
@@ -3778,7 +3779,7 @@ if(authPanel){
     :"Please verify your email to activate the account. Trial time will only begin after server-side verification.";
    try{
      const token=await user.getIdToken();
-     const response=await fetch("/api/subscription/status",{
+     const response=await fetch(subscriptionApiUrl("/api/subscription/status"),{
        headers:{Authorization:"Bearer "+token},
        signal:AbortSignal.timeout(12000)
      });
@@ -4224,7 +4225,7 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
  async function refresh(){
   allowed=!!(window.jonPremiumAccess&&window.jonPremiumAccess.allowed&&user);
   if(allowed){
-   try{const token=await user.getIdToken();const res=await fetch("/api/subscription/fullscreen-preferences",{headers:{Authorization:"Bearer "+token}});const data=await res.json();if(res.ok&&data.preferences)prefs=data.preferences;}catch(e){console.warn("Could not load Premium fullscreen preferences");}
+   try{const token=await user.getIdToken();const res=await fetch(subscriptionApiUrl("/api/subscription/fullscreen-preferences"),{headers:{Authorization:"Bearer "+token}});const data=await res.json();if(res.ok&&data.preferences)prefs=data.preferences;}catch(e){console.warn("Could not load Premium fullscreen preferences");}
   } else {prefs={sponsorAds:true,newsTicker:true};}
   apply();
  }
@@ -4235,7 +4236,7 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
   prefs={...prefs,[key]:!previous};apply();
   try{
    const token=await user.getIdToken();
-   const res=await fetch("/api/subscription/fullscreen-preferences",{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({[key]:prefs[key]})});
+   const res=await fetch(subscriptionApiUrl("/api/subscription/fullscreen-preferences"),{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({[key]:prefs[key]})});
    const data=await res.json();
    if(!res.ok)throw new Error(data.error||"Could not save preference");
    prefs=data.preferences||prefs;apply();
