@@ -1,4 +1,4 @@
-import { getApp, getApps } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword,
   createUserWithEmailAndPassword, sendEmailVerification,
@@ -8,8 +8,14 @@ import {
 (() => {
   "use strict";
   const API = "https://jon-stream.vercel.app/api/subscription/status";
+  const firebaseConfig = {
+    apiKey: "AIzaSyC5uNWNp9KbcepO36VQCx8gfbyPmZW4fxM",
+    authDomain: "jon-stream.firebaseapp.com", projectId: "jon-stream",
+    storageBucket: "jon-stream.firebasestorage.app", messagingSenderId: "189801194527",
+    appId: "1:189801194527:web:c7d99f83a2c4c604fa212a", measurementId: "G-CEEKQDJXFS"
+  };
   let auth;
-  try { auth = getAuth(getApps().length ? getApp() : null); }
+  try { auth = getAuth(getApps().length ? getApp() : initializeApp(firebaseConfig)); }
   catch (error) { console.error("JON mobile account setup failed", error); return; }
 
   const button = document.createElement("button");
