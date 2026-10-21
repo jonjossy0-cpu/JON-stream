@@ -3766,32 +3766,39 @@ if(authPanel){
  const setBusy=(busy)=>["jonAccountSignup","jonAccountSignin","jonResendVerification","jonAccountSignout"].forEach(id=>{const el=$(id);if(el)el.disabled=busy;});
  async function showSubscription(user){
    window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
+   window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
 
    $("jonProfileEmail").textContent=user.email||"—";
    $("jonProfileVerified").textContent=user.emailVerified?"Verified":"Not verified";
-   $("jonProfilePlan").textContent=user.emailVerified?"Subscription status unavailable":"Verify your email first";
+   $("jonProfilePlan").textContent=user.emailVerified?"Checking subscription…":"Verify your email first";
    $("jonProfileRemaining").textContent="Not available yet";
    $("jonProfilePayment").textContent="Telebirr setup pending";
    $("jonAccountMessage").textContent=user.emailVerified
-    ?"Your account is ready. Trial dates and paid access will show here once secure subscription validation is connected."
+    ?"Checking your subscription. If the service is unavailable, access will remain protected and the status will show an error."
     :"Please verify your email to activate the account. Trial time will only begin after server-side verification.";
    try{
      const token=await user.getIdToken();
-     const response=await fetch("/api/subscription/status",{headers:{Authorization:"Bearer "+token}});
-     if(response.ok){
-       const data=await response.clone().json();
-       window.jonPremiumAccess={ready:true,allowed:data.hasPremium===true,status:String(data.status||"free")};
-       window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
-     }
-
-     if(response.ok){
-       const data=await response.json();
-       $("jonProfilePlan").textContent=data.planLabel||data.status||"No active subscription";
-       $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
-       $("jonProfilePayment").textContent=data.paymentLabel||"—";
-       $("jonAccountMessage").textContent=data.message||$("jonAccountMessage").textContent;
-     }
-   }catch(e){console.info("Subscription status endpoint is not available yet.");}
+     const response=await fetch("/api/subscription/status",{
+       headers:{Authorization:"Bearer "+token},
+       signal:AbortSignal.timeout(12000)
+     });
+     if(!response.ok) throw new Error("Subscription API returned HTTP "+response.status);
+     const data=await response.json();
+     window.jonPremiumAccess={ready:true,allowed:data.hasPremium===true,status:String(data.status||"free")};
+     window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+     $("jonProfilePlan").textContent=data.planLabel||data.status||"No active subscription";
+     $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
+     $("jonProfilePayment").textContent=data.paymentLabel||"—";
+     $("jonAccountMessage").textContent=data.message||$("jonAccountMessage").textContent;
+   }catch(e){
+     console.warn("Subscription status check failed:",e);
+     window.jonPremiumAccess={ready:true,allowed:false,status:"unavailable"};
+     window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+     $("jonProfilePlan").textContent="Subscription status unavailable";
+     $("jonProfileRemaining").textContent="—";
+     $("jonProfilePayment").textContent="Not verified";
+     $("jonAccountMessage").textContent="Could not verify Premium status. Please retry when the subscription service is available.";
+   }
  }
 
  window.jonShowPremiumUpgrade=()=>{
