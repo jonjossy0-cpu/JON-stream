@@ -82,15 +82,22 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
     def outputFile = layout.buildDirectory.file("generated/mobile/assets/index.html")
     def sponsorCssFile = layout.projectDirectory.file("src/mobile/assets/jon-sponsor-carousel.css")
     def sponsorJsFile = layout.projectDirectory.file("src/mobile/assets/jon-sponsor-carousel.js")
+    def subscriptionCssFile = layout.projectDirectory.file("src/mobile/assets/jon-mobile-subscription.css")
+    def subscriptionJsFile = layout.projectDirectory.file("src/mobile/assets/jon-mobile-subscription.js")
     inputs.file(sourceFile)
     inputs.file(sponsorCssFile)
     inputs.file(sponsorJsFile)
+    inputs.file(subscriptionCssFile)
+    inputs.file(subscriptionJsFile)
     outputs.file(outputFile)
 
     doLast {
         def html = sourceFile.asFile.getText("UTF-8")
         if (!sponsorCssFile.asFile.isFile() || !sponsorJsFile.asFile.isFile()) {
             throw new GradleException("Missing Mobile APK sponsor carousel assets.")
+        }
+        if (!subscriptionCssFile.asFile.isFile() || !subscriptionJsFile.asFile.isFile()) {
+            throw new GradleException("Missing Mobile APK subscription assets.")
         }
         if (html.contains("jon-sponsor-carousel.js") || html.contains("jon-sponsor-carousel.css")) {
             throw new GradleException("Mobile sponsor carousel is already injected in the base HTML.")
@@ -116,7 +123,7 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (!html.contains("</head>")) {
             throw new GradleException("Missing HTML head closing tag.")
         }
-        html = html.replace("</head>", style + ' <link rel="stylesheet" href="jon-news-ticker.css">\n <link rel="stylesheet" href="jon-sponsor-carousel.css">\n' + "</head>")
+        html = html.replace("</head>", style + ' <link rel="stylesheet" href="jon-news-ticker.css">\n <link rel="stylesheet" href="jon-sponsor-carousel.css">\n <link rel="stylesheet" href="jon-mobile-subscription.css">\n' + "</head>")
 
         if (html.count("</html>") != 1) {
             throw new GradleException("Expected one HTML closing tag before injecting the mobile news ticker.")
@@ -124,7 +131,8 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (html.contains("jon-news-ticker.js")) {
             throw new GradleException("Mobile news ticker script is already injected.")
         }
-        html = html.replace("</html>", ' <script src="jon-news-ticker.js"></script>\n <script src="jon-sponsor-carousel.js"></script>\n</html>')
+        def mobileSubscriptionScript = subscriptionJsFile.asFile.getText("UTF-8")
+        html = html.replace("</html>", ' <script src="jon-news-ticker.js"></script>\n <script src="jon-sponsor-carousel.js"></script>\n <script type="module">\n' + mobileSubscriptionScript + '\n</script>\n</html>')
 
         def target = outputFile.get().asFile
         target.parentFile.mkdirs()
