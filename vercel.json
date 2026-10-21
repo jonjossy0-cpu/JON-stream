@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/api/subscription/config", "destination": "/api/subscription/config.js" },
+    { "source": "/api/subscription/grants", "destination": "/api/subscription/grants.js" },
+    { "source": "/api/subscription/grant", "destination": "/api/subscription/grant.js" },
+    { "source": "/api/subscription/status", "destination": "/api/subscription/status.js" },
+    { "source": "/api/subscription/fullscreen-preferences", "destination": "/api/subscription/fullscreen-preferences.js" }
+  ]
+}
