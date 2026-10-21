@@ -3777,7 +3777,7 @@ if(authPanel){
     :"Please verify your email to activate the account. Trial time will only begin after server-side verification.";
    try{
      const token=await user.getIdToken();
-     const response=await fetch("/api/subscription/status",{headers:{Authorization:"Bearer "+token}});
+     const response=await fetch("https://jon-stream.vercel.app/api/subscription/status",{headers:{Authorization:"Bearer "+token}});
      if(response.ok){
        const data=await response.clone().json();
        window.jonPremiumAccess={ready:true,allowed:data.hasPremium===true,status:String(data.status||"free")};
@@ -4217,7 +4217,7 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
  async function refresh(){
   allowed=!!(window.jonPremiumAccess&&window.jonPremiumAccess.allowed&&user);
   if(allowed){
-   try{const token=await user.getIdToken();const res=await fetch("/api/subscription/fullscreen-preferences",{headers:{Authorization:"Bearer "+token}});const data=await res.json();if(res.ok&&data.preferences)prefs=data.preferences;}catch(e){console.warn("Could not load Premium fullscreen preferences");}
+   try{const token=await user.getIdToken();const res=await fetch("https://jon-stream.vercel.app/api/subscription/fullscreen-preferences",{headers:{Authorization:"Bearer "+token}});const data=await res.json();if(res.ok&&data.preferences)prefs=data.preferences;}catch(e){console.warn("Could not load Premium fullscreen preferences");}
   } else {prefs={sponsorAds:true,newsTicker:true};}
   apply();
  }
@@ -4228,7 +4228,7 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
   prefs={...prefs,[key]:!previous};apply();
   try{
    const token=await user.getIdToken();
-   const res=await fetch("/api/subscription/fullscreen-preferences",{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({[key]:prefs[key]})});
+   const res=await fetch("https://jon-stream.vercel.app/api/subscription/fullscreen-preferences",{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({[key]:prefs[key]})});
    const data=await res.json();
    if(!res.ok)throw new Error(data.error||"Could not save preference");
    prefs=data.preferences||prefs;apply();
