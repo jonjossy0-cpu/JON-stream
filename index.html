@@ -3592,15 +3592,16 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
  const box=document.getElementById('tvPlayerBox');
  const list=document.getElementById('tvChannels');
  const tvSection=document.querySelector('.tv-section');
+ let channelPlayed=false;
  if(!btn||!box||!list)return;
 
  function inTVMode(){
    return !!tvSection && tvSection.classList.contains('active');
  }
  function showShortcut(){
-   if(inTVMode()) btn.classList.add('show');
+   if(channelPlayed && inTVMode()) btn.classList.add('show');
  }
- function hideShortcut(){btn.classList.remove('show')}
+ function hideShortcut(){if(!inTVMode())btn.classList.remove('show')}
  function goDisplay(){
    if(!inTVMode())return;
    box.classList.add('tv-display-persistent');
@@ -3615,6 +3616,7 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
 
  /* When a channel is selected, return to the display automatically. */
  list.addEventListener('click',function(e){
+   if(e.target.closest('.tv-play')) channelPlayed=true;
    if(e.target.closest('.tv-play,.tv-favorite,.tv-channel-lock')){
      setTimeout(function(){
        if(inTVMode()) box.scrollIntoView({behavior:'smooth',block:'start'});
