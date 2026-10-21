@@ -78,7 +78,8 @@ dependencies {
 android.sourceSets.mobile.assets.srcDir(layout.buildDirectory.dir("generated/mobile/assets"))
 
 def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenControls") {
-    def sourceFile = layout.projectDirectory.file("src/main/assets/index.html")
+    // Mobile 7.1 uses the latest root web app; TV 8.0 keeps its existing shared asset unchanged.
+    def sourceFile = rootProject.projectDir.parentFile.toPath().resolve("index.html").toFile()
     def outputFile = layout.buildDirectory.file("generated/mobile/assets/index.html")
     def sponsorCssFile = layout.projectDirectory.file("src/mobile/assets/jon-sponsor-carousel.css")
     def sponsorJsFile = layout.projectDirectory.file("src/mobile/assets/jon-sponsor-carousel.js")
@@ -92,7 +93,7 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
     outputs.file(outputFile)
 
     doLast {
-        def html = sourceFile.asFile.getText("UTF-8")
+        def html = sourceFile.getText("UTF-8")
         if (!sponsorCssFile.asFile.isFile() || !sponsorJsFile.asFile.isFile()) {
             throw new GradleException("Missing Mobile APK sponsor carousel assets.")
         }
@@ -104,15 +105,19 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         }
         def bottomMarker = '    <div class="tv-fullscreen-bottom">\n'
         if (html.count(bottomMarker) != 1) {
-            throw new GradleException("Expected one fullscreen bottom bar in the base HTML.")
+            throw new GradleException("Expected one fullscreen bottom bar in the Mobile 7.1 source HTML.")
         }
-        if (html.contains('id="tvFullscreenPrevious"') || html.contains('id="tvFullscreenNext"')) {
-            throw new GradleException("Fullscreen channel controls already exist in the base HTML.")
+        def hasPrevious = html.contains('id="tvFullscreenPrevious"')
+        def hasNext = html.contains('id="tvFullscreenNext"')
+        if (hasPrevious != hasNext) {
+            throw new GradleException("Mobile fullscreen channel navigation is only partially present.")
         }
 
-        def controls = bottomMarker +
-                '     <button type="button" onclick="previousTV()" id="tvFullscreenPrevious" aria-label="Previous channel" title="Previous channel">⏮</button>\n' +
-                '     <button type="button" onclick="nextTV()" id="tvFullscreenNext" aria-label="Next channel" title="Next channel">⏭</button>\n'
+        def controls = bottomMarker
+        if (!hasPrevious) {
+            controls += '     <button type="button" onclick="previousTV()" id="tvFullscreenPrevious" aria-label="Previous channel" title="Previous channel">⏮</button>\n' +
+                    '     <button type="button" onclick="nextTV()" id="tvFullscreenNext" aria-label="Next channel" title="Next channel">⏭</button>\n'
+        }
         html = html.replace(bottomMarker, controls)
 
         def style = '\n<style id="jonMobileFullscreenChannelNav">\n' +
