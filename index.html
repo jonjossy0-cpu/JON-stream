@@ -895,7 +895,7 @@ img.jon-ad-media{
 #tvVideoFrame:fullscreen .tv-fullscreen-overlay{opacity:1;transition:opacity .2s}
 #tvVideoFrame:fullscreen #tvPlayer::-webkit-media-controls{display:none!important}
 @media(max-width:600px){.tv-fullscreen-overlay{padding:10px}.tv-fullscreen-top{align-items:flex-start;gap:8px}.tv-fullscreen-brand{gap:8px;max-width:70vw;padding:7px 10px 7px 7px;border-radius:12px}.tv-fullscreen-brand-copy small{font-size:8px;letter-spacing:1px}.tv-fullscreen-status{gap:5px}.tv-fullscreen-bottom{gap:5px;padding:7px;border-radius:13px}.tv-fullscreen-bottom button,.tv-fullscreen-bottom select{min-height:35px;padding:6px 8px;font-size:11px}.tv-fullscreen-bottom label{font-size:10px}}
-.topbar-actions{display:flex;align-items:center;gap:8px}.jon-account-panel[hidden]{display:none!important}.jon-account-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:15px;margin:14px 0}.jon-account-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}.jon-account-head span,.jon-account-note{font-size:12px;color:var(--muted)}.jon-account-panel label{display:block;font-size:12px;font-weight:700;margin:9px 0 4px}.jon-account-panel input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:14px}.jon-account-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.jon-account-secondary{background:#263750}.jon-account-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}.jon-account-row span{color:var(--muted)}.jon-account-row strong{text-align:right;overflow-wrap:anywhere}.jon-account-error{color:#fca5a5;font-size:12px;white-space:pre-wrap}
+.topbar-actions{display:flex;align-items:center;gap:8px}.jon-account-panel[hidden]{display:none!important}.jon-account-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:15px;margin:14px 0}.jon-account-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}.jon-account-head span,.jon-account-note{font-size:12px;color:var(--muted)}.jon-account-panel label{display:block;font-size:12px;font-weight:700;margin:9px 0 4px}.jon-account-panel input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:16px;min-height:46px}.jon-password-entry{display:flex;gap:8px;align-items:stretch}.jon-password-entry input{flex:1;min-width:0;margin:0}.jon-password-toggle{flex:0 0 auto;min-width:58px;border:1px solid var(--border);border-radius:10px;background:var(--card2);color:var(--text);padding:0 12px;font-size:13px;font-weight:700}.jon-forgot-password{display:inline-block;margin-top:10px;padding:8px 0;border:0;background:transparent;color:var(--accent,#60a5fa);font-size:13px;text-decoration:underline}.jon-account-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.jon-account-secondary{background:#263750}.jon-account-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}.jon-account-row span{color:var(--muted)}.jon-account-row strong{text-align:right;overflow-wrap:anywhere}.jon-account-error{color:#fca5a5;font-size:12px;white-space:pre-wrap}
 </style>
 </head>
 
@@ -925,7 +925,7 @@ img.jon-ad-media{
  <div id="jonAccountSignedOut">
   <p class="jon-account-note">Sign up or sign in with your email to manage your Premium subscription.</p>
   <label for="jonAccountEmail">Email address</label><input id="jonAccountEmail" type="email" autocomplete="email" placeholder="name@example.com">
-  <label for="jonAccountPassword">Password</label><input id="jonAccountPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters">
+  <label for="jonAccountPassword">Password</label><div class="jon-password-entry"><input id="jonAccountPassword" type="password" autocomplete="current-password" placeholder="Enter your password" autocapitalize="off" spellcheck="false"><button id="jonPasswordToggle" class="jon-password-toggle" type="button" aria-label="Show password" aria-pressed="false">Show</button></div><button id="jonForgotPassword" class="jon-forgot-password" type="button">Forgot password?</button>
   <div class="jon-account-actions"><button id="jonAccountSignup" type="button">Create account</button><button id="jonAccountSignin" type="button" class="jon-account-secondary">Sign in</button></div>
  </div>
  <div id="jonAccountSignedIn" hidden>
@@ -3738,7 +3738,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 
 <script type="module">
 import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, signOut, reload } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, signOut, reload } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 const authPanel=document.getElementById("jonAccountPanel");
 window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
 
@@ -3763,7 +3763,7 @@ if(authPanel){
    };
    return messages[code]||((action||"Request")+" failed ("+(code||"unknown error")+"). Please try again.");
  };
- const setBusy=(busy)=>["jonAccountSignup","jonAccountSignin","jonResendVerification","jonAccountSignout"].forEach(id=>{const el=$(id);if(el)el.disabled=busy;});
+ const setBusy=(busy)=>["jonAccountSignup","jonAccountSignin","jonForgotPassword","jonResendVerification","jonAccountSignout"].forEach(id=>{const el=$(id);if(el)el.disabled=busy;});
  async function showSubscription(user){
    window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
 
@@ -3810,6 +3810,8 @@ if(authPanel){
    message("");
    if(user)await showSubscription(user);
  });
+ $("jonPasswordToggle").addEventListener("click",()=>{const input=$("jonAccountPassword"),button=$("jonPasswordToggle");const reveal=input.type==="password";input.type=reveal?"text":"password";button.textContent=reveal?"Hide":"Show";button.setAttribute("aria-label",reveal?"Hide password":"Show password");button.setAttribute("aria-pressed",String(reveal));input.focus();});
+ $("jonForgotPassword").addEventListener("click",async()=>{const email=$("jonAccountEmail").value.trim();if(!email){message("Enter your account email first, then tap Forgot password.",true);$("jonAccountEmail").focus();return;}if(!auth){message("Firebase Authentication is unavailable. Please try again later.",true);return;}setBusy(true);message("Sending password reset email…");try{await sendPasswordResetEmail(auth,email);message("If an account exists for "+email+", a password reset link has been sent. Check your Inbox and Spam/Junk.");}catch(e){message(authErrorText(e,"Password reset"),true);}finally{setBusy(false);}});
  $("jonAccountSignup").addEventListener("click",async()=>{
    const email=$("jonAccountEmail").value.trim(),password=$("jonAccountPassword").value;
    if(!email||password.length<6){message("Enter a valid email and a password with at least 6 characters.",true);return;}
