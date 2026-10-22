@@ -5,6 +5,21 @@ const authPanel=document.getElementById("jonAccountPanel");
 const auth=getAuth(getApp());
 async function getSubscriptionStatus(user){
  const token=await user.getIdToken(true);
+ if(window.JonNativeApi&&typeof window.JonNativeApi.getSubscriptionStatus==="function"){
+  window.__jonSubscriptionStatusCallbacks=window.__jonSubscriptionStatusCallbacks||{};
+  window.__jonSubscriptionCallbackSeq=(window.__jonSubscriptionCallbackSeq||0)+1;
+  const callbackId="jonSubscription_"+window.__jonSubscriptionCallbackSeq;
+  return await new Promise((resolve,reject)=>{
+   const timeout=setTimeout(()=>{delete window.__jonSubscriptionStatusCallbacks[callbackId];reject(new Error("Subscription status request timed out."));},20000);
+   window.__jonSubscriptionStatusCallbacks[callbackId]=(httpStatus,raw)=>{
+    clearTimeout(timeout);delete window.__jonSubscriptionStatusCallbacks[callbackId];
+    let data={};try{data=JSON.parse(raw||"{}");}catch(_){}
+    if(httpStatus>=200&&httpStatus<300)resolve({data});
+    else reject(new Error(data.error||data.message||("Subscription API returned HTTP "+httpStatus)));
+   };
+   window.JonNativeApi.getSubscriptionStatus(token,callbackId);
+  });
+ }
  const response=await fetch("https://jon-stream.vercel.app/api/subscription/status",{
   method:"GET",
   headers:{Authorization:"Bearer "+token,Accept:"application/json"},
