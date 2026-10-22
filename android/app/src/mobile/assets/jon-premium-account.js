@@ -163,6 +163,7 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
  const liveAds=document.getElementById("jonLiveUpdates");
  if(liveAds&&window.MutationObserver)new MutationObserver(()=>applyPromotionGate()).observe(liveAds,{childList:true,subtree:true});
  applyPromotionGate();
+ // Re-check playback at the function boundary and on the card click itself.
  // Capture direct card clicks as a second guard for playback handlers.
  document.addEventListener("click",function(event){
   const button=event.target&&event.target.closest?event.target.closest(".station-play,.tv-play"):null;
