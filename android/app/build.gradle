@@ -20,8 +20,8 @@ android {
         mobile {
             dimension "device"
             applicationId "com.jonstream.app"
-            versionCode 7
-            versionName "7.1"
+            versionCode 8
+            versionName "7.2"
         }
         tv {
             dimension "device"
