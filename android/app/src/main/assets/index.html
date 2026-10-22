@@ -2258,7 +2258,6 @@ function renderTV(list){
    <div class="tv-info">
     <div class="tv-name">${escapeHTML(channel.name)}</div>
     <div class="tv-country">${escapeHTML(channel.country||channel.group||"TV Channel")}</div>
-    <span class="jon-access-tier ${String(channel.accessTier||"free").toLowerCase()==="premium"?"premium":"free"}">${String(channel.accessTier||"free").toLowerCase()==="premium"?"PREMIUM / PAID":"FREE"}</span>
    </div>
 
    <span class="tv-stream-health testing" data-tv-health="${escapeHTML(channel.url)}" title="Checking TV stream…">●</span>
@@ -3223,14 +3222,12 @@ body.jon-ad-visible{padding-bottom:85px}
         logo:typeof x.logo==='string'?x.logo:'',
         country:typeof x.country==='string'?x.country:'',
         group:typeof x.category==='string'&&x.category.trim()?x.category.trim():(typeof x.group==='string'&&x.group.trim()?x.group.trim():'TV Channel'),
-        accessTier:String(x.accessTier||'free').toLowerCase()==='premium'?'premium':'free',
         id:x.id==null?'':String(x.id),
         backupUrl:cleanStreamUrl(x.backupUrl),
         backupUrls:Array.isArray(x.backupUrls)?x.backupUrls.filter(isHttpUrl).map(u=>u.trim()):[],
         backupStreams:Array.isArray(x.backupStreams)?x.backupStreams.filter(isHttpUrl).map(u=>u.trim()):[]
       }));
-      /* Prefer current Firebase channel metadata (including accessTier) over stale local duplicates. */
-      const merged=[...incoming,...tvChannels];
+      const merged=[...tvChannels,...incoming];
       const seen=new Set();
       tvChannels=merged.filter(x=>{const k=String(x.url||'').trim(); if(!k||seen.has(k)) return false; seen.add(k); return true;});
       /* Firebase may arrive after the local order was restored. Always apply
