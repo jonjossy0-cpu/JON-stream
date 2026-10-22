@@ -39,6 +39,7 @@ function busy(v){["jonAccountSignup","jonAccountSignin","jonForgotPassword","jon
 function errText(e){const c=String(e&&e.code||"");const m={"auth/operation-not-allowed":"Enable Email/Password sign-in in Firebase Authentication.","auth/unauthorized-domain":"Authorize this app domain in Firebase Authentication.","auth/email-already-in-use":"This email already has an account. Sign in instead.","auth/invalid-email":"Enter a valid email address.","auth/weak-password":"Choose a password with at least 6 characters.","auth/invalid-credential":"Email or password is incorrect.","auth/user-disabled":"This account has been disabled.","auth/too-many-requests":"Too many attempts. Wait and try again.","auth/network-request-failed":"Network connection failed. Check your connection.","auth/missing-password":"Enter your password."};return m[c]||String(e&&e.message||"Request failed. Please try again.");}
 async function refreshSubscription(user){
  window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
+ window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
  $("jonProfileEmail").textContent=user.email||"—";$("jonProfileVerified").textContent=user.emailVerified?"Verified":"Not verified";
  $("jonProfilePlan").textContent=user.emailVerified?"Checking subscription…":"Verify email first";$("jonProfileRemaining").textContent="—";$("jonProfilePayment").textContent="—";
  $("jonAccountMessage").textContent=user.emailVerified?"Checking subscription status…":"Verify your email before starting the free trial or using Premium.";
@@ -217,7 +218,7 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
  function saveFullscreenPrefs(){try{localStorage.setItem(prefKey,JSON.stringify(fullscreenPrefs));}catch(_){}}
  function applyFullscreenPrefs(){
   const allowed=premiumAllowed();
-  if(fullscreenPanel)fullscreenPanel.hidden=!allowed;
+  if(fullscreenPanel){fullscreenPanel.hidden=!allowed;fullscreenPanel.style.display=allowed?"inline-flex":"none";fullscreenPanel.setAttribute("aria-hidden",String(!allowed));}
   if(fullscreenFrame){
    fullscreenFrame.classList.toggle("jon-hide-news",!allowed||fullscreenPrefs.newsTicker===false);
    fullscreenFrame.classList.toggle("jon-hide-sponsor",!allowed||fullscreenPrefs.promotion===false);
