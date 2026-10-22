@@ -2,7 +2,7 @@
 .jon-access-tier{display:inline-flex;align-items:center;margin-top:5px;padding:4px 7px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.25px;line-height:1.2}
 .jon-access-tier.free{color:#86efac;background:#14532d;border:1px solid #166534}
 .jon-access-tier.premium{color:#fde68a;background:#78350f;border:1px solid #92400e}
-.account-btn{width:auto;min-height:42px;padding:0 12px;background:var(--card);color:var(--text);border:1px solid var(--border);white-space:nowrap}
+.account-btn{width:42px;min-width:42px;min-height:42px;padding:0;background:var(--card);color:var(--text);border:1px solid var(--border);white-space:nowrap;font-size:18px}
 .jon-account-panel{margin:10px 0 18px;padding:15px;background:var(--card);border:1px solid var(--border);border-radius:17px}
 .jon-account-panel[hidden],.jon-account-panel [hidden]{display:none!important}
 .jon-account-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
