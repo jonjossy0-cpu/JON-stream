@@ -1309,9 +1309,12 @@ let previousVolume=.8;
 
 let favorites=JSON.parse(localStorage.getItem("jonRadioFavorites")||"[]");
 
+function jonIsPremiumTier(value){return ["premium","paid","subscription","subscriber"].includes(String(value||"free").trim().toLowerCase());}
+function jonPremiumAllowed(){const a=window.jonPremiumAccess;return !!(a&&a.ready&&a.allowed);}
+
 function selectStation(index){
  const requestedStation=stations[index];
- if(requestedStation&&String(requestedStation.accessTier||"free").toLowerCase()==="premium"&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
+ if(requestedStation&&jonIsPremiumTier(requestedStation.accessTier)&&!jonPremiumAllowed()){
   if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
   radioStatus.innerHTML="🔒 Premium access required";
   return;
@@ -1339,6 +1342,7 @@ function selectStation(index){
 }
 
 function playCurrent(){
+ if(currentStation&&jonIsPremiumTier(currentStation.accessTier)&&!jonPremiumAllowed()){if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();radioStatus.innerHTML="🔒 Premium access required";return;}
  if(!currentStation){
   selectStation(0);
   return;
@@ -1382,6 +1386,7 @@ radioPlayer.addEventListener("error",()=>{
 function reconnectRadio(){
  clearTimeout(reconnectTimer);
  if(!currentStation)return;
+ if(jonIsPremiumTier(currentStation.accessTier)&&!jonPremiumAllowed()){stopRadio();currentStation=null;radioStatus.innerHTML="🔒 Premium access required";return;}
 
  reconnectAttempts++;
 
@@ -2569,7 +2574,7 @@ function jonGatewayForChannel(channel,kind){
 }
 function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  const requestedChannel=filteredTV[index]||tvChannels.find(c=>c.url===url);
- if(requestedChannel&&String(requestedChannel.accessTier||"free").toLowerCase()==="premium"&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
+ if(requestedChannel&&jonIsPremiumTier(requestedChannel.accessTier)&&!jonPremiumAllowed()){
   if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
   tvStatus("🔒 Premium access required");
   return;
@@ -3748,7 +3753,10 @@ if(authPanel){
    return messages[code]||((action||"Request")+" failed ("+(code||"unknown error")+"). Please try again.");
  };
  const setBusy=(busy)=>["jonAccountSignup","jonAccountSignin","jonForgotPassword","jonResendVerification","jonAccountSignout"].forEach(id=>{const el=$(id);if(el)el.disabled=busy;});
+ let jonSubscriptionRequestId=0;
  async function showSubscription(user){
+   const requestId=++jonSubscriptionRequestId;
+   if(auth.currentUser!==user)return;
    window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
    window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
    $("jonProfileEmail").textContent=user.email||"—";
@@ -3772,6 +3780,7 @@ if(authPanel){
        cache:"no-store"
      });
      const data=await response.json().catch(()=>({}));
+     if(requestId!==jonSubscriptionRequestId||auth.currentUser!==user)return;
      if(!response.ok)throw new Error(data.error||("Subscription API returned HTTP "+response.status));
      window.jonPremiumAccess={ready:true,allowed:data.hasPremium===true,status:String(data.status||"free")};
      window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
@@ -3781,6 +3790,7 @@ if(authPanel){
      $("jonAccountMessage").textContent=data.message||(data.hasPremium?"Premium access is active.":"Free channels remain available. Premium requires an active trial or entitlement.");
      message("");
    }catch(e){
+     if(requestId!==jonSubscriptionRequestId||auth.currentUser!==user)return;
      // Fail closed for Premium-only channels, but do not block free channels.
      window.jonPremiumAccess={ready:true,allowed:false,status:"api_error"};
      window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
@@ -3801,6 +3811,7 @@ if(authPanel){
    if(error)error.textContent="This is a Premium channel. Sign in with a verified email and an active 3-day trial or Premium entitlement to continue.";
  };
  onAuthStateChanged(auth,async user=>{
+   jonSubscriptionRequestId++;
    if(!user){window.jonPremiumAccess={ready:true,allowed:false,status:"signed_out"};window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));}
 
    $("jonAccountState").textContent=user?(user.emailVerified?"Signed in":"Verify email"):"Not signed in";
@@ -4027,4 +4038,33 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
  onAuthStateChanged(auth,nextUser=>{user=nextUser;refresh();});
 })();
 </script>
+
+<script id="jonPremiumSignoutPlaybackLock">
+(function(){
+ "use strict";
+ function enforcePremiumPlaybackLock(){
+  if(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)return;
+  try{
+   if(typeof currentTV!=="undefined"&&currentTV&&typeof jonIsPremiumTier==="function"&&jonIsPremiumTier(currentTV.accessTier)){
+    clearTimeout(tvStartupTimer);clearTimeout(tvRetryTimer);clearTimeout(tvReconnectTimer);
+    tvRetryTimer=null;tvReconnectTimer=null;tvPlayAttemptId++;
+    if(typeof cleanupPreviousTV==="function")cleanupPreviousTV();
+    if(typeof tvPlayer!=="undefined"&&tvPlayer){tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load();}
+    currentTV=null;
+    if(typeof tvStatus==="function")tvStatus("🔒 Premium access required — sign in again");
+   }
+  }catch(e){console.warn("Could not stop Premium TV playback after access loss",e);}
+  try{
+   if(typeof currentStation!=="undefined"&&currentStation&&typeof jonIsPremiumTier==="function"&&jonIsPremiumTier(currentStation.accessTier)){
+    if(typeof stopRadio==="function")stopRadio();
+    currentStation=null;
+    if(typeof radioStatus!=="undefined"&&radioStatus)radioStatus.textContent="🔒 Premium access required — sign in again";
+   }
+  }catch(e){console.warn("Could not stop Premium radio playback after access loss",e);}
+ }
+ window.addEventListener("jon-premium-access-changed",enforcePremiumPlaybackLock);
+ window.addEventListener("pageshow",enforcePremiumPlaybackLock);
+})();
+</script>
+
 </html>
