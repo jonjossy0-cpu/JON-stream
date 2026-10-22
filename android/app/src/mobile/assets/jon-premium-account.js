@@ -101,7 +101,8 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
  function decorateRadio(list){
   requestAnimationFrame(()=>{
    document.querySelectorAll("#stations .station").forEach((card,i)=>{
-    const station=list&&list[i] || (window.stations&&window.stations[i]);
+    const sourceStations=(typeof stations!=="undefined"&&Array.isArray(stations))?stations:[];
+    const station=list&&list[i] || sourceStations[i];
     addBadge(card.querySelector(".station-info"),station);
    });
   });
@@ -121,14 +122,16 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
  // remote-number selection and other callers cannot bypass the visible lock.
  const originalSelectStation=window.selectStation;
  if(typeof originalSelectStation==="function")window.selectStation=function(index){
-  const station=window.stations&&window.stations[index];
+  const sourceStations=(typeof stations!=="undefined"&&Array.isArray(stations))?stations:[];
+  const station=sourceStations[index];
   if(deny(station))return;
   return originalSelectStation.apply(this,arguments);
  };
  const originalPlayTV=window.playTVStream;
  if(typeof originalPlayTV==="function")window.playTVStream=function(url,name,index){
-  const channel=(window.tvChannels&&window.tvChannels.find(ch=>ch&&ch.url===url)) ||
-   (window.filteredTV&&window.filteredTV[index]) || null;
+  const sourceTV=(typeof tvChannels!=="undefined"&&Array.isArray(tvChannels))?tvChannels:[];
+  const sourceFiltered=(typeof filteredTV!=="undefined"&&Array.isArray(filteredTV))?filteredTV:[];
+  const channel=sourceTV.find(ch=>ch&&ch.url===url) || sourceFiltered[index] || null;
   if(deny(channel))return;
   return originalPlayTV.apply(this,arguments);
  };
@@ -168,8 +171,8 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
   if(badge&&!premiumAllowed()){event.preventDefault();event.stopImmediatePropagation();if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();}
  },true);
  window.addEventListener("jon-premium-access-changed",()=>{
-  decorateRadio(window.stations||[]);
-  decorateTV(window.filteredTV||window.tvChannels||[]);
+  decorateRadio((typeof stations!=="undefined"&&Array.isArray(stations))?stations:[]);
+  decorateTV((typeof filteredTV!=="undefined"&&Array.isArray(filteredTV))?filteredTV:((typeof tvChannels!=="undefined"&&Array.isArray(tvChannels))?tvChannels:[]));
  });
 })();
 </script>
