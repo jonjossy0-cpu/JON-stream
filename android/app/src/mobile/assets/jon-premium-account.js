@@ -156,8 +156,7 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
   let badge=container.querySelector(".jon-access-tier");
   if(!badge){badge=document.createElement("span");badge.className="jon-access-tier";container.appendChild(badge);}
   badge.className="jon-access-tier "+(paid?"premium":"free")+(tier==="unknown"?" unknown":"");
-  // Mobile channel list: show FREE unless the channel is explicitly classified Premium.
-  // Channel list: show FREE unless the channel is explicitly classified as premium.
+  // Channel list labels: FREE by default; only explicitly Premium channels show PREMIUM / PAID.
   badge.textContent=(tier==="premium")?"PREMIUM / PAID":"FREE";
  }
  function stopPaidPlaybackIfAccessLost(event){
