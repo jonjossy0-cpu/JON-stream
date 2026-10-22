@@ -107,19 +107,13 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
   if(localTier)return localTier;
   const remote=firebaseChannelRecord(channel,kind);
   if(remote){
-   // A matching Firebase channel without an explicit paid flag is Free;
-   // explicit Premium/Paid metadata always takes precedence.
-   return tierFromRecord(remote)||"free";
+   // Never assume Free when Firebase has not explicitly classified the channel.
+   // Missing/unknown metadata must fail closed so a Premium stream cannot bypass the gate.
+   return tierFromRecord(remote)||"unknown";
   }
-  // Existing built-in channels have no tier field and remain Free.
-  // Unknown unmatched channels remain locked rather than being assumed paid or free.
-  const name=normalized(channel&& (channel.name||channel.title));
-  const url=normalizedUrl(channel&& (channel.url||channel.streamUrl||channel.stream));
-  const baseList=kind==="radio"
-   ? ((typeof stations!=="undefined"&&Array.isArray(stations))?stations:[])
-   : ((typeof tvChannels!=="undefined"&&Array.isArray(tvChannels))?tvChannels:[]);
-  const inPlayableList=baseList.some(item=>item&&normalized(item.name||item.title)===name&&normalizedUrl(item.url||item.streamUrl||item.stream)===url);
-  return inPlayableList?"free":"unknown";
+  // A channel that cannot be matched to Firebase metadata is not safe to classify as Free.
+  // Require an explicit Free marker or a matching Firebase record with a recognized tier.
+  return "unknown";
  }
  function isPaid(channel,kind){return tierValue(channel,kind)!=="free";}
  function premiumAllowed(){
