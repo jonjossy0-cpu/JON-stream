@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - mainv
+      - feature/firebase-premium-status-mobile
   pull_request:
     branches:
       - mainv
