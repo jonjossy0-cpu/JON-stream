@@ -134,13 +134,13 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
 
         def originalMerge = "      const merged=[...tvChannels,...incoming];"
         if (html.count(originalMerge) != 1) throw new GradleException("Mobile tier fix: Firebase merge not found exactly once.")
-        html = html.replace(originalMerge, "      /* Prefer current Firebase tier metadata over local duplicates. */\\n      const merged=[...incoming,...tvChannels];")
+        html = html.replace(originalMerge, "      /* Prefer current Firebase tier metadata over local duplicates. */\n      const merged=[...incoming,...tvChannels];")
 
         def originalCard = '     <div class="tv-country">${escapeHTML(channel.country||channel.group||"TV Channel")}</div>'
-        def tierCard = originalCard + '\\n     <span class="jon-access-tier ${String(channel.accessTier||"free").toLowerCase()==="premium"?"premium":"free"}">${String(channel.accessTier||"free").toLowerCase()==="premium"?"PREMIUM / PAID":"FREE"}</span>'
+        def tierCard = originalCard + '\n     <span class="jon-access-tier ${String(channel.accessTier||"free").toLowerCase()==="premium"?"premium":"free"}">${String(channel.accessTier||"free").toLowerCase()==="premium"?"PREMIUM / PAID":"FREE"}</span>'
         if (html.count(originalCard) != 1) throw new GradleException("Mobile tier fix: channel card label not found exactly once.")
         html = html.replace(originalCard, tierCard)
-        def tierCss = '\\n<style id="jonMobileAccessTier">.jon-access-tier{display:inline-block;margin-top:4px;padding:3px 7px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.25px;line-height:1.2}.jon-access-tier.free{color:#86efac;background:#14532d;border:1px solid #166534}.jon-access-tier.premium{color:#fde68a;background:#78350f;border:1px solid #92400e}</style>\\n'
+        def tierCss = '\n<style id="jonMobileAccessTier">.jon-access-tier{display:inline-block;margin-top:4px;padding:3px 7px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.25px;line-height:1.2}.jon-access-tier.free{color:#86efac;background:#14532d;border:1px solid #166534}.jon-access-tier.premium{color:#fde68a;background:#78350f;border:1px solid #92400e}</style>\n'
         html = html.replace("</head>", tierCss + "</head>")
 
         def target = outputFile.get().asFile
