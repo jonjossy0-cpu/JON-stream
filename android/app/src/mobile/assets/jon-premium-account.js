@@ -135,6 +135,7 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
   if(deny(channel))return;
   return originalPlayTV.apply(this,arguments);
  };
+ // Mobile-only promotion gate: keep this logic out of the shared website/TV HTML.
  // Promotion cards are Premium-only on Mobile. Respect an explicit Admin
  // ON/OFF value if present in the existing Firebase appData settings.
  function promotionEnabled(remote){
