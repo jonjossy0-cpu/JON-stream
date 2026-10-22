@@ -12,6 +12,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import androidx.webkit.WebViewAssetLoader;
@@ -33,6 +34,8 @@ public class MainActivity extends Activity {
     private final StringBuilder numberBuffer = new StringBuilder();
     private final Handler handler = new Handler();
     private Runnable commitTask;
+    // Do not consume mobile keyboard events as TV remote/channel shortcuts while editing text.
+    private volatile boolean textInputFocused = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,6 +108,12 @@ public class MainActivity extends Activity {
                 exitImmersive();
             }
         };
+        webView.addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public void setTextInputFocused(boolean focused) {
+                textInputFocused = focused;
+            }
+        }, "JONNativeInput");
         webView.setWebChromeClient(chromeClient);
 
         assetLoader = new WebViewAssetLoader.Builder()
@@ -115,6 +124,12 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
+
+            @Override public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                // Track focused text fields so numeric/Enter/D-pad TV handlers never swallow typing.
+                view.evaluateJavascript("(function(){if(window.__jonNativeInputTracking)return;window.__jonNativeInputTracking=true;function report(t){var on=!!(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable));if(window.JONNativeInput)window.JONNativeInput.setTextInputFocused(on);}document.addEventListener('focusin',function(e){report(e.target);},true);document.addEventListener('focusout',function(){setTimeout(function(){report(document.activeElement);},0);},true);report(document.activeElement);})();", null);
             }
 
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -163,6 +178,8 @@ public class MainActivity extends Activity {
     }
 
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        // Let Android/WebView handle all keys normally while an Email/Password/text field is focused.
+        if (textInputFocused) return super.dispatchKeyEvent(event);
         if(event.getAction()==KeyEvent.ACTION_DOWN && event.getRepeatCount()==0) {
             int k=event.getKeyCode();
 
