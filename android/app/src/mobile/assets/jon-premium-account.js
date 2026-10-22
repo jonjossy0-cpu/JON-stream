@@ -164,6 +164,45 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
  if(liveAds&&window.MutationObserver)new MutationObserver(()=>applyPromotionGate()).observe(liveAds,{childList:true,subtree:true});
  applyPromotionGate();
  // Re-check playback at the function boundary and on the card click itself.
+ // Premium users can independently hide/show News and Promotion in fullscreen.
+ // Choices stay local to Mobile APK and never override the Admin master ON/OFF.
+ const prefKey="jonMobilePremiumFullscreenPreferences";
+ const fullscreenFrame=document.getElementById("tvVideoFrame");
+ const fullscreenControls=document.querySelector("#tvFullscreenOverlay .tv-fullscreen-bottom");
+ let fullscreenPrefs={newsTicker:true,promotion:true};
+ try{fullscreenPrefs={...fullscreenPrefs,...JSON.parse(localStorage.getItem(prefKey)||"{}")};}catch(_){}
+ let fullscreenPanel=null;
+ function saveFullscreenPrefs(){try{localStorage.setItem(prefKey,JSON.stringify(fullscreenPrefs));}catch(_){}}
+ function applyFullscreenPrefs(){
+  const allowed=premiumAllowed();
+  if(fullscreenPanel)fullscreenPanel.hidden=!allowed;
+  if(fullscreenFrame){
+   fullscreenFrame.classList.toggle("jon-hide-news",!allowed||fullscreenPrefs.newsTicker===false);
+   fullscreenFrame.classList.toggle("jon-hide-sponsor",!allowed||fullscreenPrefs.promotion===false);
+  }
+  if(fullscreenPanel)fullscreenPanel.querySelectorAll("button[data-pref]").forEach(button=>{
+   const key=button.dataset.pref;
+   button.textContent=(key==="newsTicker"?"News: ":"Promotion: ")+(fullscreenPrefs[key]===false?"OFF":"ON");
+   button.setAttribute("aria-pressed",String(fullscreenPrefs[key]!==false));
+  });
+ }
+ if(fullscreenControls){
+  fullscreenPanel=document.createElement("span");
+  fullscreenPanel.id="jonMobilePremiumFullscreenControls";
+  fullscreenPanel.hidden=true;
+  fullscreenPanel.innerHTML='<button type="button" data-pref="newsTicker">News: ON</button><button type="button" data-pref="promotion">Promotion: ON</button>';
+  fullscreenControls.insertBefore(fullscreenPanel,fullscreenControls.lastElementChild||null);
+  fullscreenPanel.addEventListener("click",event=>{
+   const button=event.target.closest("button[data-pref]");
+   if(!button||!premiumAllowed())return;
+   const key=button.dataset.pref;
+   fullscreenPrefs={...fullscreenPrefs,[key]:fullscreenPrefs[key]===false};
+   saveFullscreenPrefs();applyFullscreenPrefs();
+  });
+ }
+ window.addEventListener("jon-premium-access-changed",applyFullscreenPrefs);
+ window.addEventListener("jon-firebase-data",applyFullscreenPrefs);
+ applyFullscreenPrefs();
  // Capture direct card clicks as a second guard for playback handlers.
  document.addEventListener("click",function(event){
   const button=event.target&&event.target.closest?event.target.closest(".station-play,.tv-play"):null;
