@@ -30,6 +30,7 @@ public class MainActivity extends Activity {
     // Serve bundled assets from the same HTTPS origin used by the subscription API.
     // This prevents file:// Origin:null from breaking authenticated API calls on Android WebView.
     private static final String HOME = "https://jon-stream.vercel.app/assets/index.html";
+    private static final String TRUSTED_HOST = "jon-stream.vercel.app";
     private WebViewAssetLoader assetLoader;
     private final StringBuilder numberBuffer = new StringBuilder();
     private final Handler handler = new Handler();
@@ -117,7 +118,7 @@ public class MainActivity extends Activity {
         webView.setWebChromeClient(chromeClient);
 
         assetLoader = new WebViewAssetLoader.Builder()
-            .setDomain("jon-stream.vercel.app")
+            .setDomain(TRUSTED_HOST)
             .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
             .build();
 
@@ -133,11 +134,19 @@ public class MainActivity extends Activity {
             }
 
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                Uri uri=request.getUrl();
-                String url=uri.toString();
-                if(url.startsWith(HOME)) return false;
-                try { startActivity(new Intent(Intent.ACTION_VIEW,uri)); return true; }
-                catch(Exception ignored) { return false; }
+                Uri uri = request.getUrl();
+                // Trust only the exact HTTPS origin. Prefix checks also accept lookalike
+                // hosts and URLs such as /assets/index.html.attacker.
+                boolean trustedOrigin = "https".equalsIgnoreCase(uri.getScheme())
+                    && TRUSTED_HOST.equalsIgnoreCase(uri.getHost())
+                    && (uri.getPort() == -1 || uri.getPort() == 443);
+                if (trustedOrigin) return false;
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                    return true;
+                } catch (Exception ignored) {
+                    return true;
+                }
             }
         });
 
