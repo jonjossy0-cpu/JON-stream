@@ -148,7 +148,8 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
      if(!response.ok)throw new Error(data.error||("Subscription API returned HTTP "+response.status));
      window.jonPremiumAccess={ready:true,allowed:data.hasPremium===true,status:String(data.status||"free")};
      window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
-     if(!document.getElementById("jonAccountPanel")?.hidden){
+     const accountPanel=document.getElementById("jonAccountPanel");
+     if(accountPanel&&!accountPanel.hidden){
        $("jonProfilePlan").textContent=data.planLabel||data.status||"No active subscription";
        $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
        $("jonProfilePayment").textContent=data.paymentLabel||"—";
