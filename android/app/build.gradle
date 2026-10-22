@@ -140,7 +140,7 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (html.count(themeButton) != 1) {
             throw new GradleException("Expected one theme button for Mobile Premium account entry.")
         }
-        html = html.replace(themeButton, '<div style="display:flex;gap:7px;align-items:center"><button class="account-btn" id="jonAccountToggle" type="button" onclick="toggleJonAccountPanel()">👤 Free / Paid</button>' + themeButton + '</div>')
+        html = html.replace(themeButton, '<div style="display:flex;gap:7px;align-items:center"><button class="account-btn" id="jonAccountToggle" type="button" onclick="toggleJonAccountPanel()" aria-label="Profile and subscription" title="Profile / Subscription">👤</button>' + themeButton + '</div>')
 
         def accountMarker = '</div>\n\n<div class="brand">'
         if (html.count(accountMarker) != 1) {
