@@ -96,17 +96,29 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
   const url=normalizedUrl(channel.url||channel.streamUrl||channel.stream);
   const name=normalized(channel.name||channel.title);
   // Prefer stable IDs, then exact source URL, then exact channel name.
-  if(id){const found=records.find(item=>item&&normalized(item.id||item.channelId||item.key)===id&&tierFromRecord(item));if(found)return found;}
-  if(url){const found=records.find(item=>item&&normalizedUrl(item.url||item.streamUrl||item.stream)===url&&tierFromRecord(item));if(found)return found;}
-  if(name){const found=records.find(item=>item&&normalized(item.name||item.title)===name&&tierFromRecord(item));if(found)return found;}
+  if(id){const found=records.find(item=>item&&normalized(item.id||item.channelId||item.key)===id);if(found)return found;}
+  if(url){const found=records.find(item=>item&&normalizedUrl(item.url||item.streamUrl||item.stream)===url);if(found)return found;}
+  if(name){const found=records.find(item=>item&&normalized(item.name||item.title)===name);if(found)return found;}
   return null;
  }
  function tierValue(channel,kind){
-  const remote=firebaseChannelRecord(channel,kind);
-  const remoteTier=tierFromRecord(remote);
-  if(remoteTier)return remoteTier;
   const localTier=tierFromRecord(channel);
-  return localTier||"unknown";
+  if(localTier)return localTier;
+  const remote=firebaseChannelRecord(channel,kind);
+  if(remote){
+   // A matching Firebase channel without an explicit paid flag is Free;
+   // explicit Premium/Paid metadata always takes precedence.
+   return tierFromRecord(remote)||"free";
+  }
+  // Existing built-in channels have no tier field and remain Free.
+  // Unknown unmatched channels remain locked rather than being assumed paid or free.
+  const name=normalized(channel&& (channel.name||channel.title));
+  const url=normalizedUrl(channel&& (channel.url||channel.streamUrl||channel.stream));
+  const baseList=kind==="radio"
+   ? ((typeof stations!=="undefined"&&Array.isArray(stations))?stations:[])
+   : ((typeof tvChannels!=="undefined"&&Array.isArray(tvChannels))?tvChannels:[]);
+  const inPlayableList=baseList.some(item=>item&&normalized(item.name||item.title)===name&&normalizedUrl(item.url||item.streamUrl||item.stream)===url);
+  return inPlayableList?"free":"unknown";
  }
  function isPaid(channel,kind){return tierValue(channel,kind)!=="free";}
  function premiumAllowed(){
