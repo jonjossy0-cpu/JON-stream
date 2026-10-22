@@ -7,7 +7,7 @@ const { getFirestore, Timestamp, FieldValue } = require("firebase-admin/firestor
 
 if (!getApps().length) initializeApp();
 const db = getFirestore();
-const adminUidsParam = defineString("JON_ADMIN_UIDS", { default: "" });
+const adminUidsParam = defineString("JON_ADMIN_UIDS");
 const emailKey = email => crypto.createHash("sha256").update(String(email || "").trim().toLowerCase()).digest("hex");
 const adminAllowed = uid => adminUidsParam.value().split(",").map(x => x.trim()).filter(Boolean).includes(uid);
 const active = (entitlement, now) => {
