@@ -3810,6 +3810,7 @@ if(authPanel){
    if(error)error.textContent="This is a Premium channel. Sign in with a verified email and an active 3-day trial or Premium entitlement to continue.";
  };
  onAuthStateChanged(auth,async user=>{
+   window.jonAccountAuthUser=!!user;
    jonSubscriptionRequestId++;
    if(!user){window.jonPremiumAccess={ready:true,allowed:false,status:"signed_out"};window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));}
 
@@ -4043,7 +4044,8 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 (function(){
  "use strict";
  function enforcePremiumPlaybackLock(){
-  if(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)return;
+  // Stop Premium playback only after Firebase confirms sign-out. Account opens and subscription refresh/API errors must not stop playback.
+  if(window.jonAccountAuthUser!==false||!window.jonPremiumAccess||window.jonPremiumAccess.status!=="signed_out")return;
   try{
    if(typeof currentTV!=="undefined"&&currentTV&&typeof jonIsPremiumTier==="function"&&jonIsPremiumTier(currentTV.accessTier)){
     clearTimeout(tvStartupTimer);clearTimeout(tvRetryTimer);clearTimeout(tvReconnectTimer);
