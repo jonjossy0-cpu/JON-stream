@@ -20,3 +20,10 @@
 .jon-account-actions button{flex:1;min-width:115px}
 .jon-account-secondary{background:var(--card2);color:var(--text);border:1px solid var(--border)}
 .jon-account-error{font-size:12px;color:#fca5a5;min-height:16px;overflow-wrap:anywhere}
+
+/* Mobile Premium-only fullscreen preference controls */
+#tvVideoFrame.jon-hide-news #jonFullscreenNewsTicker{display:none!important}
+#tvVideoFrame.jon-hide-sponsor #jonSponsorLogoCarousel{display:none!important}
+#jonMobilePremiumFullscreenControls{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+#jonMobilePremiumFullscreenControls button{font:600 11px/1.2 system-ui,sans-serif;border:1px solid rgba(255,255,255,.35);border-radius:7px;background:rgba(12,25,40,.92);color:#fff;padding:6px 8px;cursor:pointer}
+#jonMobilePremiumFullscreenControls[hidden]{display:none!important}
