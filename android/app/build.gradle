@@ -82,15 +82,27 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
     def outputFile = layout.buildDirectory.file("generated/mobile/assets/index.html")
     def sponsorCssFile = layout.projectDirectory.file("src/mobile/assets/jon-sponsor-carousel.css")
     def sponsorJsFile = layout.projectDirectory.file("src/mobile/assets/jon-sponsor-carousel.js")
+    def premiumHtmlFile = layout.projectDirectory.file("src/mobile/assets/jon-premium-account.html")
+    def premiumCssFile = layout.projectDirectory.file("src/mobile/assets/jon-premium-account.css")
+    def premiumJsFile = layout.projectDirectory.file("src/mobile/assets/jon-premium-account.js")
     inputs.file(sourceFile)
     inputs.file(sponsorCssFile)
     inputs.file(sponsorJsFile)
+    inputs.file(premiumHtmlFile)
+    inputs.file(premiumCssFile)
+    inputs.file(premiumJsFile)
     outputs.file(outputFile)
 
     doLast {
         def html = sourceFile.asFile.getText("UTF-8")
         if (!sponsorCssFile.asFile.isFile() || !sponsorJsFile.asFile.isFile()) {
             throw new GradleException("Missing Mobile APK sponsor carousel assets.")
+        }
+        if (!premiumHtmlFile.asFile.isFile() || !premiumCssFile.asFile.isFile() || !premiumJsFile.asFile.isFile()) {
+            throw new GradleException("Missing Mobile APK Premium account assets.")
+        }
+        if (html.contains("jon-premium-account.js") || html.contains("jonAccountPanel")) {
+            throw new GradleException("Mobile Premium account must be injected only once into the generated HTML.")
         }
         if (html.contains("jon-sponsor-carousel.js") || html.contains("jon-sponsor-carousel.css")) {
             throw new GradleException("Mobile sponsor carousel is already injected in the base HTML.")
@@ -116,7 +128,7 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (!html.contains("</head>")) {
             throw new GradleException("Missing HTML head closing tag.")
         }
-        html = html.replace("</head>", style + ' <link rel="stylesheet" href="jon-news-ticker.css">\n <link rel="stylesheet" href="jon-sponsor-carousel.css">\n' + "</head>")
+        html = html.replace("</head>", style + ' <link rel="stylesheet" href="jon-news-ticker.css">\n <link rel="stylesheet" href="jon-sponsor-carousel.css">\n <link rel="stylesheet" href="jon-premium-account.css">\n' + "</head>")
 
         if (html.count("</html>") != 1) {
             throw new GradleException("Expected one HTML closing tag before injecting the mobile news ticker.")
@@ -124,7 +136,19 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (html.contains("jon-news-ticker.js")) {
             throw new GradleException("Mobile news ticker script is already injected.")
         }
-        html = html.replace("</html>", ' <script src="jon-news-ticker.js"></script>\n <script src="jon-sponsor-carousel.js"></script>\n</html>')
+        def themeButton = '<button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>'
+        if (html.count(themeButton) != 1) {
+            throw new GradleException("Expected one theme button for Mobile Premium account entry.")
+        }
+        html = html.replace(themeButton, '<div style="display:flex;gap:7px;align-items:center"><button class="account-btn" id="jonAccountToggle" type="button" onclick="toggleJonAccountPanel()">👤 Free / Paid</button>' + themeButton + '</div>')
+
+        def accountMarker = '</div>\n\n<div class="brand">'
+        if (html.count(accountMarker) != 1) {
+            throw new GradleException("Expected one brand section for Mobile Premium account insertion.")
+        }
+        html = html.replace(accountMarker, '</div>\n\n' + premiumHtmlFile.asFile.getText("UTF-8") + '\n<div class="brand">')
+
+        html = html.replace("</html>", ' <script src="jon-news-ticker.js"></script>\n <script src="jon-sponsor-carousel.js"></script>\n' + premiumJsFile.asFile.getText("UTF-8") + '\n</html>')
 
         def target = outputFile.get().asFile
         target.parentFile.mkdirs()
