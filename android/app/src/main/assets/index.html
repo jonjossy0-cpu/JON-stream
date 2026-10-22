@@ -3694,6 +3694,7 @@ function toggleProfilePanel(){
  button.setAttribute("aria-expanded",String(opening));
  button.setAttribute("aria-label",opening?"Close profile":"Open profile");
  button.title=opening?"Close profile":"Profile";
+ if(opening)window.dispatchEvent(new Event("jon-account-panel-open"));
 }
 </script>
 <script type="module">
@@ -3726,32 +3727,47 @@ if(authPanel){
  const setBusy=(busy)=>["jonAccountSignup","jonAccountSignin","jonForgotPassword","jonResendVerification","jonAccountSignout"].forEach(id=>{const el=$(id);if(el)el.disabled=busy;});
  async function showSubscription(user){
    window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
-
+   window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
    $("jonProfileEmail").textContent=user.email||"—";
    $("jonProfileVerified").textContent=user.emailVerified?"Verified":"Not verified";
-   $("jonProfilePlan").textContent=user.emailVerified?"Subscription status unavailable":"Verify your email first";
-   $("jonProfileRemaining").textContent="Not available yet";
-   $("jonProfilePayment").textContent="Telebirr setup pending";
-   $("jonAccountMessage").textContent=user.emailVerified
-    ?"Your account is ready. Trial dates and paid access will show here once secure subscription validation is connected."
-    :"Please verify your email to activate the account. Trial time will only begin after server-side verification.";
+   $("jonProfilePlan").textContent=user.emailVerified?"Loading subscription…":"Verify your email first";
+   $("jonProfileRemaining").textContent="—";
+   $("jonProfilePayment").textContent="Checking…";
+   if(!user.emailVerified){
+     window.jonPremiumAccess={ready:true,allowed:false,status:"email_verification_required"};
+     window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+     $("jonProfilePlan").textContent="Email verification required";
+     $("jonProfilePayment").textContent="Not active";
+     $("jonAccountMessage").textContent="Verify your email before starting a trial or using Premium access.";
+     return;
+   }
    try{
-     const token=await user.getIdToken();
-     const response=await fetch("https://jon-stream.vercel.app/api/subscription/status",{headers:{Authorization:"Bearer "+token}});
-     if(response.ok){
-       const data=await response.clone().json();
-       window.jonPremiumAccess={ready:true,allowed:data.hasPremium===true,status:String(data.status||"free")};
-       window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
-     }
-
-     if(response.ok){
-       const data=await response.json();
-       $("jonProfilePlan").textContent=data.planLabel||data.status||"No active subscription";
-       $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
-       $("jonProfilePayment").textContent=data.paymentLabel||"—";
-       $("jonAccountMessage").textContent=data.message||$("jonAccountMessage").textContent;
-     }
-   }catch(e){console.info("Subscription status endpoint is not available yet.");}
+     const token=await user.getIdToken(true);
+     const response=await fetch("https://jon-stream.vercel.app/api/subscription/status",{
+       method:"GET",
+       headers:{Authorization:"Bearer "+token,Accept:"application/json"},
+       cache:"no-store"
+     });
+     const data=await response.json().catch(()=>({}));
+     if(!response.ok)throw new Error(data.error||("Subscription API returned HTTP "+response.status));
+     window.jonPremiumAccess={ready:true,allowed:data.hasPremium===true,status:String(data.status||"free")};
+     window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+     $("jonProfilePlan").textContent=data.planLabel||data.status||"No active subscription";
+     $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
+     $("jonProfilePayment").textContent=data.paymentLabel||"—";
+     $("jonAccountMessage").textContent=data.message||(data.hasPremium?"Premium access is active.":"Free channels remain available. Premium requires an active trial or entitlement.");
+     message("");
+   }catch(e){
+     // Fail closed for Premium-only channels, but do not block free channels.
+     window.jonPremiumAccess={ready:true,allowed:false,status:"api_error"};
+     window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+     $("jonProfilePlan").textContent="Status unavailable";
+     $("jonProfileRemaining").textContent="—";
+     $("jonProfilePayment").textContent="Could not verify";
+     $("jonAccountMessage").textContent="Subscription could not be verified right now. Free channels remain available. Reopen Profile to retry.";
+     message("Could not load subscription status: "+(e&&e.message?e.message:"network error")+". Reopen Profile to retry.",true);
+     console.error("JON subscription status request failed",e);
+   }
  }
 
  window.jonShowPremiumUpgrade=()=>{
@@ -3770,6 +3786,7 @@ if(authPanel){
    message("");
    if(user)await showSubscription(user);
  });
+ window.addEventListener("jon-account-panel-open",()=>{if(auth.currentUser)showSubscription(auth.currentUser);});
  $("jonPasswordToggle").addEventListener("click",()=>{const input=$("jonAccountPassword"),button=$("jonPasswordToggle");const reveal=input.type==="password";input.type=reveal?"text":"password";button.textContent=reveal?"Hide":"Show";button.setAttribute("aria-label",reveal?"Hide password":"Show password");button.setAttribute("aria-pressed",String(reveal));input.focus();});
  $("jonForgotPassword").addEventListener("click",async()=>{const email=$("jonAccountEmail").value.trim();if(!email){message("Enter your account email first, then tap Forgot password.",true);$("jonAccountEmail").focus();return;}if(!auth){message("Firebase Authentication is unavailable. Please try again later.",true);return;}setBusy(true);message("Sending password reset email…");try{await sendPasswordResetEmail(auth,email);message("If an account exists for "+email+", a password reset link has been sent. Check your Inbox and Spam/Junk.");}catch(e){message(authErrorText(e,"Password reset"),true);}finally{setBusy(false);}});
  $("jonAccountSignup").addEventListener("click",async()=>{
@@ -3925,6 +3942,66 @@ if(authPanel){
  video.addEventListener("ended",pause);
  video.addEventListener("emptied",reset);
  render();
+})();
+</script>
+
+<style id="jonPremiumFullscreenPreferencesCSS">
+#tvVideoFrame.jon-hide-news #jonFullscreenNewsTicker{display:none!important}
+#tvVideoFrame.jon-hide-sponsor #jonSponsorLogoCarousel{display:none!important}
+#jonPremiumFullscreenPreferencesUI{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+#jonPremiumFullscreenPreferencesUI button{font:600 11px/1.2 system-ui,sans-serif;border:1px solid rgba(255,255,255,.35);border-radius:7px;background:rgba(12,25,40,.92);color:#fff;padding:6px 8px;cursor:pointer}
+#jonPremiumFullscreenPreferencesUI[hidden]{display:none!important}
+</style>
+<script type="module" id="jonPremiumFullscreenPreferencesModule">
+import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+(() => {
+ const frame=document.getElementById("tvVideoFrame");
+ const controls=document.querySelector("#tvFullscreenOverlay .tv-fullscreen-bottom");
+ if(!frame||!controls)return;
+ const panel=document.createElement("span");
+ panel.id="jonPremiumFullscreenPreferencesUI";
+ panel.hidden=true;
+ panel.innerHTML='<button type="button" data-pref="sponsorAds">Sponsored: ON</button><button type="button" data-pref="newsTicker">News: ON</button>';
+ controls.insertBefore(panel,controls.lastElementChild||null);
+ let user=null,prefs={sponsorAds:true,newsTicker:true},allowed=false,requestId=0;
+ const buttons=()=>panel.querySelectorAll("button[data-pref]");
+ function apply(){
+  frame.classList.toggle("jon-hide-sponsor",prefs.sponsorAds===false);
+  frame.classList.toggle("jon-hide-news",prefs.newsTicker===false);
+  panel.hidden=!allowed;
+  buttons().forEach(b=>{const k=b.dataset.pref;b.textContent=(k==="sponsorAds"?"Sponsored: ":"News: ")+(prefs[k]===false?"OFF":"ON");b.setAttribute("aria-pressed",String(prefs[k]!==false));});
+ }
+ async function refresh(){
+  const current=++requestId;
+  allowed=!!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed&&user);
+  if(allowed){
+   try{
+    const token=await user.getIdToken();
+    const res=await fetch("https://jon-stream.vercel.app/api/subscription/fullscreen-preferences",{headers:{Authorization:"Bearer "+token,Accept:"application/json"},cache:"no-store"});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok)throw new Error(data.error||("HTTP "+res.status));
+    if(current===requestId&&data.preferences)prefs=data.preferences;
+   }catch(e){console.warn("Could not load Premium fullscreen preferences",e);}
+  }else{prefs={sponsorAds:true,newsTicker:true};}
+  if(current===requestId)apply();
+ }
+ panel.addEventListener("click",async event=>{
+  const button=event.target.closest("button[data-pref]");
+  if(!button||!allowed||!user)return;
+  const key=button.dataset.pref,previous=prefs[key]!==false;
+  prefs={...prefs,[key]:!previous};apply();
+  try{
+   const token=await user.getIdToken();
+   const res=await fetch("https://jon-stream.vercel.app/api/subscription/fullscreen-preferences",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({[key]:prefs[key]}),cache:"no-store"});
+   const data=await res.json().catch(()=>({}));
+   if(!res.ok)throw new Error(data.error||("HTTP "+res.status));
+   prefs=data.preferences||prefs;apply();
+  }catch(error){prefs={...prefs,[key]:previous};apply();window.alert(error.message||"Could not save Premium preference");}
+ });
+ window.addEventListener("jon-premium-access-changed",refresh);
+ const auth=getAuth(getApp());
+ onAuthStateChanged(auth,nextUser=>{user=nextUser;refresh();});
 })();
 </script>
 </html>
