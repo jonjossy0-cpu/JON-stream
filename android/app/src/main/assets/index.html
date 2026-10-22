@@ -580,29 +580,6 @@ audio,video{
  opacity:1 !important;
 }
 
-
-/* Firebase Premium account panel: additive-only UI */
-.jon-access-tier{display:inline-flex;align-items:center;margin-top:5px;padding:4px 7px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.25px;line-height:1.2}
-.jon-access-tier.free{color:#86efac;background:#14532d;border:1px solid #166534}
-.jon-access-tier.premium{color:#fde68a;background:#78350f;border:1px solid #92400e}
-.account-btn{width:auto;min-height:42px;padding:0 12px;background:var(--card);color:var(--text);border:1px solid var(--border);white-space:nowrap}
-.jon-account-panel{margin:10px 0 18px;padding:15px;background:var(--card);border:1px solid var(--border);border-radius:17px}
-.jon-account-panel[hidden],.jon-account-panel [hidden]{display:none!important}
-.jon-account-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
-.jon-account-head span{font-size:11px;color:var(--muted)}
-.jon-account-panel label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}
-.jon-account-panel input{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--card2);color:var(--text);font-size:16px;min-width:0}
-.jon-password-entry{display:flex;gap:7px;align-items:center}
-.jon-password-entry input{flex:1}
-.jon-password-toggle{padding:10px;background:var(--card2);color:var(--text);border:1px solid var(--border)}
-.jon-account-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
-.jon-account-row span{color:var(--muted)}
-.jon-account-row strong{text-align:right;overflow-wrap:anywhere}
-.jon-account-note{font-size:12px;line-height:1.5;color:var(--muted)}
-.jon-account-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.jon-account-actions button{flex:1;min-width:115px}
-.jon-account-secondary{background:var(--card2);color:var(--text);border:1px solid var(--border)}
-.jon-account-error{font-size:12px;color:#fca5a5;min-height:16px;overflow-wrap:anywhere}
 </style>
 
 <style id="jonGithubMediaFix">.jonMediaHeroImage{visibility:visible!important}.jonMediaHeroImage.show{visibility:visible!important;opacity:1!important}.jon-ad-media{visibility:visible!important}</style>
@@ -917,7 +894,7 @@ img.jon-ad-media{
 
 <div class="topbar">
  <div class="clock" id="clock">🕐 --:--:--</div>
- <div style="display:flex;gap:7px;align-items:center"><button class="account-btn" id="jonAccountToggle" type="button" onclick="toggleJonAccountPanel()">👤 Free / Paid</button><button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button></div>
+ <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
 </div>
 
 <div class="time-panel">
@@ -929,27 +906,6 @@ img.jon-ad-media{
  <button id="radioModeBtn" class="active" onclick="setMode('radio')">📻 RADIO</button>
  <button id="tvModeBtn" onclick="setMode('tv')">📺 TV</button>
 </div>
-
-<section id="jonAccountPanel" class="jon-account-panel" hidden>
- <div class="jon-account-head"><strong>👤 My Profile / Premium</strong><span id="jonAccountState">Not signed in</span></div>
- <div id="jonAccountSignedOut">
-  <p class="jon-account-note">Sign up or sign in with your email to check Free / Paid status.</p>
-  <label for="jonAccountEmail">Email address</label><input id="jonAccountEmail" type="email" autocomplete="email" placeholder="name@example.com">
-  <label for="jonAccountPassword">Password</label><div class="jon-password-entry"><input id="jonAccountPassword" type="password" autocomplete="current-password" placeholder="Enter your password" autocapitalize="off" spellcheck="false"><button id="jonPasswordToggle" class="jon-password-toggle" type="button" aria-label="Show password" aria-pressed="false">Show</button></div>
-  <div class="jon-account-actions"><button id="jonAccountSignup" type="button">Create account</button><button id="jonAccountSignin" type="button" class="jon-account-secondary">Sign in</button></div>
-  <button id="jonForgotPassword" type="button" class="jon-account-secondary" style="margin-top:8px;width:100%">Forgot password?</button>
- </div>
- <div id="jonAccountSignedIn" hidden>
-  <div class="jon-account-row"><span>Email</span><strong id="jonProfileEmail">—</strong></div>
-  <div class="jon-account-row"><span>Email verification</span><strong id="jonProfileVerified">—</strong></div>
-  <div class="jon-account-row"><span>Subscription status</span><strong id="jonProfilePlan">Checking…</strong></div>
-  <div class="jon-account-row"><span>Time remaining</span><strong id="jonProfileRemaining">—</strong></div>
-  <div class="jon-account-row"><span>Payment</span><strong id="jonProfilePayment">—</strong></div>
-  <p id="jonAccountMessage" class="jon-account-note" aria-live="polite"></p>
-  <div class="jon-account-actions"><button id="jonSubscriptionRefresh" type="button">Update status</button><button id="jonResendVerification" type="button" class="jon-account-secondary">Resend verification</button><button id="jonAccountSignout" type="button" class="jon-account-secondary">Sign out</button></div>
- </div>
- <p id="jonAccountError" class="jon-account-error" role="status" aria-live="polite"></p>
-</section>
 
 <div class="brand">
  <img data-logo class="logo" alt="JON FM ETHIOPIA">
@@ -1325,12 +1281,6 @@ let previousVolume=.8;
 let favorites=JSON.parse(localStorage.getItem("jonRadioFavorites")||"[]");
 
 function selectStation(index){
- const requestedStation=stations[index];
- if(requestedStation&&String(requestedStation.accessTier||"free").toLowerCase()==="premium"&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
-  if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
-  const status=document.getElementById("radioStatus");if(status)status.textContent="🔒 Premium access required — sign in and check status";
-  return;
- }
  clearTimeout(radioAdvancedRetryTimer);
  radioAdvancedRetryTimer=null;
  radioAdvancedRetryAttempts=0;
@@ -1742,7 +1692,6 @@ function renderStations(list){
    <div class="station-info">
     <div class="station-name">${escapeHTML(station.name)}</div>
     <div class="station-status">🔴 Live Stream</div>
-    <span class="jon-access-tier ${String(station.accessTier||"free").toLowerCase()==="premium"?"premium":"free"}">${String(station.accessTier||"free").toLowerCase()==="premium"?"PREMIUM / PAID":"FREE"}</span>
    </div>
    <button class="station-play" onclick="selectStation(${index})">▶</button>
    <button class="favorite-btn ${fav?"active":""}" onclick="toggleFavorite(${index})">${fav?"★":"☆"}</button>
@@ -2309,7 +2258,6 @@ function renderTV(list){
    <div class="tv-info">
     <div class="tv-name">${escapeHTML(channel.name)}</div>
     <div class="tv-country">${escapeHTML(channel.country||channel.group||"TV Channel")}</div>
-    <span class="jon-access-tier ${String(channel.accessTier||"free").toLowerCase()==="premium"?"premium":"free"}">${String(channel.accessTier||"free").toLowerCase()==="premium"?"PREMIUM / PAID":"FREE"}</span>
    </div>
 
    <span class="tv-stream-health testing" data-tv-health="${escapeHTML(channel.url)}" title="Checking TV stream…">●</span>
@@ -2326,10 +2274,6 @@ function renderTV(list){
   `;
 
   card.querySelector(".tv-play").onclick=()=>{
-   if(String(channel.accessTier||"free").toLowerCase()==="premium"&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
-    if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
-    return;
-   }
    if(!jonAllowsChannel(channel)) return;
    playTVStream(channel.url,channel.name,index);
   };
@@ -3796,115 +3740,4 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
  render();
 })();
 </script>
-
-<script type="module" id="jonFirebasePremiumAccount">
-import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, signOut, reload } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-functions.js";
-
-const authPanel=document.getElementById("jonAccountPanel");
-const auth=getAuth(getApp());
-const functions=getFunctions(getApp(),"us-central1");
-const getSubscriptionStatus=httpsCallable(functions,"subscriptionStatus");
-const $=id=>document.getElementById(id);
-window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
-
-window.toggleJonAccountPanel=function(){
- if(!authPanel)return;
- authPanel.hidden=!authPanel.hidden;
- if(!authPanel.hidden){authPanel.scrollIntoView({behavior:"smooth",block:"nearest"});if(auth.currentUser)refreshSubscription(auth.currentUser);}
-};
-window.jonShowPremiumUpgrade=function(){
- if(authPanel)authPanel.hidden=false;
- if(authPanel)authPanel.scrollIntoView({behavior:"smooth",block:"center"});
- const err=$("jonAccountError");
- if(err)err.textContent="This is a Premium channel. Sign in with a verified email and an active trial or Premium entitlement to continue.";
-};
-function message(text,isError=false){if($("jonAccountError")){$("jonAccountError").textContent=text||"";$("jonAccountError").style.color=isError?"#fca5a5":"#86efac";}}
-function setBusy(busy){["jonAccountSignup","jonAccountSignin","jonForgotPassword","jonResendVerification","jonAccountSignout","jonSubscriptionRefresh"].forEach(id=>{const el=$(id);if(el)el.disabled=busy;});}
-function authErrorText(error){
- const code=String(error&&error.code||"");
- const messages={
-  "auth/operation-not-allowed":"Email/Password sign-in is not enabled in Firebase Authentication.",
-  "auth/unauthorized-domain":"This app domain is not authorized in Firebase Authentication.",
-  "auth/email-already-in-use":"This email already has an account. Please sign in.",
-  "auth/invalid-email":"Enter a valid email address.",
-  "auth/weak-password":"Choose a password with at least 6 characters.",
-  "auth/invalid-credential":"Email or password is incorrect.",
-  "auth/user-disabled":"This account has been disabled.",
-  "auth/too-many-requests":"Too many attempts. Wait and try again.",
-  "auth/network-request-failed":"Network connection failed. Check your connection.",
-  "auth/missing-password":"Enter your password."
- };
- return messages[code]||String(error&&error.message||"Request failed. Please try again.");
-}
-async function refreshSubscription(user){
- window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
- $("jonProfileEmail").textContent=user.email||"—";
- $("jonProfileVerified").textContent=user.emailVerified?"Verified":"Not verified";
- $("jonProfilePlan").textContent=user.emailVerified?"Checking subscription…":"Verify email first";
- $("jonProfileRemaining").textContent="—";$("jonProfilePayment").textContent="—";
- $("jonAccountMessage").textContent=user.emailVerified?"Checking your subscription from Firebase…":"Verify your email before starting the free trial or using Premium.";
- try{
-  await reload(user);
-  if(!user.emailVerified){
-   window.jonPremiumAccess={ready:true,allowed:false,status:"email_verification_required"};
-   window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
-   $("jonProfileVerified").textContent="Not verified";$("jonProfilePlan").textContent="Email verification required";
-   $("jonProfileRemaining").textContent="0 days";$("jonProfilePayment").textContent="Not active";
-   $("jonAccountMessage").textContent="Please verify your email. The 3-day trial begins after verification.";return;
-  }
-  const response=await getSubscriptionStatus({});
-  const data=response.data||{};
-  window.jonPremiumAccess={ready:true,allowed:data.hasPremium===true,status:String(data.status||"free")};
-  window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
-  $("jonProfilePlan").textContent=data.planLabel||data.status||"Free plan";
-  $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
-  $("jonProfilePayment").textContent=data.paymentLabel||"—";
-  $("jonAccountMessage").textContent=data.message||"Subscription status updated.";message("");
- }catch(error){
-  window.jonPremiumAccess={ready:false,allowed:false,status:"unavailable"};
-  window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
-  $("jonProfilePlan").textContent="Subscription status unavailable";$("jonProfileRemaining").textContent="—";$("jonProfilePayment").textContent="—";
-  $("jonAccountMessage").textContent="Firebase subscription service is not reachable. Confirm Cloud Functions are deployed, then tap Update status.";
-  message(authErrorText(error),true);
- }
-}
-onAuthStateChanged(auth,async user=>{
- if(!user){window.jonPremiumAccess={ready:true,allowed:false,status:"signed_out"};window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));}
- $("jonAccountState").textContent=user?(user.emailVerified?"Signed in":"Verify email"):"Not signed in";
- $("jonAccountSignedOut").hidden=!!user;$("jonAccountSignedIn").hidden=!user;
- $("jonAccountToggle").textContent=user?(user.emailVerified?"👤 Free / Paid":"👤 Verify email"):"👤 Free / Paid";
- if(user)await refreshSubscription(user);
-});
-$("jonPasswordToggle").addEventListener("click",()=>{const input=$("jonAccountPassword"),button=$("jonPasswordToggle"),reveal=input.type==="password";input.type=reveal?"text":"password";button.textContent=reveal?"Hide":"Show";button.setAttribute("aria-pressed",String(reveal));input.focus();});
-$("jonAccountSignup").addEventListener("click",async()=>{
- const email=$("jonAccountEmail").value.trim(),password=$("jonAccountPassword").value;
- if(!email||password.length<6){message("Enter a valid email and a password with at least 6 characters.",true);return;}
- setBusy(true);message("Creating account…");
- try{const cred=await createUserWithEmailAndPassword(auth,email,password);await sendEmailVerification(cred.user);message("Account created. Open the verification email and verify your address.");}
- catch(error){message(authErrorText(error),true);}finally{setBusy(false);}
-});
-$("jonAccountSignin").addEventListener("click",async()=>{
- const email=$("jonAccountEmail").value.trim(),password=$("jonAccountPassword").value;
- if(!email||!password){message("Enter your email and password.",true);return;}
- setBusy(true);message("Signing in…");
- try{const cred=await signInWithEmailAndPassword(auth,email,password);await reload(cred.user);if(!cred.user.emailVerified)message("Please verify your email. Use Resend verification below.");else await refreshSubscription(cred.user);}
- catch(error){message(authErrorText(error),true);}finally{setBusy(false);}
-});
-$("jonForgotPassword").addEventListener("click",async()=>{
- const email=$("jonAccountEmail").value.trim();if(!email){message("Enter your email first, then tap Forgot password.",true);return;}
- setBusy(true);message("Sending password reset email…");
- try{await sendPasswordResetEmail(auth,email);message("If the account exists, a reset link was sent. Check Inbox and Spam/Junk.");}
- catch(error){message(authErrorText(error),true);}finally{setBusy(false);}
-});
-$("jonResendVerification").addEventListener("click",async()=>{
- const user=auth.currentUser;if(!user){message("Sign in first.",true);return;}setBusy(true);
- try{await sendEmailVerification(user);message("Verification email sent. Check Inbox and Spam/Junk.");}
- catch(error){message(authErrorText(error),true);}finally{setBusy(false);}
-});
-$("jonSubscriptionRefresh").addEventListener("click",async()=>{if(auth.currentUser){setBusy(true);try{await refreshSubscription(auth.currentUser);}finally{setBusy(false);}}});
-$("jonAccountSignout").addEventListener("click",async()=>{setBusy(true);try{await signOut(auth);message("Signed out.");}catch(error){message(authErrorText(error),true);}finally{setBusy(false);}});
-</script>
-
 </html>
