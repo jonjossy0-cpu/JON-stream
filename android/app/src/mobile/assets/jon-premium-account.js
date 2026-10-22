@@ -132,6 +132,33 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
   if(deny(channel))return;
   return originalPlayTV.apply(this,arguments);
  };
+ // Promotion cards are Premium-only on Mobile. Respect an explicit Admin
+ // ON/OFF value if present in the existing Firebase appData settings.
+ function promotionEnabled(remote){
+  const settings=remote&&remote.settings||{};
+  if(typeof settings.promotionEnabled==="boolean")return settings.promotionEnabled;
+  if(typeof settings.promotionsEnabled==="boolean")return settings.promotionsEnabled;
+  if(typeof settings.promotion==="boolean")return settings.promotion;
+  if(settings.promotion&&typeof settings.promotion.enabled==="boolean")return settings.promotion.enabled;
+  if(settings.promotions&&typeof settings.promotions.enabled==="boolean")return settings.promotions.enabled;
+  return true;
+ }
+ function applyPromotionGate(){
+  const box=document.getElementById("jonLiveUpdates");
+  if(!box)return;
+  const remote=window.__JON_FIREBASE_DATA||{};
+  const hidden=!(premiumAllowed()&&promotionEnabled(remote));
+  box.classList.toggle("jon-mobile-promotion-hidden",hidden);
+  if(hidden){box.style.display="none";document.body.classList.remove("jon-ad-visible");}
+  else if(box.children.length&&!(window.jonAdClosedUntil&&Date.now()<window.jonAdClosedUntil)){
+   box.style.display="flex";document.body.classList.add("jon-ad-visible");
+  }
+ }
+ window.addEventListener("jon-firebase-data",event=>{applyPromotionGate();});
+ window.addEventListener("jon-premium-access-changed",applyPromotionGate);
+ const liveAds=document.getElementById("jonLiveUpdates");
+ if(liveAds&&window.MutationObserver)new MutationObserver(()=>applyPromotionGate()).observe(liveAds,{childList:true,subtree:true});
+ applyPromotionGate();
  // Capture direct card clicks as a second guard for playback handlers.
  document.addEventListener("click",function(event){
   const button=event.target&&event.target.closest?event.target.closest(".station-play,.tv-play"):null;
