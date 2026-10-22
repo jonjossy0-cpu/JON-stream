@@ -4002,7 +4002,8 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
  function apply(){
   frame.classList.toggle("jon-hide-sponsor",prefs.sponsorAds===false);
   frame.classList.toggle("jon-hide-news",prefs.newsTicker===false);
-  panel.hidden=!allowed;
+  // Keep Sponsored/News controls visible for a signed-in user; hide only after actual sign-out.
+  panel.hidden=!user;
   buttons().forEach(b=>{const k=b.dataset.pref;b.textContent=(k==="sponsorAds"?"Sponsored: ":"News: ")+(prefs[k]===false?"OFF":"ON");b.setAttribute("aria-pressed",String(prefs[k]!==false));});
  }
  async function refresh(){
