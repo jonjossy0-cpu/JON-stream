@@ -20,8 +20,8 @@ android {
         mobile {
             dimension "device"
             applicationId "com.jonstream.app"
-            versionCode 8
-            versionName "7.2"
+            versionCode 9
+            versionName "7.3"
         }
         tv {
             dimension "device"
@@ -89,6 +89,23 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
 
     doLast {
         def html = sourceFile.asFile.getText("UTF-8")
+
+        // Mobile APK only: keep ordinary HTTP HLS streams direct, as in the known-working APK.
+        // Explicitly configured channel gateway/proxy URLs are still honored.
+        def gatewayStartMarker = 'function jonGatewayForChannel(channel,kind){'
+        def playbackStartMarker = '\nfunction playTVStream(url,name,index,sourceIndex=0,resetRetry=true){'
+        def gatewayStart = html.indexOf(gatewayStartMarker)
+        def playbackStart = gatewayStart >= 0 ? html.indexOf(playbackStartMarker, gatewayStart) : -1
+        if (gatewayStart < 0 || playbackStart < 0 || html.indexOf(gatewayStartMarker, gatewayStart + 1) >= 0) {
+            throw new GradleException("Could not safely isolate the Mobile-only HLS gateway fallback patch.")
+        }
+        def directGatewayFunction = '''function jonGatewayForChannel(channel,kind){
+ if(!channel)return "";
+ const candidates=[channel.gatewayUrl,channel.gatewayURL,channel.proxyUrl,channel.proxyURL,channel.hlsGateway,channel.hlsUrl];
+ for(const v of candidates){const u=jonNormalizeStreamUrl(v);if(u)return u}
+ return "";
+}'''
+        html = html.substring(0, gatewayStart) + directGatewayFunction + html.substring(playbackStart)
         if (!sponsorCssFile.asFile.isFile() || !sponsorJsFile.asFile.isFile()) {
             throw new GradleException("Missing Mobile APK sponsor carousel assets.")
         }
