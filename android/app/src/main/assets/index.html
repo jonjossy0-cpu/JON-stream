@@ -3757,8 +3757,7 @@ if(authPanel){
  async function showSubscription(user){
    const requestId=++jonSubscriptionRequestId;
    if(auth.currentUser!==user)return;
-   window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
-   window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+   // Preserve current entitlement while refreshing Profile; opening Account is not signing out.
    $("jonProfileEmail").textContent=user.email||"—";
    $("jonProfileVerified").textContent=user.emailVerified?"Verified":"Not verified";
    $("jonProfilePlan").textContent=user.emailVerified?"Loading subscription…":"Verify your email first";
