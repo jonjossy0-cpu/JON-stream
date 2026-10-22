@@ -71,7 +71,7 @@ exports.updatePremiumEntitlement = onCall({ region: "us-central1", enforceAppChe
   const body = request.data || {};
   const action = String(body.action || "");
   const email = String(body.email || "").trim().toLowerCase();
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) throw new HttpsError("invalid-argument", "Enter a valid email address.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpsError("invalid-argument", "Enter a valid email address.");
   if (!["grant", "extend", "revoke"].includes(action)) throw new HttpsError("invalid-argument", "Action must be grant, extend, or revoke.");
   const allowedDurations = new Set([7, 30, 90, 365, "unlimited"]);
   if (action !== "revoke" && !allowedDurations.has(body.duration)) throw new HttpsError("invalid-argument", "Duration must be 7, 30, 90, 365, or unlimited.");
