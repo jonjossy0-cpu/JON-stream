@@ -1,0 +1,22 @@
+/* Mobile-only Firebase Premium account and Free/Paid badges */
+.jon-access-tier{display:inline-flex;align-items:center;margin-top:5px;padding:4px 7px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.25px;line-height:1.2}
+.jon-access-tier.free{color:#86efac;background:#14532d;border:1px solid #166534}
+.jon-access-tier.premium{color:#fde68a;background:#78350f;border:1px solid #92400e}
+.account-btn{width:auto;min-height:42px;padding:0 12px;background:var(--card);color:var(--text);border:1px solid var(--border);white-space:nowrap}
+.jon-account-panel{margin:10px 0 18px;padding:15px;background:var(--card);border:1px solid var(--border);border-radius:17px}
+.jon-account-panel[hidden],.jon-account-panel [hidden]{display:none!important}
+.jon-account-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+.jon-account-head span{font-size:11px;color:var(--muted)}
+.jon-account-panel label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}
+.jon-account-panel input{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--card2);color:var(--text);font-size:16px;min-width:0}
+.jon-password-entry{display:flex;gap:7px;align-items:center}
+.jon-password-entry input{flex:1}
+.jon-password-toggle{padding:10px;background:var(--card2);color:var(--text);border:1px solid var(--border)}
+.jon-account-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.jon-account-row span{color:var(--muted)}
+.jon-account-row strong{text-align:right;overflow-wrap:anywhere}
+.jon-account-note{font-size:12px;line-height:1.5;color:var(--muted)}
+.jon-account-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.jon-account-actions button{flex:1;min-width:115px}
+.jon-account-secondary{background:var(--card2);color:var(--text);border:1px solid var(--border)}
+.jon-account-error{font-size:12px;color:#fca5a5;min-height:16px;overflow-wrap:anywhere}
