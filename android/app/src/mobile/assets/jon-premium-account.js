@@ -127,7 +127,7 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
   let badge=container.querySelector(".jon-access-tier");
   if(!badge){badge=document.createElement("span");badge.className="jon-access-tier";container.appendChild(badge);}
   badge.className="jon-access-tier "+(paid?"premium":"free")+(tier==="unknown"?" unknown":"");
-  badge.textContent=tier==="free"?"FREE":(tier==="unknown"?"VERIFY ACCESS":"PREMIUM / PAID");
+  badge.textContent=tier==="free"?"FREE":"PREMIUM / PAID";
  }
  function deny(channel,kind){
   if(!isPaid(channel,kind)||premiumAllowed())return false;
