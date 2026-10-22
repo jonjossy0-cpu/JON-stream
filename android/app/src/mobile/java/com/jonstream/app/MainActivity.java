@@ -42,13 +42,13 @@ public class MainActivity extends Activity {
         public void getSubscriptionStatus(String token, String callbackId) {
             if (callbackId == null || !callbackId.matches("[A-Za-z0-9_]{1,80}")) return;
             if (token == null || token.trim().isEmpty()) {
-                postSubscriptionResult(callbackId, 401, "{\\"error\\":\\"Authentication required\\"}");
+                postSubscriptionResult(callbackId, 401, "{\"error\":\"Authentication required\"}");
                 return;
             }
             new Thread(() -> {
                 HttpURLConnection connection = null;
                 int status = 0;
-                String body = "{\\"error\\":\\"Unable to reach subscription service\\"}";
+                String body = "{\"error\":\"Unable to reach subscription service\"}";
                 try {
                     connection = (HttpURLConnection) new URL("https://jon-stream.vercel.app/api/subscription/status").openConnection();
                     connection.setRequestMethod("GET");
