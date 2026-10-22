@@ -2574,7 +2574,7 @@ function jonGatewayForChannel(channel,kind){
 }
 function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  const requestedChannel=filteredTV[index]||tvChannels.find(c=>c.url===url);
- if(requestedChannel&&jonIsPremiumTier(requestedChannel.accessTier)&&!jonPremiumAllowed()){
+ if(requestedChannel&&!/^mbc\s*3$/i.test(String(requestedChannel.name||"").trim())&&jonIsPremiumTier(requestedChannel.accessTier)&&!jonPremiumAllowed()){
   if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
   tvStatus("🔒 Premium access required");
   return;
