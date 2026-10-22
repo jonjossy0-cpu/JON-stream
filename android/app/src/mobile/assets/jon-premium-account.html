@@ -1,0 +1,20 @@
+<section id="jonAccountPanel" class="jon-account-panel" hidden>
+ <div class="jon-account-head"><strong>👤 My Profile / Premium</strong><span id="jonAccountState">Not signed in</span></div>
+ <div id="jonAccountSignedOut">
+  <p class="jon-account-note">Sign up or sign in with your email to check your Free / Paid status.</p>
+  <label for="jonAccountEmail">Email address</label><input id="jonAccountEmail" type="email" autocomplete="email" placeholder="name@example.com">
+  <label for="jonAccountPassword">Password</label><div class="jon-password-entry"><input id="jonAccountPassword" type="password" autocomplete="current-password" placeholder="Enter your password" autocapitalize="off" spellcheck="false"><button id="jonPasswordToggle" class="jon-password-toggle" type="button" aria-label="Show password" aria-pressed="false">Show</button></div>
+  <div class="jon-account-actions"><button id="jonAccountSignup" type="button">Create account</button><button id="jonAccountSignin" type="button" class="jon-account-secondary">Sign in</button></div>
+  <button id="jonForgotPassword" type="button" class="jon-account-secondary" style="margin-top:8px;width:100%">Forgot password?</button>
+ </div>
+ <div id="jonAccountSignedIn" hidden>
+  <div class="jon-account-row"><span>Email</span><strong id="jonProfileEmail">—</strong></div>
+  <div class="jon-account-row"><span>Email verification</span><strong id="jonProfileVerified">—</strong></div>
+  <div class="jon-account-row"><span>Subscription status</span><strong id="jonProfilePlan">Checking…</strong></div>
+  <div class="jon-account-row"><span>Time remaining</span><strong id="jonProfileRemaining">—</strong></div>
+  <div class="jon-account-row"><span>Payment</span><strong id="jonProfilePayment">—</strong></div>
+  <p id="jonAccountMessage" class="jon-account-note" aria-live="polite"></p>
+  <div class="jon-account-actions"><button id="jonSubscriptionRefresh" type="button">Update status</button><button id="jonResendVerification" type="button" class="jon-account-secondary">Resend verification</button><button id="jonAccountSignout" type="button" class="jon-account-secondary">Sign out</button></div>
+ </div>
+ <p id="jonAccountError" class="jon-account-error" role="status" aria-live="polite"></p>
+</section>

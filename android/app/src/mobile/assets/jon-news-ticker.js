@@ -13,10 +13,11 @@
  viewport.appendChild(track);bar.append(logo,label,viewport);frame.appendChild(bar);
  let settings={enabled:false,text:"",logoUrl:"",speed:"5m"};
  function validUrl(value){try{const u=new URL(value);return u.protocol==="https:"||u.protocol==="http:"}catch(_){return false}}
+ function premiumAllowed(){const a=window.jonPremiumAccess;return !!(a&&a.ready===true&&a.allowed===true)}
  function render(){
   const active=document.fullscreenElement===frame||document.webkitFullscreenElement===frame;
   const text=String(settings.text||"").trim();
-  const show=!!(active&&settings.enabled&&text);
+  const show=!!(active&&settings.enabled&&text&&premiumAllowed());
   bar.classList.toggle("jon-ticker-visible",show);
   if(!show)return;
   track.textContent=text+"   •   "+text+"   •   ";
@@ -30,6 +31,7 @@
  }
  function update(data){const next=data&&data.settings&&data.settings.newsTicker||{};settings={enabled:next.enabled===true,text:typeof next.text==="string"?next.text:"",logoUrl:typeof next.logoUrl==="string"?next.logoUrl:"",speed:["1m","2m","3m","5m","8m","10m"].includes(next.speed)?next.speed:"5m"};render()}
  window.addEventListener("jon-firebase-data",event=>update(event.detail));
+ window.addEventListener("jon-premium-access-changed",render);
  document.addEventListener("fullscreenchange",render);
  document.addEventListener("webkitfullscreenchange",render);
  window.addEventListener("jon-tv-channel-changed",render);
