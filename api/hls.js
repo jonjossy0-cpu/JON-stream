@@ -59,6 +59,22 @@ function rewritePlaylist(body, baseUrl, gatewayOrigin) {
   }).join("\n");
 }
 
+// Only cache successful, complete media segments. Never cache live playlists,
+// byte-range responses, errors, keys, or unknown binary resources.
+function isCacheableSegment(target, contentType) {
+  const path = target.pathname.toLowerCase();
+  const knownSegmentExtension = /\.(ts|m4s|mp4|m4a|aac|ac3|ec3|mp3|vtt)$/.test(path);
+  const knownMediaType =
+    contentType.includes("video/mp2t") ||
+    contentType.includes("video/mp4") ||
+    contentType.includes("audio/mp4") ||
+    contentType.includes("audio/aac") ||
+    contentType.includes("audio/mpeg") ||
+    contentType.includes("audio/ac3") ||
+    contentType.includes("audio/eac3");
+  return knownSegmentExtension || knownMediaType;
+}
+
 export default async function handler(req, res) {
   const cors = corsHeaders();
 
@@ -148,6 +164,8 @@ export default async function handler(req, res) {
     res.setHeader("Content-Type", looksLikePlaylist ? "application/vnd.apple.mpegurl" : (contentType || "application/octet-stream"));
 
     if (looksLikePlaylist) {
+      // Live playlists are time-sensitive: keep them out of shared caches.
+      res.setHeader("Cache-Control", "no-store");
       const body = await upstream.text();
       res.statusCode = upstream.status;
       if (req.method === "HEAD") return res.end();
@@ -156,6 +174,21 @@ export default async function handler(req, res) {
         ? "https://" + requestHost
         : "https://jon-stream.vercel.app";
       return res.end(rewritePlaylist(body, finalTarget.toString(), gatewayOrigin));
+    }
+
+    // Shared edge cache can collapse repeat requests for the same immutable
+    // segment across viewers. Do not cache partial/range responses or errors.
+    const cacheable =
+      req.method === "GET" &&
+      !req.headers.range &&
+      upstream.status === 200 &&
+      !upstream.headers.get("set-cookie") &&
+      isCacheableSegment(finalTarget, contentType);
+
+    if (cacheable) {
+      res.setHeader("Cache-Control", "public, s-maxage=30, stale-while-revalidate=60");
+    } else {
+      res.setHeader("Cache-Control", "no-store");
     }
 
     const buffer = Buffer.from(await upstream.arrayBuffer());
