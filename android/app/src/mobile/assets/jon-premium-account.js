@@ -69,32 +69,61 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
 <script id="jonMobilePremiumLabelsAndGate">
 (function(){
  "use strict";
- function tierValue(channel){
-  if(!channel||typeof channel!=="object")return "";
-  const values=[channel.accessTier,channel.tier,channel.access,channel.plan,channel.subscriptionType];
-  for(const value of values){
-   if(typeof value==="string"&&value.trim())return value.trim().toLowerCase();
+ function normalized(value){return String(value||"").trim().toLowerCase().replace(/\\s+/g," ");}
+ function normalizedUrl(value){return String(value||"").trim().replace(/#.*$/,"").replace(/\\?.*$/,"").replace(/\\/$/,"").toLowerCase();}
+ function tierFromRecord(record){
+  if(!record||typeof record!=="object")return "";
+  for(const key of ["accessTier","tier","access","plan","subscriptionType"]){
+   const value=record[key];
+   if(typeof value==="string"&&value.trim()){
+    const tier=value.trim().toLowerCase();
+    if(["free","open","public"].includes(tier))return "free";
+    if(["premium","paid","subscription","subscriber","pro"].includes(tier))return "premium";
+   }
   }
-  if(channel.isPremium===true||channel.premium===true||channel.paid===true)return "premium";
-  return "free";
+  if(record.isPremium===true||record.premium===true||record.paid===true)return "premium";
+  if(record.isFree===true||record.free===true)return "free";
+  return "";
  }
- function isPaid(channel){
-  return ["premium","paid","subscription","subscriber"].includes(tierValue(channel));
+ function firebaseChannelRecord(channel,kind){
+  const data=window.__JON_FIREBASE_DATA;
+  if(!data||typeof data!=="object"||!channel||typeof channel!=="object")return null;
+  const names=kind==="radio"?["radio","stations","radioChannels"]:["tv","tvChannels","television"];
+  const records=[];
+  names.forEach(key=>{if(Array.isArray(data[key]))records.push(...data[key]);});
+  if(!records.length)return null;
+  const id=normalized(channel.id||channel.channelId||channel.key);
+  const url=normalizedUrl(channel.url||channel.streamUrl||channel.stream);
+  const name=normalized(channel.name||channel.title);
+  // Prefer stable IDs, then exact source URL, then exact channel name.
+  if(id){const found=records.find(item=>item&&normalized(item.id||item.channelId||item.key)===id&&tierFromRecord(item));if(found)return found;}
+  if(url){const found=records.find(item=>item&&normalizedUrl(item.url||item.streamUrl||item.stream)===url&&tierFromRecord(item));if(found)return found;}
+  if(name){const found=records.find(item=>item&&normalized(item.name||item.title)===name&&tierFromRecord(item));if(found)return found;}
+  return null;
  }
+ function tierValue(channel,kind){
+  const remote=firebaseChannelRecord(channel,kind);
+  const remoteTier=tierFromRecord(remote);
+  if(remoteTier)return remoteTier;
+  const localTier=tierFromRecord(channel);
+  return localTier||"unknown";
+ }
+ function isPaid(channel,kind){return tierValue(channel,kind)!=="free";}
  function premiumAllowed(){
   const access=window.jonPremiumAccess;
   return !!(access&&access.ready===true&&access.allowed===true);
  }
- function addBadge(container,channel){
+ function addBadge(container,channel,kind){
   if(!container)return;
-  const paid=isPaid(channel);
+  const tier=tierValue(channel,kind);
+  const paid=tier!=="free";
   let badge=container.querySelector(".jon-access-tier");
   if(!badge){badge=document.createElement("span");badge.className="jon-access-tier";container.appendChild(badge);}
-  badge.className="jon-access-tier "+(paid?"premium":"free");
-  badge.textContent=paid?"PREMIUM / PAID":"FREE";
+  badge.className="jon-access-tier "+(paid?"premium":"free")+(tier==="unknown"?" unknown":"");
+  badge.textContent=tier==="free"?"FREE":(tier==="unknown"?"VERIFY ACCESS":"PREMIUM / PAID");
  }
- function deny(channel){
-  if(!isPaid(channel)||premiumAllowed())return false;
+ function deny(channel,kind){
+  if(!isPaid(channel,kind)||premiumAllowed())return false;
   if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
   return true;
  }
@@ -103,14 +132,14 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
    document.querySelectorAll("#stations .station").forEach((card,i)=>{
     const sourceStations=(typeof stations!=="undefined"&&Array.isArray(stations))?stations:[];
     const station=list&&list[i] || sourceStations[i];
-    addBadge(card.querySelector(".station-info"),station);
+    addBadge(card.querySelector(".station-info"),station,"radio");
    });
   });
  }
  function decorateTV(list){
   requestAnimationFrame(()=>{
    document.querySelectorAll("#tvChannels .tv-card").forEach((card,i)=>{
-    addBadge(card.querySelector(".tv-info"),list&&list[i]);
+    addBadge(card.querySelector(".tv-info"),list&&list[i],"tv");
    });
   });
  }
@@ -124,7 +153,7 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
  if(typeof originalSelectStation==="function")window.selectStation=function(index){
   const sourceStations=(typeof stations!=="undefined"&&Array.isArray(stations))?stations:[];
   const station=sourceStations[index];
-  if(deny(station))return;
+  if(deny(station,"radio"))return;
   return originalSelectStation.apply(this,arguments);
  };
  const originalPlayTV=window.playTVStream;
@@ -132,7 +161,7 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
   const sourceTV=(typeof tvChannels!=="undefined"&&Array.isArray(tvChannels))?tvChannels:[];
   const sourceFiltered=(typeof filteredTV!=="undefined"&&Array.isArray(filteredTV))?filteredTV:[];
   const channel=sourceTV.find(ch=>ch&&ch.url===url) || sourceFiltered[index] || null;
-  if(deny(channel))return;
+  if(deny(channel,"tv"))return;
   return originalPlayTV.apply(this,arguments);
  };
  // Mobile-only promotion gate: keep this logic out of the shared website/TV HTML.
@@ -209,12 +238,14 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
   const button=event.target&&event.target.closest?event.target.closest(".station-play,.tv-play"):null;
   if(!button)return;
   const card=button.closest(".station,.tv-card");
-  const badge=card&&card.querySelector(".jon-access-tier.premium");
+  const badge=card&&card.querySelector(".jon-access-tier:not(.free)");
   if(badge&&!premiumAllowed()){event.preventDefault();event.stopImmediatePropagation();if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();}
  },true);
- window.addEventListener("jon-premium-access-changed",()=>{
+ function refreshChannelAccessLabels(){
   decorateRadio((typeof stations!=="undefined"&&Array.isArray(stations))?stations:[]);
   decorateTV((typeof filteredTV!=="undefined"&&Array.isArray(filteredTV))?filteredTV:((typeof tvChannels!=="undefined"&&Array.isArray(tvChannels))?tvChannels:[]));
- });
+ }
+ window.addEventListener("jon-premium-access-changed",refreshChannelAccessLabels);
+ window.addEventListener("jon-firebase-data",refreshChannelAccessLabels);
 })();
 </script>
