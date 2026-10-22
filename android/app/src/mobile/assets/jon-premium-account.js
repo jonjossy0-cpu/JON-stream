@@ -36,12 +36,12 @@ async function refreshSubscription(user){
   $("jonProfilePlan").textContent=data.planLabel||data.status||"Free plan";
   $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
   $("jonProfilePayment").textContent=data.paymentLabel||"—";$("jonAccountMessage").textContent=data.message||"Subscription status updated.";
-  $("jonAccountToggle").textContent=data.status==="premium"?"👤 PAID":data.status==="trial"?"👤 FREE TRIAL":"👤 FREE";message("");
+  message("");
  }catch(e){window.jonPremiumAccess={ready:false,allowed:false,status:"unavailable"};window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));$("jonProfilePlan").textContent="Subscription status unavailable";$("jonProfileRemaining").textContent="—";$("jonProfilePayment").textContent="—";$("jonAccountMessage").textContent="Subscription status could not be loaded from Vercel. Check your connection and tap Update status.";message(errText(e),true);}
 }
 onAuthStateChanged(auth,async user=>{if(!user){window.jonPremiumAccess={ready:true,allowed:false,status:"signed_out"};window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));}
  $("jonAccountState").textContent=user?(user.emailVerified?"Signed in":"Verify email"):"Not signed in";$("jonAccountSignedOut").hidden=!!user;$("jonAccountSignedIn").hidden=!user;
- $("jonAccountToggle").textContent=user?(user.emailVerified?"👤 Free / Paid":"👤 Verify email"):"👤 Free / Paid";if(user)await refreshSubscription(user);
+ if(user)await refreshSubscription(user);
 });
 $("jonPasswordToggle").addEventListener("click",()=>{const i=$("jonAccountPassword"),b=$("jonPasswordToggle"),show=i.type==="password";i.type=show?"text":"password";b.textContent=show?"Hide":"Show";b.setAttribute("aria-pressed",String(show));i.focus();});
 $("jonAccountSignup").addEventListener("click",async()=>{const email=$("jonAccountEmail").value.trim(),password=$("jonAccountPassword").value;if(!email||password.length<6){message("Enter a valid email and password with at least 6 characters.",true);return;}busy(true);message("Creating account…");try{const c=await createUserWithEmailAndPassword(auth,email,password);await sendEmailVerification(c.user);message("Account created. Open the verification email and verify your address.");}catch(e){message(errText(e),true);}finally{busy(false);}});
