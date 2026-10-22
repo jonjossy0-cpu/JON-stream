@@ -151,7 +151,8 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
   const box=document.getElementById("jonLiveUpdates");
   if(!box)return;
   const remote=window.__JON_FIREBASE_DATA||{};
-  const hidden=!(premiumAllowed()&&promotionEnabled(remote));
+  let userPromotion=true;try{const saved=JSON.parse(localStorage.getItem("jonMobilePremiumFullscreenPreferences")||"{}");userPromotion=saved.promotion!==false;}catch(_){}
+  const hidden=!(premiumAllowed()&&promotionEnabled(remote)&&userPromotion);
   box.classList.toggle("jon-mobile-promotion-hidden",hidden);
   if(hidden){box.style.display="none";document.body.classList.remove("jon-ad-visible");}
   else if(box.children.length&&!(window.jonAdClosedUntil&&Date.now()<window.jonAdClosedUntil)){
@@ -197,7 +198,7 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
    if(!button||!premiumAllowed())return;
    const key=button.dataset.pref;
    fullscreenPrefs={...fullscreenPrefs,[key]:fullscreenPrefs[key]===false};
-   saveFullscreenPrefs();applyFullscreenPrefs();
+   saveFullscreenPrefs();applyFullscreenPrefs();applyPromotionGate();
   });
  }
  window.addEventListener("jon-premium-access-changed",applyFullscreenPrefs);
