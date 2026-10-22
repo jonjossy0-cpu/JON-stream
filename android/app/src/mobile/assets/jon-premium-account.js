@@ -69,24 +69,80 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
 <script id="jonMobilePremiumLabelsAndGate">
 (function(){
  "use strict";
- function addBadge(container,tier){
+ function tierValue(channel){
+  if(!channel||typeof channel!=="object")return "";
+  const values=[channel.accessTier,channel.tier,channel.access,channel.plan,channel.subscriptionType];
+  for(const value of values){
+   if(typeof value==="string"&&value.trim())return value.trim().toLowerCase();
+  }
+  if(channel.isPremium===true||channel.premium===true||channel.paid===true)return "premium";
+  return "free";
+ }
+ function isPaid(channel){
+  return ["premium","paid","subscription","subscriber"].includes(tierValue(channel));
+ }
+ function premiumAllowed(){
+  const access=window.jonPremiumAccess;
+  return !!(access&&access.ready===true&&access.allowed===true);
+ }
+ function addBadge(container,channel){
   if(!container)return;
-  const premium=String(tier||"free").toLowerCase()==="premium";
+  const paid=isPaid(channel);
   let badge=container.querySelector(".jon-access-tier");
   if(!badge){badge=document.createElement("span");badge.className="jon-access-tier";container.appendChild(badge);}
-  badge.className="jon-access-tier "+(premium?"premium":"free");
-  badge.textContent=premium?"PREMIUM / PAID":"FREE";
+  badge.className="jon-access-tier "+(paid?"premium":"free");
+  badge.textContent=paid?"PREMIUM / PAID":"FREE";
+ }
+ function deny(channel){
+  if(!isPaid(channel)||premiumAllowed())return false;
+  if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
+  return true;
+ }
+ function decorateRadio(list){
+  requestAnimationFrame(()=>{
+   document.querySelectorAll("#stations .station").forEach((card,i)=>{
+    const station=list&&list[i] || (window.stations&&window.stations[i]);
+    addBadge(card.querySelector(".station-info"),station);
+   });
+  });
+ }
+ function decorateTV(list){
+  requestAnimationFrame(()=>{
+   document.querySelectorAll("#tvChannels .tv-card").forEach((card,i)=>{
+    addBadge(card.querySelector(".tv-info"),list&&list[i]);
+   });
+  });
  }
  const oldRadio=window.renderStations;
- if(typeof oldRadio==="function")window.renderStations=function(list){const result=oldRadio.apply(this,arguments);requestAnimationFrame(()=>{document.querySelectorAll("#stations .station").forEach((card,i)=>addBadge(card.querySelector(".station-info"),list&&list[i]&&list[i].accessTier));});return result;};
+ if(typeof oldRadio==="function")window.renderStations=function(list){const result=oldRadio.apply(this,arguments);decorateRadio(list);return result;};
  const oldTV=window.renderTV;
- if(typeof oldTV==="function")window.renderTV=function(list){const result=oldTV.apply(this,arguments);requestAnimationFrame(()=>{document.querySelectorAll("#tvChannels .tv-card").forEach((card,i)=>addBadge(card.querySelector(".tv-info"),list&&list[i]&&list[i].accessTier));});return result;};
+ if(typeof oldTV==="function")window.renderTV=function(list){const result=oldTV.apply(this,arguments);decorateTV(list);return result;};
+ // Gate the actual playback entry points too, so inline buttons, favorites,
+ // remote-number selection and other callers cannot bypass the visible lock.
+ const originalSelectStation=window.selectStation;
+ if(typeof originalSelectStation==="function")window.selectStation=function(index){
+  const station=window.stations&&window.stations[index];
+  if(deny(station))return;
+  return originalSelectStation.apply(this,arguments);
+ };
+ const originalPlayTV=window.playTVStream;
+ if(typeof originalPlayTV==="function")window.playTVStream=function(url,name,index){
+  const channel=(window.tvChannels&&window.tvChannels.find(ch=>ch&&ch.url===url)) ||
+   (window.filteredTV&&window.filteredTV[index]) || null;
+  if(deny(channel))return;
+  return originalPlayTV.apply(this,arguments);
+ };
+ // Capture direct card clicks as a second guard for playback handlers.
  document.addEventListener("click",function(event){
   const button=event.target&&event.target.closest?event.target.closest(".station-play,.tv-play"):null;
   if(!button)return;
-  const card=button.closest(".station,.tv-card"),badge=card&&card.querySelector(".jon-access-tier.premium");
-  const access=window.jonPremiumAccess;
-  if(badge&&!(access&&access.ready&&access.allowed)){event.preventDefault();event.stopImmediatePropagation();if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();}
+  const card=button.closest(".station,.tv-card");
+  const badge=card&&card.querySelector(".jon-access-tier.premium");
+  if(badge&&!premiumAllowed()){event.preventDefault();event.stopImmediatePropagation();if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();}
  },true);
+ window.addEventListener("jon-premium-access-changed",()=>{
+  decorateRadio(window.stations||[]);
+  decorateTV(window.filteredTV||window.tvChannels||[]);
+ });
 })();
 </script>
