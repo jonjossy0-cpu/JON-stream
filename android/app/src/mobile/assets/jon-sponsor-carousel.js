@@ -17,6 +17,7 @@
  const PHOTO_MS=10000,CYCLE_MS=600000;
  let settings={enabled:false,photos:[]},index=0,photoTimer=null,cycleTimer=null,active=false,token=0;
  const isFullscreen=()=>document.fullscreenElement===frame||document.webkitFullscreenElement===frame;
+ const premiumAllowed=()=>{const a=window.jonPremiumAccess;return !!(a&&a.ready===true&&a.allowed===true)};
  function cleanPhotos(value){
   if(!Array.isArray(value))return [];
   const result=[];
@@ -29,7 +30,7 @@
  function hide(){box.classList.remove("jon-sponsor-visible");box.style.display="none";image.onload=null;image.onerror=null;image.removeAttribute("src")}
  function clearTimers(){if(photoTimer!==null){clearTimeout(photoTimer);photoTimer=null}if(cycleTimer!==null){clearTimeout(cycleTimer);cycleTimer=null}}
  function showNext(run,attempts=0){
-  if(run!==token||!isFullscreen()||!settings.enabled||!settings.photos.length){hide();return}
+  if(run!==token||!isFullscreen()||!premiumAllowed()||!settings.enabled||!settings.photos.length){hide();return}
   // Once every configured logo has had its 10-second slot, hide the card
   // until the 10-minute cycle timer restarts the carousel.
   // index counts logos already attempted in this 10-minute cycle.
@@ -55,7 +56,7 @@
  }
  function startCycle(){
   clearTimers();active=false;hide();
-  if(!isFullscreen()||!settings.enabled||!settings.photos.length)return;
+  if(!isFullscreen()||!premiumAllowed()||!settings.enabled||!settings.photos.length)return;
   active=true;token++;const run=token;index=0;showNext(run);
   cycleTimer=setTimeout(()=>{cycleTimer=null;if(run===token&&isFullscreen())startCycle()},CYCLE_MS);
  }
@@ -70,6 +71,7 @@
   if(isFullscreen()&&(changed||!active))startCycle();else if(!isFullscreen())stop();
  }
  window.addEventListener("jon-firebase-data",event=>update(event.detail));
+ window.addEventListener("jon-premium-access-changed",()=>premiumAllowed()?(isFullscreen()?startCycle():null):stop());
  document.addEventListener("fullscreenchange",()=>isFullscreen()?startCycle():stop());
  document.addEventListener("webkitfullscreenchange",()=>isFullscreen()?startCycle():stop());
  if(window.__JON_FIREBASE_DATA)update(window.__JON_FIREBASE_DATA);

@@ -16,6 +16,12 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.JavascriptInterface;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import org.json.JSONObject;
 import android.widget.FrameLayout;
 
 public class MainActivity extends Activity {
@@ -28,6 +34,57 @@ public class MainActivity extends Activity {
     private final StringBuilder numberBuffer = new StringBuilder();
     private final Handler handler = new Handler();
     private Runnable commitTask;
+
+    // Mobile-only bridge for the existing Vercel subscription status API.
+    // It avoids browser CORS restrictions from file:///android_asset/index.html.
+    private final class SubscriptionApiBridge {
+        @JavascriptInterface
+        public void getSubscriptionStatus(String token, String callbackId) {
+            if (callbackId == null || !callbackId.matches("[A-Za-z0-9_]{1,80}")) return;
+            if (token == null || token.trim().isEmpty()) {
+                postSubscriptionResult(callbackId, 401, "{\"error\":\"Authentication required\"}");
+                return;
+            }
+            new Thread(() -> {
+                HttpURLConnection connection = null;
+                int status = 0;
+                String body = "{\"error\":\"Unable to reach subscription service\"}";
+                try {
+                    connection = (HttpURLConnection) new URL("https://jon-stream.vercel.app/api/subscription/status").openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setConnectTimeout(15000);
+                    connection.setReadTimeout(15000);
+                    connection.setRequestProperty("Authorization", "Bearer " + token);
+                    connection.setRequestProperty("Accept", "application/json");
+                    status = connection.getResponseCode();
+                    InputStream stream = status >= 400 ? connection.getErrorStream() : connection.getInputStream();
+                    if (stream != null) {
+                        try (InputStream input = stream; ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                            byte[] buffer = new byte[4096];
+                            int count;
+                            while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
+                            body = output.toString("UTF-8");
+                        }
+                    }
+                } catch (Exception ignored) {
+                    if (status == 0) status = 502;
+                } finally {
+                    if (connection != null) connection.disconnect();
+                }
+                final int resultStatus = status;
+                final String resultBody = body;
+                runOnUiThread(() -> postSubscriptionResult(callbackId, resultStatus, resultBody));
+            }).start();
+        }
+    }
+
+    private void postSubscriptionResult(String callbackId, int status, String body) {
+        if (webView == null) return;
+        String safeBody = JSONObject.quote(body == null ? "" : body);
+        String script = "(function(){var callbacks=window.__jonSubscriptionStatusCallbacks;" +
+                "var cb=callbacks&&callbacks['" + callbackId + "'];if(cb)cb(" + status + "," + safeBody + ");})()";
+        webView.evaluateJavascript(script, null);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +130,7 @@ public class MainActivity extends Activity {
         webView.getSettings().setAllowFileAccess(false);
         webView.getSettings().setAllowContentAccess(false);
         webView.getSettings().setSupportZoom(false);
+        webView.addJavascriptInterface(new SubscriptionApiBridge(), "JonNativeApi");
 
         chromeClient = new WebChromeClient() {
             @Override public void onShowCustomView(View view, CustomViewCallback callback) {
