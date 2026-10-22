@@ -69,8 +69,8 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
 <script id="jonMobilePremiumLabelsAndGate">
 (function(){
  "use strict";
- function normalized(value){return String(value||"").trim().toLowerCase().replace(/\\s+/g," ");}
- function normalizedUrl(value){return String(value||"").trim().replace(/#.*$/,"").replace(/\\?.*$/,"").replace(/\\/$/,"").toLowerCase();}
+ function normalized(value){return String(value||"").trim().toLowerCase().replace(/\s+/g," ");}
+ function normalizedUrl(value){return String(value||"").trim().replace(/#.*$/,"").replace(/\?.*$/,"").replace(/\/$/,"").toLowerCase();}
  function tierFromRecord(record){
   if(!record||typeof record!=="object")return "";
   for(const key of ["accessTier","tier","access","plan","subscriptionType"]){
