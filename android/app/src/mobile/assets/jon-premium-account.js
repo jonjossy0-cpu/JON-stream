@@ -3,6 +3,33 @@ import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.j
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, signOut, reload } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 const authPanel=document.getElementById("jonAccountPanel");
 const auth=getAuth(getApp());
+let jonPremiumWatchTimer=null;
+let jonPremiumWatchBusy=false;
+async function checkPremiumExpiry(user){
+ if(jonPremiumWatchBusy||auth.currentUser!==user)return;
+ jonPremiumWatchBusy=true;
+ try{
+  await reload(user);
+  if(auth.currentUser!==user)return;
+  if(!user.emailVerified){
+   window.jonPremiumAccess={ready:true,allowed:false,status:"email_verification_required"};
+   window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+   return;
+  }
+  const response=await getSubscriptionStatus(user),data=response.data||{};
+  if(auth.currentUser!==user)return;
+  window.jonPremiumAccess={ready:true,allowed:data.hasPremium===true,status:String(data.status||"free")};
+  window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+  $("jonProfilePlan").textContent=data.planLabel||data.status||"Free plan";
+  $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
+  $("jonProfilePayment").textContent=data.paymentLabel||"—";
+  $("jonAccountMessage").textContent=data.message||"Subscription status updated.";
+ }catch(_){
+  if(auth.currentUser!==user)return;
+  window.jonPremiumAccess={ready:true,allowed:false,status:"unavailable"};
+  window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+ }finally{jonPremiumWatchBusy=false;}
+}
 async function getSubscriptionStatus(user){
  const token=await user.getIdToken(true);
  if(window.JonNativeApi&&typeof window.JonNativeApi.getSubscriptionStatus==="function"){
@@ -55,9 +82,11 @@ async function refreshSubscription(user){
   message("");
  }catch(e){window.jonPremiumAccess={ready:false,allowed:false,status:"unavailable"};window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));$("jonProfilePlan").textContent="Subscription status unavailable";$("jonProfileRemaining").textContent="—";$("jonProfilePayment").textContent="—";$("jonAccountMessage").textContent="Subscription status could not be loaded from Vercel. Check your connection and tap Update status.";message(errText(e),true);}
 }
-onAuthStateChanged(auth,async user=>{if(!user){window.jonPremiumAccess={ready:true,allowed:false,status:"signed_out"};window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));}
+onAuthStateChanged(auth,async user=>{
+ if(jonPremiumWatchTimer){clearInterval(jonPremiumWatchTimer);jonPremiumWatchTimer=null;}
+ if(!user){window.jonPremiumAccess={ready:true,allowed:false,status:"signed_out"};window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));}
  $("jonAccountState").textContent=user?(user.emailVerified?"Signed in":"Verify email"):"Not signed in";$("jonAccountSignedOut").hidden=!!user;$("jonAccountSignedIn").hidden=!user;
- if(user)await refreshSubscription(user);
+ if(user){await refreshSubscription(user);if(auth.currentUser===user)jonPremiumWatchTimer=setInterval(()=>checkPremiumExpiry(user),15000);}
 });
 $("jonPasswordToggle").addEventListener("click",()=>{const i=$("jonAccountPassword"),b=$("jonPasswordToggle"),show=i.type==="password";i.type=show?"text":"password";b.textContent=show?"Hide":"Show";b.setAttribute("aria-pressed",String(show));i.focus();});
 $("jonAccountSignup").addEventListener("click",async()=>{const email=$("jonAccountEmail").value.trim(),password=$("jonAccountPassword").value;if(!email||password.length<6){message("Enter a valid email and password with at least 6 characters.",true);return;}busy(true);message("Creating account…");try{const c=await createUserWithEmailAndPassword(auth,email,password);await sendEmailVerification(c.user);message("Account created. Open the verification email and verify your address.");}catch(e){message(errText(e),true);}finally{busy(false);}});
@@ -129,6 +158,27 @@ $("jonAccountSignout").addEventListener("click",async()=>{busy(true);try{await s
   badge.className="jon-access-tier "+(paid?"premium":"free")+(tier==="unknown"?" unknown":"");
   badge.textContent=tier==="free"?"FREE":"PREMIUM / PAID";
  }
+ function stopPaidPlaybackIfAccessLost(event){
+  const access=event&&event.detail||window.jonPremiumAccess||{};
+  if(access.status==="checking")return;
+  if(access.allowed===true)return;
+  try{
+   if(typeof currentStation!=="undefined"&&currentStation&&tierValue(currentStation,"radio")!=="free"){
+    clearTimeout(reconnectTimer);clearTimeout(radioAdvancedRetryTimer);clearTimeout(radioAdvancedStallTimer);clearInterval(radioAdvancedDiagnosticsTimer);
+    if(typeof stopRadio==="function")stopRadio();
+    currentStation=null;
+   }
+  }catch(_){}
+  try{
+   if(typeof currentTV!=="undefined"&&currentTV&&tierValue(currentTV,"tv")!=="free"){
+    clearTimeout(tvStartupTimer);clearTimeout(tvReconnectTimer);
+    if(typeof cleanupPreviousTV==="function")cleanupPreviousTV();
+    currentTV=null;
+    if(typeof tvStatus==="function")tvStatus("Premium access ended. Sign in or renew to continue.");
+   }
+  }catch(_){}
+ }
+ window.addEventListener("jon-premium-access-changed",stopPaidPlaybackIfAccessLost);
  function deny(channel,kind){
   if(!isPaid(channel,kind)||premiumAllowed())return false;
   if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
