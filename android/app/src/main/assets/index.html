@@ -3821,6 +3821,47 @@ if(authPanel){
    if(user)await showSubscription(user);
  });
  window.addEventListener("jon-account-panel-open",()=>{if(auth.currentUser)showSubscription(auth.currentUser);});
+
+ // Recheck entitlement while the APK stays open. The status API is authoritative;
+ // this makes an expiry stop Premium playback without requiring the user to reopen Profile.
+ let jonSilentSubscriptionRefreshRunning=false;
+ async function refreshPremiumEntitlementQuietly(){
+   const user=auth.currentUser;
+   if(!user||!user.emailVerified||jonSilentSubscriptionRefreshRunning)return;
+   if(window.jonPremiumAccess&&window.jonPremiumAccess.status==="checking")return;
+   jonSilentSubscriptionRefreshRunning=true;
+   try{
+     const token=await user.getIdToken();
+     const response=await fetch("https://jon-stream.vercel.app/api/subscription/status",{
+       method:"GET",
+       headers:{Authorization:"Bearer "+token,Accept:"application/json"},
+       cache:"no-store"
+     });
+     const data=await response.json().catch(()=>({}));
+     if(auth.currentUser!==user)return;
+     if(!response.ok)throw new Error(data.error||("Subscription API returned HTTP "+response.status));
+     window.jonPremiumAccess={ready:true,allowed:data.hasPremium===true,status:String(data.status||"free")};
+     window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+     if(!document.getElementById("jonAccountPanel")?.hidden){
+       $("jonProfilePlan").textContent=data.planLabel||data.status||"No active subscription";
+       $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
+       $("jonProfilePayment").textContent=data.paymentLabel||"—";
+       $("jonAccountMessage").textContent=data.message||(data.hasPremium?"Premium access is active.":"Free channels remain available. Premium requires an active trial or entitlement.");
+     }
+   }catch(error){
+     if(auth.currentUser!==user)return;
+     window.jonPremiumAccess={ready:true,allowed:false,status:"api_error"};
+     window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+     console.warn("JON silent subscription refresh failed; Premium access closed safely",error);
+   }finally{
+     jonSilentSubscriptionRefreshRunning=false;
+   }
+ }
+ // Poll every 30 seconds and recheck as soon as the app returns to the foreground.
+ setInterval(refreshPremiumEntitlementQuietly,30000);
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshPremiumEntitlementQuietly();});
+ window.addEventListener("focus",refreshPremiumEntitlementQuietly);
+
  $("jonPasswordToggle").addEventListener("click",()=>{const input=$("jonAccountPassword"),button=$("jonPasswordToggle");const reveal=input.type==="password";input.type=reveal?"text":"password";button.textContent=reveal?"Hide":"Show";button.setAttribute("aria-label",reveal?"Hide password":"Show password");button.setAttribute("aria-pressed",String(reveal));input.focus();});
  $("jonForgotPassword").addEventListener("click",async()=>{const email=$("jonAccountEmail").value.trim();if(!email){message("Enter your account email first, then tap Forgot password.",true);$("jonAccountEmail").focus();return;}if(!auth){message("Firebase Authentication is unavailable. Please try again later.",true);return;}setBusy(true);message("Sending password reset email…");try{await sendPasswordResetEmail(auth,email);message("If an account exists for "+email+", a password reset link has been sent. Check your Inbox and Spam/Junk.");}catch(e){message(authErrorText(e,"Password reset"),true);}finally{setBusy(false);}});
  $("jonAccountSignup").addEventListener("click",async()=>{
