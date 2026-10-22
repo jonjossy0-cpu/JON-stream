@@ -1,10 +1,20 @@
 <script type="module" id="jonFirebasePremiumAccount">
 import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, signOut, reload } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-functions.js";
 const authPanel=document.getElementById("jonAccountPanel");
-const auth=getAuth(getApp()), functions=getFunctions(getApp(),"us-central1");
-const getSubscriptionStatus=httpsCallable(functions,"subscriptionStatus");
+const auth=getAuth(getApp());
+async function getSubscriptionStatus(user){
+ const token=await user.getIdToken(true);
+ const response=await fetch("https://jon-stream.vercel.app/api/subscription/status",{
+  method:"GET",
+  headers:{Authorization:"Bearer "+token,Accept:"application/json"},
+  cache:"no-store"
+ });
+ let data={};
+ try{data=await response.json();}catch(_){}
+ if(!response.ok)throw new Error(data.error||data.message||("Subscription API returned HTTP "+response.status));
+ return {data};
+}
 const $=id=>document.getElementById(id);
 window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
 window.toggleJonAccountPanel=function(){if(!authPanel)return;authPanel.hidden=!authPanel.hidden;if(!authPanel.hidden){authPanel.scrollIntoView({behavior:"smooth",block:"nearest"});if(auth.currentUser)refreshSubscription(auth.currentUser);}};
@@ -16,18 +26,18 @@ async function refreshSubscription(user){
  window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
  $("jonProfileEmail").textContent=user.email||"—";$("jonProfileVerified").textContent=user.emailVerified?"Verified":"Not verified";
  $("jonProfilePlan").textContent=user.emailVerified?"Checking subscription…":"Verify email first";$("jonProfileRemaining").textContent="—";$("jonProfilePayment").textContent="—";
- $("jonAccountMessage").textContent=user.emailVerified?"Checking subscription status through Firebase…":"Verify your email before starting the free trial or using Premium.";
+ $("jonAccountMessage").textContent=user.emailVerified?"Checking subscription status…":"Verify your email before starting the free trial or using Premium.";
  try{
   await reload(user);
   if(!user.emailVerified){window.jonPremiumAccess={ready:true,allowed:false,status:"email_verification_required"};window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));$("jonProfileVerified").textContent="Not verified";$("jonProfilePlan").textContent="Email verification required";$("jonProfileRemaining").textContent="0 days";$("jonProfilePayment").textContent="Not active";$("jonAccountMessage").textContent="Verify your email. The 3-day trial begins after verification.";return;}
-  const response=await getSubscriptionStatus({}), data=response.data||{};
+  const response=await getSubscriptionStatus(user), data=response.data||{};
   window.jonPremiumAccess={ready:true,allowed:data.hasPremium===true,status:String(data.status||"free")};
   window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
   $("jonProfilePlan").textContent=data.planLabel||data.status||"Free plan";
   $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
   $("jonProfilePayment").textContent=data.paymentLabel||"—";$("jonAccountMessage").textContent=data.message||"Subscription status updated.";
   $("jonAccountToggle").textContent=data.status==="premium"?"👤 PAID":data.status==="trial"?"👤 FREE TRIAL":"👤 FREE";message("");
- }catch(e){window.jonPremiumAccess={ready:false,allowed:false,status:"unavailable"};window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));$("jonProfilePlan").textContent="Subscription status unavailable";$("jonProfileRemaining").textContent="—";$("jonProfilePayment").textContent="—";$("jonAccountMessage").textContent="Firebase subscription service is unavailable. Deploy the Cloud Functions, then tap Update status.";message(errText(e),true);}
+ }catch(e){window.jonPremiumAccess={ready:false,allowed:false,status:"unavailable"};window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));$("jonProfilePlan").textContent="Subscription status unavailable";$("jonProfileRemaining").textContent="—";$("jonProfilePayment").textContent="—";$("jonAccountMessage").textContent="Subscription status could not be loaded from Vercel. Check your connection and tap Update status.";message(errText(e),true);}
 }
 onAuthStateChanged(auth,async user=>{if(!user){window.jonPremiumAccess={ready:true,allowed:false,status:"signed_out"};window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));}
  $("jonAccountState").textContent=user?(user.emailVerified?"Signed in":"Verify email"):"Not signed in";$("jonAccountSignedOut").hidden=!!user;$("jonAccountSignedIn").hidden=!user;
