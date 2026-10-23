@@ -3719,7 +3719,7 @@ button.jon-tv-focused,[role="button"].jon-tv-focused,a.jon-tv-focused{
 <script id="jonTvRemoteArrowNavigationJS">
 (function(){
 "use strict";
-const S='button:not([disabled]):not([hidden]),select:not([disabled]):not([hidden]),[role="button"]:not([aria-disabled="true"]):not([hidden]),a[href]:not([hidden])';
+const S='button:not([disabled]):not([hidden]),input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([disabled]):not([hidden]),textarea:not([disabled]):not([hidden]),select:not([disabled]):not([hidden]),[role="button"]:not([aria-disabled="true"]):not([hidden]),a[href]:not([hidden])';
 const SKIP=['INPUT','TEXTAREA']; let focused=null,okDownAt=0,okTarget=null,selectChoosing=null;
 function fullscreenFrame(){const f=document.getElementById("tvVideoFrame");return f&&(document.fullscreenElement===f||document.webkitFullscreenElement===f)?f:null}
 function vis(el){if(!el||el.closest('[hidden]'))return false;const s=getComputedStyle(el),r=el.getBoundingClientRect();return s.display!=="none"&&s.visibility!=="hidden"&&Number(s.opacity)!==0&&r.width>0&&r.height>0}
