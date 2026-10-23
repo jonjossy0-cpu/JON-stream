@@ -3719,7 +3719,7 @@ button.jon-tv-focused,[role="button"].jon-tv-focused,a.jon-tv-focused{
 <script id="jonTvRemoteArrowNavigationJS">
 (function(){
 "use strict";
-const S='button:not([disabled]):not([hidden]),select:not([disabled]):not([hidden]),[role="button"]:not([aria-disabled="true"]):not([hidden]),a[href]:not([hidden])';
+const S='button:not([disabled]):not([hidden]),input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([disabled]):not([hidden]),textarea:not([disabled]):not([hidden]),select:not([disabled]):not([hidden]),[role="button"]:not([aria-disabled="true"]):not([hidden]),a[href]:not([hidden])';
 const SKIP=['INPUT','TEXTAREA']; let focused=null,okDownAt=0,okTarget=null,selectChoosing=null;
 function fullscreenFrame(){const f=document.getElementById("tvVideoFrame");return f&&(document.fullscreenElement===f||document.webkitFullscreenElement===f)?f:null}
 function vis(el){if(!el||el.closest('[hidden]'))return false;const s=getComputedStyle(el),r=el.getBoundingClientRect();return s.display!=="none"&&s.visibility!=="hidden"&&Number(s.opacity)!==0&&r.width>0&&r.height>0}
@@ -3730,7 +3730,25 @@ function score(a,b,d){const A=a.getBoundingClientRect(),B=b.getBoundingClientRec
 function move(d){const a=all();if(!a.length)return;const from=cur();if(!from){set(a[0]);return}let best=null,bs=Infinity;for(const el of a){if(el===from)continue;const z=score(from,el,d);if(z<bs){bs=z;best=el}}if(best)set(best)}
 function seed(){const a=all(),x=document.activeElement;if(x&&a.includes(x))set(x);else if(!focused||!vis(focused)||!a.includes(focused))set(a[0])}
 window.addEventListener("keydown",e=>{
- if(["INPUT","TEXTAREA"].includes(document.activeElement?.tagName))return;
+ const typing=document.activeElement;
+ if(["INPUT","TEXTAREA"].includes(typing?.tagName)){
+  const backKey=["Escape","BrowserBack","GoBack"].includes(e.key)||[4,27,10009,461].includes(e.keyCode||e.which);
+  if(backKey){
+   e.preventDefault();e.stopImmediatePropagation();
+   typing.blur();
+   return;
+  }
+  if(e.key==="Enter"&&!e.repeat){
+   e.preventDefault();e.stopImmediatePropagation();
+   if(typing.id==="jonAccountEmail"){
+    document.getElementById("jonAccountPassword")?.focus();
+   }else if(typing.id==="jonAccountPassword"){
+    document.getElementById("jonAccountSignin")?.click();
+   }
+   return;
+  }
+  return;
+ }
  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)){
   const f=fullscreenFrame();
   if(f&&typeof window.jonShowTVFullscreenOverlay==="function")window.jonShowTVFullscreenOverlay();
