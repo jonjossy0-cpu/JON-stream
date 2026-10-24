@@ -119,6 +119,7 @@ module.exports = async function handler(req, res) {
       ticket,
       expiresAt,
       ttlSeconds: TICKET_TTL_SECONDS,
+      isHls: channel.isHls === true || /\.m3u8$/i.test(source.pathname),
       // Gateway enforcement must be deployed before clients use this URL.
       playbackUrl: "/api/hls?channelId=" + encodeURIComponent(channelId) + "&ticket=" + encodeURIComponent(ticket)
     });
