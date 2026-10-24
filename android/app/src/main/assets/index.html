@@ -966,6 +966,32 @@ img.jon-ad-media{
 @keyframes jonRadioPlayerGlowSweep{0%{background-position:100% 0}100%{background-position:-140% 0}}
 @media(prefers-reduced-motion:reduce){.radio-section .player.jon-radio-player-premium,.radio-section .player.jon-radio-player-premium::before{animation:none!important}}
 </style>
+
+<style id="jonRadioStationHeroMobileCSS">
+/* Mobile APK only: station identity and Now Streaming panel. */
+.radio-section .player .jon-radio-station-hero{position:relative;display:flex;align-items:center;gap:13px;margin:16px 0 12px;padding:14px;border:1px solid rgba(90,151,220,.24);border-radius:18px;background:linear-gradient(120deg,rgba(255,255,255,.065),rgba(255,255,255,.018));box-shadow:inset 0 1px rgba(255,255,255,.035);min-width:0}
+.radio-section .player .jon-radio-art-wrap{position:relative;flex:0 0 72px;width:72px;height:72px;display:grid;place-items:center}
+.radio-section .player .jon-radio-art,.radio-section .player .jon-radio-art-fallback{width:64px;height:64px;border-radius:15px;object-fit:contain;background:#fff;border:1px solid rgba(255,255,255,.2);box-shadow:0 7px 22px rgba(0,0,0,.28);position:relative;z-index:1}
+.radio-section .player .jon-radio-art[hidden],.radio-section .player .jon-radio-art-fallback[hidden]{display:none!important}
+.radio-section .player .jon-radio-art-fallback{display:grid;place-items:center;font-size:29px;color:#e31b23;background:linear-gradient(145deg,#fff,#e8edf5)}
+.radio-section .player .jon-radio-art-ring{position:absolute;inset:0;border:1px solid rgba(55,155,255,.45);border-right-color:rgba(255,45,75,.7);border-radius:20px;transform:rotate(45deg);animation:jonRadioHeroRing 7s linear infinite}
+.radio-section .player .jon-radio-identity{min-width:0;flex:1}
+.radio-section .player .jon-radio-kicker{display:flex;align-items:center;gap:7px;font-size:9px;font-weight:900;letter-spacing:1.35px;color:#ff7884;margin-bottom:6px}
+.radio-section .player .jon-live-dot{width:7px;height:7px;flex:0 0 7px;display:inline-block;border-radius:50%;background:#ff3545;box-shadow:0 0 0 3px rgba(255,53,69,.12),0 0 12px #ff3545;animation:jonRadioLivePulse 1.5s infinite}
+.radio-section .player .jon-radio-title{font-size:clamp(15px,3.5vw,21px);line-height:1.25;font-weight:900;color:#fff;overflow-wrap:anywhere}
+.radio-section .player .jon-radio-subtitle{margin-top:5px;color:#9cacc0;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+.radio-section .player .jon-radio-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.radio-section .player .jon-radio-tags span{font-size:8px;font-weight:800;letter-spacing:.55px;color:#dce6f4;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.045);padding:4px 6px;border-radius:6px}
+.radio-section .player .jon-radio-tags span:first-child{color:#83efb2;border-color:rgba(131,239,178,.2)}
+.radio-section .player .jon-radio-equalizer{height:25px;display:flex;align-items:center;gap:3px;flex:0 0 auto;margin-left:auto}
+.radio-section .player .jon-radio-equalizer i{width:3px;height:8px;border-radius:3px;background:#ff4652;opacity:.9;animation:jonRadioHeroBars .8s ease-in-out infinite alternate}
+.radio-section .player .jon-radio-equalizer i:nth-child(2){height:16px;animation-delay:.13s}.radio-section .player .jon-radio-equalizer i:nth-child(3){height:23px;animation-delay:.27s}.radio-section .player .jon-radio-equalizer i:nth-child(4){height:12px;animation-delay:.39s}.radio-section .player .jon-radio-equalizer i:nth-child(5){height:18px;animation-delay:.51s}
+@keyframes jonRadioHeroBars{from{transform:scaleY(.35)}to{transform:scaleY(1)}}
+@keyframes jonRadioHeroRing{to{transform:rotate(405deg)}}
+@media(max-width:520px){.radio-section .player .jon-radio-station-hero{gap:9px;padding:11px;margin-top:13px;border-radius:15px}.radio-section .player .jon-radio-art-wrap{width:58px;height:58px;flex-basis:58px}.radio-section .player .jon-radio-art,.radio-section .player .jon-radio-art-fallback{width:52px;height:52px;border-radius:12px}.radio-section .player .jon-radio-art-fallback{font-size:25px}.radio-section .player .jon-radio-art-ring{border-radius:16px}.radio-section .player .jon-radio-title{font-size:15px}.radio-section .player .jon-radio-subtitle{font-size:10px}.radio-section .player .jon-radio-tags{gap:4px;margin-top:6px}.radio-section .player .jon-radio-tags span{font-size:7px;padding:4px 5px}.radio-section .player .jon-radio-equalizer{gap:2px}.radio-section .player .jon-radio-equalizer i{width:2px}}
+@media(prefers-reduced-motion:reduce){.radio-section .player .jon-radio-art-ring,.radio-section .player .jon-radio-equalizer i,.radio-section .player .jon-live-dot{animation:none!important}}
+</style>
+
 </head>
 
 <body>
@@ -1045,6 +1071,20 @@ img.jon-ad-media{
 
  <div class="player jon-radio-player-premium">
   <div class="live">🔴 LIVE RADIO</div>
+  <div class="jon-radio-station-hero" aria-live="polite">
+   <div class="jon-radio-art-wrap">
+    <div class="jon-radio-art-ring"></div>
+    <img id="jonRadioStationLogo" class="jon-radio-art" alt="Radio station logo" hidden>
+    <div id="jonRadioStationLogoFallback" class="jon-radio-art-fallback">📻</div>
+   </div>
+   <div class="jon-radio-identity">
+    <div class="jon-radio-kicker"><span class="jon-live-dot"></span> NOW STREAMING</div>
+    <div class="jon-radio-title" id="jonRadioStationTitle">JON Stream Radio</div>
+    <div class="jon-radio-subtitle" id="jonRadioStationSubtitle">Live radio broadcast · For Advanced Growth</div>
+    <div class="jon-radio-tags"><span>LIVE RADIO</span><span>JON STREAM</span></div>
+   </div>
+   <div class="jon-radio-equalizer" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+  </div>
   <div class="now" id="nowPlaying">Select a radio station</div>
 
   <audio id="radioPlayer" controls preload="none"></audio>
@@ -1385,6 +1425,23 @@ let favorites=JSON.parse(localStorage.getItem("jonRadioFavorites")||"[]");
 function jonIsPremiumTier(value){return ["premium","paid","subscription","subscriber"].includes(String(value||"free").trim().toLowerCase());}
 function jonPremiumAllowed(){const a=window.jonPremiumAccess;return !!(a&&a.ready&&a.allowed);}
 
+function updateJonRadioStationHero(station){
+ const title=document.getElementById("jonRadioStationTitle");
+ const subtitle=document.getElementById("jonRadioStationSubtitle");
+ const logo=document.getElementById("jonRadioStationLogo");
+ const fallback=document.getElementById("jonRadioStationLogoFallback");
+ if(title)title.textContent=station&&station.name?String(station.name):"JON Stream Radio";
+ if(subtitle)subtitle.textContent="Live radio broadcast · For Advanced Growth";
+ if(!logo||!fallback)return;
+ logo.onerror=()=>{logo.hidden=true;logo.removeAttribute("src");fallback.hidden=false;};
+ const logoUrl=String(station&&station.logo||"");
+ if(/^https?:\/\//i.test(logoUrl)){
+  fallback.hidden=true;logo.hidden=false;logo.src=logoUrl;
+ }else{
+  logo.hidden=true;logo.removeAttribute("src");fallback.hidden=false;
+ }
+}
+
 function selectStation(index){
  const requestedStation=stations[index];
  if(requestedStation&&jonIsPremiumTier(requestedStation.accessTier)&&!jonPremiumAllowed()){
@@ -1396,6 +1453,7 @@ function selectStation(index){
  radioAdvancedRetryTimer=null;
  radioAdvancedRetryAttempts=0;
  currentStation=stations[index];
+ updateJonRadioStationHero(currentStation);
  const perfKey=String(currentStation.name||"Radio")+"|"+String(currentStation.url||"");
  resetRadioPerformance(perfKey);
  updateRadioMediaSession();
