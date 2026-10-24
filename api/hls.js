@@ -24,7 +24,7 @@ function absolutize(value, base) {
 }
 
 function gatewayUrl(target, gatewayOrigin, ticket) {
-  return gatewayOrigin + "/api/hls?url=" + encodeURIComponent(target) + "&ticket=" + encodeURIComponent(ticket);
+  return gatewayOrigin + "/api/hls?url=" + encodeURIComponent(target) + (ticket ? "&ticket=" + encodeURIComponent(ticket) : "");
 }
 
 function rewriteUriAttributes(line, baseUrl, gatewayOrigin, ticket) {
@@ -85,39 +85,37 @@ module.exports = async function handler(req, res) {
     return res.status(405).send("Method not allowed");
   }
 
-  const ticketSecret = process.env.PREMIUM_PLAYBACK_TICKET_SECRET;
-  if (!ticketSecret || ticketSecret.length < 32) {
-    return res.status(503).send("Premium playback authorization is not configured");
-  }
-
+  const ticketSecret = process.env.PREMIUM_PLAYBACK_TICKET_SECRET || "";
   const ticket = typeof req.query.ticket === "string" ? req.query.ticket : "";
-  const payload = decodeTicket(ticket, ticketSecret);
-  if (!payload) return res.status(401).send("Valid playback ticket required");
-
-  let channelId = typeof req.query.channelId === "string" ? req.query.channelId : "";
-  if (channelId && channelId !== payload.channelId) return res.status(403).send("Ticket channel mismatch");
-  channelId = payload.channelId;
-
-  let channel;
-  try {
-    channel = await getChannel(channelId);
-  } catch (_) {
-    return res.status(503).send("Premium channel catalog unavailable");
-  }
-  if (!channel || typeof channel.sourceUrl !== "string") {
-    return res.status(403).send("Premium channel unavailable");
-  }
-
-  let target;
+  const channelIdParam = typeof req.query.channelId === "string" ? req.query.channelId : "";
   const raw = typeof req.query.url === "string" ? req.query.url : "";
-  try {
-    target = raw ? new URL(raw) : new URL(channel.sourceUrl);
-  } catch (_) {
-    return res.status(400).send("Invalid URL");
-  }
-  if (!isAllowed(target)) return res.status(403).send("Host not allowed");
-  if (target.hostname !== payload.host || !isWithinChannelRoot(target, channel.sourceUrl)) {
-    return res.status(403).send("URL is outside the authorized channel source");
+  let payload = null;
+  let channel = null;
+  let target;
+
+  if (ticket) {
+    payload = decodeTicket(ticket, ticketSecret);
+    if (!payload) return res.status(401).send("Valid playback ticket required");
+    if (channelIdParam && channelIdParam !== payload.channelId) return res.status(403).send("Ticket channel mismatch");
+    try { channel = await getChannel(payload.channelId); }
+    catch (_) { return res.status(503).send("Premium channel catalog unavailable"); }
+    if (!channel || typeof channel.sourceUrl !== "string") return res.status(403).send("Premium channel unavailable");
+    try { target = raw ? new URL(raw) : new URL(channel.sourceUrl); }
+    catch (_) { return res.status(400).send("Invalid URL"); }
+    if (!isAllowed(target) || target.hostname !== payload.host || !isWithinChannelRoot(target, channel.sourceUrl)) {
+      return res.status(403).send("URL is outside the authorized channel source");
+    }
+  } else {
+    if (channelIdParam) return res.status(401).send("Valid playback ticket required");
+    if (!raw) return res.status(400).send("Missing url");
+    try { target = new URL(raw); }
+    catch (_) { return res.status(400).send("Invalid URL"); }
+    if (!isAllowed(target)) return res.status(403).send("Host not allowed");
+    try {
+      if (await isCataloguedPremiumUrl(target)) return res.status(401).send("Premium playback ticket required");
+    } catch (_) {
+      return res.status(503).send("Premium channel catalog unavailable");
+    }
   }
 
   try {
@@ -146,8 +144,14 @@ module.exports = async function handler(req, res) {
         try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
         return res.status(502).send("Invalid upstream redirect");
       }
-      if (!isAllowed(nextUrl) || nextUrl.hostname !== payload.host ||
-          !isWithinChannelRoot(nextUrl, channel.sourceUrl)) {
+      let redirectAllowed = isAllowed(nextUrl);
+      if (payload) {
+        redirectAllowed = redirectAllowed && nextUrl.hostname === payload.host && isWithinChannelRoot(nextUrl, channel.sourceUrl);
+      } else if (redirectAllowed) {
+        try { if (await isCataloguedPremiumUrl(nextUrl)) redirectAllowed = false; }
+        catch (_) { redirectAllowed = false; }
+      }
+      if (!redirectAllowed) {
         try { if (upstream.body) await upstream.body.cancel(); } catch (_) {}
         return res.status(502).send("Redirected source is outside the authorized channel");
       }
@@ -171,7 +175,7 @@ module.exports = async function handler(req, res) {
       const gatewayOrigin = /^jon-stream(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(requestHost)
         ? "https://" + requestHost
         : "https://jon-stream.vercel.app";
-      return res.end(rewritePlaylist(body, finalTarget.toString(), gatewayOrigin, ticket));
+      return res.end(rewritePlaylist(body, finalTarget.toString(), gatewayOrigin, payload ? ticket : ""));
     }
 
     for (const name of ["content-length", "content-range", "accept-ranges", "etag", "last-modified"]) {
