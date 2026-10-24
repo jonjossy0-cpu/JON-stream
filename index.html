@@ -1217,13 +1217,13 @@ img.jon-ad-media{
     <div class="jon-radio-kicker">NOW STREAMING</div>
     <div class="jon-radio-title" id="radioStationTitle">Choose a station</div>
     <div class="jon-radio-subtitle" id="radioStationSubtitle">Select a station below to start listening</div>
-    <div class="jon-radio-tags"><span>● LIVE AUDIO</span><span id="radioStreamMode">DIRECT STREAM</span></div>
+    <div class="jon-radio-tags"><span>● LIVE AUDIO</span><span id="radioStreamMode">LIVE STREAM</span></div>
    </div>
    <div class="jon-radio-equalizer" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
   </div>
   <div class="now" id="nowPlaying">Select a radio station</div>
 
-  <audio id="radioPlayer" controls preload="none"></audio>
+  <audio id="radioPlayer" preload="none" aria-label="Live radio audio"></audio>
 
   <div class="volume-box">
    <span id="volumeIcon">🔊</span>
