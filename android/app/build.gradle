@@ -72,7 +72,7 @@ dependencies {
 }
 
 /*
- * Generate fullscreen channel controls only for Mobile APK 7.1.
+ * Generate fullscreen channel controls only for Mobile APK 7.4.
  * The shared source HTML remains unchanged for Android TV APK 8.0.
  */
 android.sourceSets.mobile.assets.srcDir(layout.buildDirectory.dir("generated/mobile/assets"))
