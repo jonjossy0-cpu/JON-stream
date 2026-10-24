@@ -70,3 +70,11 @@ Do not merge until the blocking items are closed and the deployed Preview is ver
 
 
 - The public `jonStream/appData` document is shared with existing mobile/Android TV clients; do not remove or blank shared `url` fields until those clients are migrated to the ticket flow or their channel catalogs are split safely. This is required to avoid breaking current APK playback while closing the raw-URL bypass.
+
+
+## Audit update (2026-10-24, after ticket-revocation review)
+- The current branch now includes client-side ticket requests for Premium TV and radio selection. This is implementation presence only; it is not evidence of successful end-to-end playback.
+- The Premium playback authorization unit-test workflow, Dependency Review, JON Stream Security Audit, and APK CI workflow completed successfully for the documentation follow-up commit. The playback test workflow runs unit tests and an inline-JavaScript syntax check; it does **not** test Firebase sign-in against Preview, Firestore catalog contents, Cloudflare Worker secrets/routes, real upstream streams, or mobile device playback.
+- The Vercel environment-name audit did not find `PREMIUM_PLAYBACK_TICKET_SECRET`; ticket issuance therefore remains expected to return HTTP 503 until configured. Environment values were not decrypted.
+- A valid ticket remains usable until its expiry even if a user's entitlement is revoked, unless the channel is disabled or the shared secret is rotated. The current ticket lifetime is four hours; immediate per-user revocation is not implemented.
+- **Decision: keep PR #234 open as Draft.** Do not merge or deploy this change yet. The raw-source bypass, secret/catalog setup, Worker enforcement, and real Free/Premium regression tests remain blockers. Preserve the existing shared channel URLs until a compatible catalog/client migration is ready, so the current APK is not accidentally broken.
