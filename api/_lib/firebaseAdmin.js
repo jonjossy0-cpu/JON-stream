@@ -54,7 +54,10 @@ function setCors(req, res) {
   ]);
   // Permit only this project's Vercel preview hostnames, never arbitrary origins.
   const isProjectPreview = /^https:\/\/jon-stream-[a-z0-9-]+-jonjossy0-5772\.vercel\.app$/.test(origin);
-  const isAllowed = allowedOrigins.has(origin) || isProjectPreview;
+  // Android WebView loads the bundled Mobile HTML from file:// and sends Origin: null.
+  // API requests still require a verified Firebase ID token; CORS is not authorization.
+  const isNativeWebView = origin === "null";
+  const isAllowed = allowedOrigins.has(origin) || isProjectPreview || isNativeWebView;
   if (isAllowed) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
