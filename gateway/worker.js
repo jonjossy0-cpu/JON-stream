@@ -99,6 +99,64 @@ function isAllowed(url) {
     ALLOWED_ENDPOINTS.has(endpointKey(url));
 }
 
+
+function premiumPlaylistReferencesAllowed(body, base, payload, env) {
+  const references = [];
+  for (const line of body.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    for (const match of line.matchAll(/URI="([^"]+)"/gi)) references.push(match[1]);
+    if (!trimmed.startsWith("#")) references.push(trimmed);
+  }
+  for (const reference of references) {
+    let url;
+    try { url = new URL(reference, base); } catch (_) { return false; }
+    if (!isAllowed(url) || url.hostname !== payload.host ||
+        !url.pathname.startsWith(payload.rootPath) || !isPremiumSource(url, env)) return false;
+  }
+  return true;
+}
+
+function premiumPrefixes(env) {
+  return String(env && env.PREMIUM_SOURCE_PREFIXES || "").split(",").map(value => value.trim()).filter(Boolean);
+}
+
+function isPremiumSource(url, env) {
+  return premiumPrefixes(env).some(value => {
+    try {
+      const prefix = new URL(value);
+      if (!["https:", "http:"].includes(prefix.protocol) || url.origin !== prefix.origin) return false;
+      // Prefixes represent directories. Enforce a path boundary even if an
+      // operator accidentally omits the trailing slash in configuration:
+      // /premium/ is allowed, /premium-extra/ is not.
+      const directoryPath = prefix.pathname.endsWith("/") ? prefix.pathname : prefix.pathname + "/";
+      return url.pathname === prefix.pathname || url.pathname.startsWith(directoryPath);
+    } catch (_) { return false; }
+  });
+}
+
+function decodeBase64Url(value) {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+  const binary = atob(padded);
+  return Uint8Array.from(binary, char => char.charCodeAt(0));
+}
+
+async function verifyPremiumTicket(ticket, env) {
+  const secret = String(env && env.PREMIUM_PLAYBACK_TICKET_SECRET || "");
+  if (secret.length < 32 || typeof ticket !== "string" || ticket.length > 4096) return null;
+  const parts = ticket.split(".");
+  if (parts.length !== 2) return null;
+  try {
+    const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+    const valid = await crypto.subtle.verify("HMAC", key, decodeBase64Url(parts[1]), new TextEncoder().encode(parts[0]));
+    if (!valid) return null;
+    const payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(parts[0])));
+    if (payload.v !== 1 || !payload.channelId || !payload.host || !payload.rootPath || !Number.isInteger(payload.exp) || payload.exp <= Math.floor(Date.now() / 1000)) return null;
+    return payload;
+  } catch (_) { return null; }
+}
+
 function checkRateLimit(request) {
   const now = Date.now();
   const client = request.headers.get("CF-Connecting-IP") || "unknown";
@@ -157,8 +215,8 @@ function absolutize(value, base) {
   }
 }
 
-function proxiedUrl(target) {
-  return "/hls?url=" + encodeURIComponent(target);
+function proxiedUrl(target, ticket) {
+  return "/hls?url=" + encodeURIComponent(target) + (ticket ? "&ticket=" + encodeURIComponent(ticket) : "");
 }
 
 function upstreamHeaders(request, target) {
@@ -175,7 +233,7 @@ function upstreamHeaders(request, target) {
   return headers;
 }
 
-function rewriteUriAttributes(line, base) {
+function rewriteUriAttributes(line, base, ticket) {
   return line.replace(/URI="([^"]+)"/g, (match, value) => {
     const absolute = absolutize(value, base);
     if (!absolute) return match;
@@ -183,7 +241,7 @@ function rewriteUriAttributes(line, base) {
     try {
       const url = new URL(absolute);
       return isAllowed(url)
-        ? 'URI="' + proxiedUrl(url.toString()) + '"'
+        ? 'URI="' + proxiedUrl(url.toString(), ticket) + '"'
         : match;
     } catch (_) {
       return match;
@@ -191,13 +249,13 @@ function rewriteUriAttributes(line, base) {
   });
 }
 
-function rewritePlaylist(body, base) {
+function rewritePlaylist(body, base, ticket) {
   return body.split(/\r?\n/).map(line => {
     const trimmed = line.trim();
     if (!trimmed) return line;
 
     if (trimmed.startsWith("#")) {
-      return rewriteUriAttributes(line, base);
+      return rewriteUriAttributes(line, base, ticket);
     }
 
     const absolute = absolutize(trimmed, base);
@@ -205,14 +263,14 @@ function rewritePlaylist(body, base) {
 
     try {
       const url = new URL(absolute);
-      return isAllowed(url) ? proxiedUrl(url.toString()) : line;
+      return isAllowed(url) ? proxiedUrl(url.toString(), ticket) : line;
     } catch (_) {
       return line;
     }
   }).join("\n");
 }
 
-async function fetchAllowed(target, request) {
+async function fetchAllowed(target, request, ticketPayload, env) {
   let current = target;
 
   for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount++) {
@@ -233,6 +291,8 @@ async function fetchAllowed(target, request) {
     if (!isAllowed(next)) {
       return { blockedRedirect: true };
     }
+    if (ticketPayload && (next.hostname !== ticketPayload.host || !next.pathname.startsWith(ticketPayload.rootPath) || !isPremiumSource(next, env))) return { blockedRedirect: true };
+    if (!ticketPayload && isPremiumSource(next, env)) return { blockedRedirect: true };
 
     current = next;
   }
@@ -254,7 +314,7 @@ async function fetchFixedChannel(sources, request) {
     if (!isAllowed(target)) continue;
 
     try {
-      const result = await fetchAllowed(target, request);
+      const result = await fetchAllowed(target, request, null, {});
       lastResult = result;
 
       // Try the next known mirror if this one rejects the request or is unavailable.
@@ -270,7 +330,7 @@ async function fetchFixedChannel(sources, request) {
   return lastResult || { response: new Response("All Sony Movies mirrors failed", { status: 502 }), finalUrl: sources[0] };
 }
 
-async function handle(request) {
+async function handle(request, env) {
   const incoming = new URL(request.url);
 
   if (request.method === "OPTIONS") {
@@ -322,11 +382,21 @@ async function handle(request) {
     return new Response("Host or port not allowed", { status: 403, headers: corsHeaders() });
   }
 
+  const ticket = incoming.searchParams.get("ticket") || "";
+  let ticketPayload = null;
+  if (!sourceList && (ticket || isPremiumSource(target, env))) {
+    if (!ticket) return new Response("Premium playback ticket required", { status: 401, headers: corsHeaders() });
+    ticketPayload = await verifyPremiumTicket(ticket, env);
+    if (!ticketPayload || ticketPayload.host !== target.hostname || !target.pathname.startsWith(ticketPayload.rootPath) || !isPremiumSource(target, env)) {
+      return new Response("Invalid Premium playback ticket", { status: 401, headers: corsHeaders() });
+    }
+  }
+
   let result;
   try {
     result = sourceList
       ? await fetchFixedChannel(sourceList, request)
-      : await fetchAllowed(target, request);
+      : await fetchAllowed(target, request, ticketPayload, env);
   } catch (_) {
     return new Response("Upstream connection failed", {
       status: 502,
@@ -370,7 +440,13 @@ async function handle(request) {
       return new Response("Playlist too large", { status: 413, headers: corsHeaders() });
     }
 
-    const rewritten = rewritePlaylist(body, finalUrl);
+    if (ticketPayload && !premiumPlaylistReferencesAllowed(body, finalUrl, ticketPayload, env)) {
+      return new Response("Playlist contains a URL outside the authorized Premium source", {
+        status: 502,
+        headers: corsHeaders()
+      });
+    }
+    const rewritten = rewritePlaylist(body, finalUrl, ticketPayload ? ticket : "");
 
     return new Response(rewritten, {
       status: upstream.status,
@@ -402,4 +478,4 @@ async function handle(request) {
   });
 }
 
-export default { fetch: handle };
+export default { fetch: (request, env) => handle(request, env) };

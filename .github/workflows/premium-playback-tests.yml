@@ -1,0 +1,63 @@
+name: Premium playback authorization tests
+
+on:
+  pull_request:
+    paths:
+      - "api/_lib/playbackTicket.js"
+      - "api/subscription/playback-ticket.js"
+      - "index.html"
+      - "tests/playback-ticket.test.js"
+      - "package.json"
+      - ".github/workflows/premium-playback-tests.yml"
+  push:
+    branches:
+      - mainv
+      - feature/premium-playback-ticket-v1
+    paths:
+      - "api/_lib/playbackTicket.js"
+      - "api/subscription/playback-ticket.js"
+      - "index.html"
+      - "tests/playback-ticket.test.js"
+      - "package.json"
+      - ".github/workflows/premium-playback-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  playback-ticket-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run playback ticket unit tests
+        run: npm test
+      - name: Syntax-check inline JavaScript in index.html
+        run: |
+          node <<'NODE'
+          const fs = require("fs");
+          const { spawnSync } = require("child_process");
+          const html = fs.readFileSync("index.html", "utf8");
+          const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+          let checked = 0;
+          for (const [, attrs, source] of scripts) {
+            if (/\bsrc\s*=/.test(attrs)) continue;
+            const typeMatch = attrs.match(/\btype\s*=\s*["']?([^"'\s>]+)/i);
+            const type = typeMatch ? typeMatch[1].toLowerCase() : "";
+            if (type && type !== "module" && !/^(text|application)\/(javascript|ecmascript)$/.test(type)) continue;
+            const file = "/tmp/jon-inline-" + checked + ".js";
+            fs.writeFileSync(file, source);
+            const result = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });
+            if (result.status !== 0) {
+              process.stderr.write(result.stderr || result.stdout);
+              process.exit(result.status || 1);
+            }
+            checked++;
+          }
+          if (!checked) throw new Error("No inline JavaScript found");
+          console.log("Syntax-checked " + checked + " inline scripts");
+          NODE
