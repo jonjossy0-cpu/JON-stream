@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const { getServices, requireUser, sendError, setCors } = require("../_lib/firebaseAdmin");
 
 const DAY_MS = 86400000;
-const TICKET_TTL_SECONDS = 120;
+const TICKET_TTL_SECONDS = 4 * 60 * 60;
 const emailKey = email => crypto.createHash("sha256").update(String(email || "").trim().toLowerCase()).digest("hex");
 const ALLOWED_HOSTS = new Set([
   "88.212.15.19",
