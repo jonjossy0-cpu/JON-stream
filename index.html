@@ -1045,6 +1045,89 @@ img.jon-ad-media{
 @media(max-width:520px){.jon-radio-station-hero{gap:10px;padding:12px;margin-top:14px;border-radius:15px}.jon-radio-art-wrap{width:62px;height:62px;flex-basis:62px}.jon-radio-art,.jon-radio-art-fallback{width:56px;height:56px;border-radius:13px}.jon-radio-art-fallback{font-size:27px}.jon-radio-art-ring{border-radius:16px}.jon-radio-title{font-size:16px}.jon-radio-subtitle{font-size:10px}.jon-radio-tags{gap:4px;margin-top:7px}.jon-radio-tags span{font-size:8px;padding:4px 5px}.jon-radio-equalizer{gap:2px}.jon-radio-equalizer i{width:2px}.jon-radio-player-premium .buttons{gap:6px}.jon-radio-player-premium .buttons button{min-height:42px}}
 @media(prefers-reduced-motion:reduce){.jon-radio-art-ring,.jon-radio-equalizer i,.jon-live-dot{animation:none!important}}
 </style>
+
+<style id="jonRadioProfessionalRefinement">
+/* Refined radio player: restrained, clean, responsive. Playback logic unchanged. */
+.radio-section .player.jon-radio-player-premium{
+ padding:clamp(16px,3vw,24px);
+ border:1px solid rgba(148,163,184,.22);
+ border-radius:20px;
+ background:linear-gradient(150deg,#0b1220 0%,#111c2d 58%,#0b1321 100%);
+ box-shadow:0 12px 30px rgba(0,0,0,.22);
+}
+.radio-section .player.jon-radio-player-premium::before{
+ content:none;
+}
+.radio-section .player.jon-radio-player-premium::after{
+ content:none;
+}
+.jon-radio-station-hero{
+ gap:16px;
+ margin:16px 0 12px;
+ padding:18px;
+ border:1px solid rgba(148,163,184,.18);
+ border-radius:16px;
+ background:rgba(255,255,255,.025);
+ box-shadow:none;
+}
+.jon-radio-art-wrap{
+ width:96px;height:96px;flex:0 0 96px;
+ border-radius:14px;
+ background:rgba(255,255,255,.035);
+ border:1px solid rgba(148,163,184,.18);
+ overflow:hidden;
+}
+.jon-radio-art{
+ display:block;
+ width:auto!important;height:auto!important;
+ max-width:82px;max-height:82px;
+ object-fit:contain!important;
+ object-position:center;
+ padding:3px;
+ border:0!important;
+ border-radius:8px!important;
+ background:transparent!important;
+ box-shadow:none!important;
+ image-rendering:auto;
+}
+.jon-radio-art-fallback{
+ width:82px;height:82px;
+ border:0!important;border-radius:8px!important;
+ box-shadow:none!important;
+ background:transparent!important;
+ color:#e5e7eb;
+}
+.jon-radio-art-ring{display:none!important}
+.jon-radio-kicker{color:#aebdd0;letter-spacing:1.4px}
+.jon-radio-title{font-size:clamp(18px,2.6vw,24px);letter-spacing:-.35px}
+.jon-radio-subtitle{color:#a5b2c5;font-size:12px}
+.jon-radio-tags span{border-radius:5px;background:rgba(255,255,255,.035)}
+.jon-radio-player-premium .live{letter-spacing:1.1px}
+.jon-radio-player-premium audio{height:44px}
+.jon-radio-player-premium .volume-box{background:rgba(255,255,255,.025);border-color:rgba(148,163,184,.16)}
+.jon-radio-player-premium .buttons button{
+ border-radius:10px;box-shadow:none;transform:none;
+}
+.jon-radio-player-premium .buttons button:hover{transform:none;filter:brightness(1.08)}
+.jon-radio-player-premium .buttons button:first-child{background:#d71920}
+@media(max-width:520px){
+ .radio-section .player.jon-radio-player-premium{padding:14px 11px;border-radius:16px}
+ .jon-radio-station-hero{padding:12px;gap:10px;border-radius:12px}
+ .jon-radio-art-wrap{width:68px;height:68px;flex-basis:68px;border-radius:11px}
+ .jon-radio-art{max-width:58px;max-height:58px;padding:2px}
+ .jon-radio-art-fallback{width:58px;height:58px;font-size:24px}
+ .jon-radio-equalizer{display:none}
+ .jon-radio-title{font-size:16px;line-height:1.25}
+ .jon-radio-subtitle{font-size:10px}
+ .jon-radio-tags span{font-size:8px}
+ .jon-radio-player-premium .buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+ .jon-radio-player-premium .buttons button{min-width:0;min-height:42px;font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .jon-radio-player-premium *{animation:none!important;transition:none!important}
+}
+</style>
+
 </head>
 
 <body>
