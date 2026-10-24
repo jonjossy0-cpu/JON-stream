@@ -125,7 +125,12 @@ function isPremiumSource(url, env) {
   return premiumPrefixes(env).some(value => {
     try {
       const prefix = new URL(value);
-      return ["https:", "http:"].includes(prefix.protocol) && url.origin === prefix.origin && url.pathname.startsWith(prefix.pathname);
+      if (!["https:", "http:"].includes(prefix.protocol) || url.origin !== prefix.origin) return false;
+      // Prefixes represent directories. Enforce a path boundary even if an
+      // operator accidentally omits the trailing slash in configuration:
+      // /premium/ is allowed, /premium-extra/ is not.
+      const directoryPath = prefix.pathname.endsWith("/") ? prefix.pathname : prefix.pathname + "/";
+      return url.pathname === prefix.pathname || url.pathname.startsWith(directoryPath);
     } catch (_) { return false; }
   });
 }
