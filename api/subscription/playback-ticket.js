@@ -30,7 +30,7 @@ function validateSource(sourceUrl) {
     return null;
   }
   if (!["http:", "https:"].includes(source.protocol) ||
-      source.username || source.password ||
+      source.username || source.password || source.port ||
       !ALLOWED_HOSTS.has(source.hostname)) return null;
   return source;
 }
