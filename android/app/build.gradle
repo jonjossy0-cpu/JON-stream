@@ -155,11 +155,13 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (html.contains('id="jonMobileRadioPlayerGlow73"')) {
             throw new GradleException("Mobile radio UI update is already present in the generated HTML.")
         }
-        def radioGlowStyle = '\\n<style id="jonMobileRadioPlayerGlow73">\\n' +
-                '@keyframes jonRadioPlayerGlow73{0%,100%{box-shadow:0 0 10px rgba(0,140,255,.48),0 0 24px rgba(0,140,255,.22),inset 0 0 8px rgba(0,140,255,.08);border-color:rgba(0,140,255,.72)}50%{box-shadow:0 0 10px rgba(255,35,55,.5),0 0 26px rgba(255,35,55,.24),inset 0 0 8px rgba(255,35,55,.08);border-color:rgba(255,45,65,.76)}}\\n' +
-                '.radio-section .player{animation:jonRadioPlayerGlow73 3.2s ease-in-out infinite;transition:box-shadow .25s,border-color .25s}\\n' +
-                '@media(prefers-reduced-motion:reduce){.radio-section .player{animation:none;box-shadow:0 0 12px rgba(0,140,255,.25),0 0 12px rgba(255,35,55,.18)}}\\n' +
-                '</style>\\n'
+        def radioGlowStyle = '''
+<style id="jonMobileRadioPlayerGlow73">
+@keyframes jonRadioPlayerGlow73{0%,100%{box-shadow:0 0 10px rgba(0,140,255,.48),0 0 24px rgba(0,140,255,.22),inset 0 0 8px rgba(0,140,255,.08);border-color:rgba(0,140,255,.72)}50%{box-shadow:0 0 10px rgba(255,35,55,.5),0 0 26px rgba(255,35,55,.24),inset 0 0 8px rgba(255,35,55,.08);border-color:rgba(255,45,65,.76)}}
+.radio-section .player{animation:jonRadioPlayerGlow73 3.2s ease-in-out infinite;transition:box-shadow .25s,border-color .25s}
+@media(prefers-reduced-motion:reduce){.radio-section .player{animation:none;box-shadow:0 0 12px rgba(0,140,255,.25),0 0 12px rgba(255,35,55,.18)}}
+</style>
+'''
         if (html.count("</head>") != 1) {
             throw new GradleException("Mobile radio UI update: expected one HTML head closing tag.")
         }
