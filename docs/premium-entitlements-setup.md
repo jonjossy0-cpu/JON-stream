@@ -52,3 +52,7 @@ Use only an upstream host already in the server-side allowlist and ensure the fu
 Set `PREMIUM_PLAYBACK_TICKET_SECRET` to a cryptographically random secret of at least 32 characters in Vercel and the same secret as a Cloudflare Worker secret binding. Configure Worker variable `PREMIUM_SOURCE_PREFIXES` with the exact allowed Premium source directory prefixes. Never commit secrets.
 
 The current ticket lifetime is four hours. Radio Premium ticket integration and full end-to-end playback tests remain outstanding. Do not merge or claim production security until public source URLs are removed/restricted, the private catalog and channel IDs are populated, and Free/Premium regression tests pass.
+
+
+## Environment check (2026-10-24)
+The Vercel project has `FIREBASE_SERVICE_ACCOUNT_JSON` and `JON_ADMIN_UIDS` configured for Preview/Production. `PREMIUM_PLAYBACK_TICKET_SECRET` was not found in the project environment-variable names. The ticket API intentionally responds with HTTP 503 until a strong secret is configured. Secret values were not read or changed during this check.
