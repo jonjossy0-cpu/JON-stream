@@ -20,8 +20,8 @@ android {
         mobile {
             dimension "device"
             applicationId "com.jonstream.app"
-            versionCode 9
-            versionName "7.3"
+            versionCode 10
+            versionName "7.4"
         }
         tv {
             dimension "device"
@@ -116,14 +116,15 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (html.count(bottomMarker) != 1) {
             throw new GradleException("Expected one fullscreen bottom bar in the base HTML.")
         }
-        if (html.contains('id="tvFullscreenPrevious"') || html.contains('id="tvFullscreenNext"')) {
-            throw new GradleException("Fullscreen channel controls already exist in the base HTML.")
+        // Root JON Stream HTML is the source of truth. Add navigation only when absent.
+        if (!html.contains('id="tvFullscreenPrevious"') && !html.contains('id="tvFullscreenNext"')) {
+            def controls = bottomMarker +
+                    '     <button type="button" onclick="previousTV()" id="tvFullscreenPrevious" aria-label="Previous channel" title="Previous channel">⏮</button>\n' +
+                    '     <button type="button" onclick="nextTV()" id="tvFullscreenNext" aria-label="Next channel" title="Next channel">⏭</button>\n'
+            html = html.replace(bottomMarker, controls)
+        } else if (!html.contains('id="tvFullscreenPrevious"') || !html.contains('id="tvFullscreenNext"')) {
+            throw new GradleException("Only one fullscreen channel navigation control exists in the source HTML.")
         }
-
-        def controls = bottomMarker +
-                '     <button type="button" onclick="previousTV()" id="tvFullscreenPrevious" aria-label="Previous channel" title="Previous channel">⏮</button>\n' +
-                '     <button type="button" onclick="nextTV()" id="tvFullscreenNext" aria-label="Next channel" title="Next channel">⏭</button>\n'
-        html = html.replace(bottomMarker, controls)
 
         def style = '\n<style id="jonMobileFullscreenChannelNav">\n' +
                 '/* Compact fullscreen channel navigation: icons only, minimal space. */\n' +
@@ -133,15 +134,21 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (!html.contains("</head>")) {
             throw new GradleException("Missing HTML head closing tag.")
         }
-        html = html.replace("</head>", style + ' <link rel="stylesheet" href="jon-news-ticker.css">\n <link rel="stylesheet" href="jon-sponsor-carousel.css">\n' + "</head>")
+        if (!html.contains('id="jonMobileFullscreenChannelNav"')) {
+            html = html.replace("</head>", style + "</head>")
+        }
+        def mobileLinks = ''
+        if (!html.contains('href="jon-news-ticker.css"')) mobileLinks += ' <link rel="stylesheet" href="jon-news-ticker.css">\n'
+        if (!html.contains('href="jon-sponsor-carousel.css"')) mobileLinks += ' <link rel="stylesheet" href="jon-sponsor-carousel.css">\n'
+        if (mobileLinks) html = html.replace("</head>", mobileLinks + "</head>")
 
         if (html.count("</html>") != 1) {
             throw new GradleException("Expected one HTML closing tag before injecting the mobile news ticker.")
         }
-        if (html.contains("jon-news-ticker.js")) {
-            throw new GradleException("Mobile news ticker script is already injected.")
-        }
-        html = html.replace("</html>", ' <script src="jon-news-ticker.js"></script>\n <script src="jon-sponsor-carousel.js"></script>\n</html>')
+        def mobileScripts = ''
+        if (!html.contains('src="jon-news-ticker.js"')) mobileScripts += ' <script src="jon-news-ticker.js"></script>\n'
+        if (!html.contains('src="jon-sponsor-carousel.js"')) mobileScripts += ' <script src="jon-sponsor-carousel.js"></script>\n'
+        if (mobileScripts) html = html.replace("</html>", mobileScripts + "</html>")
 
 
 
