@@ -1181,6 +1181,29 @@ img.jon-ad-media{
 }
 </style>
 
+<style id="jonRadioPlayerBlueRedGlowCSS">
+/* Animated blue/red glow on the entire radio player card */
+.radio-section .player.jon-radio-player-premium{
+ border:1px solid rgba(35,151,255,.72)!important;
+ box-shadow:0 0 12px rgba(0,132,255,.26),0 0 26px rgba(0,132,255,.13),inset 0 0 18px rgba(0,132,255,.045)!important;
+ animation:jonRadioPlayerBlueRedGlow 4s ease-in-out infinite;
+}
+.radio-section .player.jon-radio-player-premium::before{
+ height:3px!important;background:linear-gradient(90deg,#087cff,#31d8ff,#a64dff,#ff254b,#ff6b35,#087cff)!important;
+ background-size:240% 100%!important;animation:jonRadioPlayerGlowSweep 5s linear infinite;
+}
+.radio-section .player.jon-radio-player-premium .jon-radio-station-hero{
+ border-color:rgba(62,155,255,.24);box-shadow:0 0 14px rgba(0,125,255,.08),inset 0 0 12px rgba(255,30,65,.035);
+}
+.radio-section .player.jon-radio-player-premium .jon-radio-tags #radioStreamMode{display:none!important}
+@keyframes jonRadioPlayerBlueRedGlow{
+ 0%,100%{border-color:rgba(30,145,255,.85);box-shadow:0 0 13px rgba(0,135,255,.34),0 0 28px rgba(0,135,255,.16),inset 0 0 18px rgba(0,135,255,.05)}
+ 50%{border-color:rgba(255,45,76,.9);box-shadow:0 0 13px rgba(0,135,255,.18),0 0 30px rgba(255,28,67,.25),inset 0 0 20px rgba(255,28,67,.06)}
+}
+@keyframes jonRadioPlayerGlowSweep{0%{background-position:100% 0}100%{background-position:-140% 0}}
+@media(prefers-reduced-motion:reduce){.radio-section .player.jon-radio-player-premium,.radio-section .player.jon-radio-player-premium::before{animation:none!important}}
+</style>
+
 </head>
 
 <body>
@@ -1622,8 +1645,8 @@ function renderRadioStationIdentity(station){
  if(!logo||!fallback||!title||!subtitle||!mode)return;
  const name=station&&station.name?String(station.name):"Choose a station";
  title.textContent=name;
- subtitle.textContent=station?"Direct audio stream · "+(station.url?(()=>{try{return new URL(station.url).hostname}catch(_){return "Radio stream"}})():"Radio stream"):"Select a station below to start listening";
- mode.textContent=station?"DIRECT STREAM":"READY TO PLAY";
+ subtitle.textContent=station?"Live radio • Ready to play":"Select a station below to start listening";
+ mode.textContent="";
  logo.onload=()=>{logo.hidden=false;fallback.hidden=true};
  logo.onerror=()=>{logo.hidden=true;fallback.hidden=false};
  if(station&&station.logo){logo.src=station.logo}else{logo.removeAttribute("src");logo.hidden=true;fallback.hidden=false}
