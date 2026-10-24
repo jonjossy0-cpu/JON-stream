@@ -4154,6 +4154,11 @@ if(authPanel){
    if(user)await showSubscription(user);
  });
  window.addEventListener("jon-account-panel-open",()=>{if(auth.currentUser)showSubscription(auth.currentUser);});
+ // Re-check entitlement periodically so News/Sponsored controls disappear soon after expiry,
+ // even when the user stays signed in and does not reopen Profile.
+ let jonPremiumRefreshTimer=setInterval(()=>{if(auth.currentUser)showSubscription(auth.currentUser);},60000);
+ window.addEventListener("pageshow",()=>{if(auth.currentUser)showSubscription(auth.currentUser);});
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&auth.currentUser)showSubscription(auth.currentUser);});
  $("jonPasswordToggle").addEventListener("click",()=>{const input=$("jonAccountPassword"),button=$("jonPasswordToggle");const reveal=input.type==="password";input.type=reveal?"text":"password";button.textContent=reveal?"Hide":"Show";button.setAttribute("aria-label",reveal?"Hide password":"Show password");button.setAttribute("aria-pressed",String(reveal));input.focus();});
  $("jonForgotPassword").addEventListener("click",async()=>{const email=$("jonAccountEmail").value.trim();if(!email){message("Enter your account email first, then tap Forgot password.",true);$("jonAccountEmail").focus();return;}if(!auth){message("Firebase Authentication is unavailable. Please try again later.",true);return;}setBusy(true);message("Sending password reset email…");try{await sendPasswordResetEmail(auth,email);message("If an account exists for "+email+", a password reset link has been sent. Check your Inbox and Spam/Junk.");}catch(e){message(authErrorText(e,"Password reset"),true);}finally{setBusy(false);}});
  $("jonAccountSignup").addEventListener("click",async()=>{
