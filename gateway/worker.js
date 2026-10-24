@@ -108,7 +108,7 @@ function isPremiumSource(url, env) {
   return premiumPrefixes(env).some(value => {
     try {
       const prefix = new URL(value);
-      return prefix.protocol === "https:" && url.origin === prefix.origin && url.pathname.startsWith(prefix.pathname);
+      return ["https:", "http:"].includes(prefix.protocol) && url.origin === prefix.origin && url.pathname.startsWith(prefix.pathname);
     } catch (_) { return false; }
   });
 }
