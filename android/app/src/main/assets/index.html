@@ -2966,7 +2966,8 @@ body.jon-ad-visible{padding-bottom:85px}
   "use strict";
   var ad=document.getElementById("jonLiveUpdates");
   var body=document.body;
-  if(!ad||!body||window.__JON_AD_SCROLL_CLEARANCE_FIX__)return;
+  var content=document.querySelector(".container");
+  if(!ad||!body||!content||window.__JON_AD_SCROLL_CLEARANCE_FIX__)return;
   window.__JON_AD_SCROLL_CLEARANCE_FIX__=true;
   var active=false,basePadding=0,originalInlinePadding="";
   function isAdVisible(){
@@ -2977,20 +2978,21 @@ body.jon-ad-visible{padding-bottom:85px}
   function sync(){
     if(!isAdVisible()){
       if(active){
-        body.style.paddingBottom=originalInlinePadding;
+        content.style.paddingBottom=originalInlinePadding;
         active=false;
       }
       return;
     }
     if(!active){
-      originalInlinePadding=body.style.paddingBottom;
-      basePadding=parseFloat(window.getComputedStyle(body).paddingBottom)||0;
+      originalInlinePadding=content.style.paddingBottom;
+      basePadding=parseFloat(window.getComputedStyle(content).paddingBottom)||0;
       active=true;
     }
     var adHeight=Math.ceil(ad.getBoundingClientRect().height||0);
-    var needed=Math.max(basePadding,adHeight+24);
-    if(Math.abs((parseFloat(body.style.paddingBottom)||0)-needed)>1){
-      body.style.paddingBottom=needed+"px";
+    var bodyPadding=parseFloat(window.getComputedStyle(body).paddingBottom)||0;
+    var needed=Math.max(basePadding,adHeight+24-bodyPadding);
+    if(Math.abs((parseFloat(content.style.paddingBottom)||0)-needed)>1){
+      content.style.paddingBottom=needed+"px";
     }
   }
   var observer=new MutationObserver(sync);
