@@ -69,8 +69,7 @@ async function isCataloguedPremiumUrl(target) {
   const snapshot = await db.collection("premiumPlaybackChannels").get();
   return snapshot.docs.some(doc => {
     const data = doc.data() || {};
-    return data.active === true &&
-      String(data.accessTier || "").toLowerCase() === "premium" &&
+    return String(data.accessTier || "").toLowerCase() === "premium" &&
       typeof data.sourceUrl === "string" &&
       isWithinChannelRoot(target, data.sourceUrl);
   });
