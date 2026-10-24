@@ -2978,11 +2978,29 @@ function jonGatewayForChannel(channel,kind){
  }
  return "";
 }
-function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
+async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,ticketPlayback=false){
  const requestedChannel=filteredTV[index]||tvChannels.find(c=>c.url===url);
- if(requestedChannel&&String(requestedChannel.accessTier||"free").toLowerCase()==="premium"&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
+ const isPremium=!!requestedChannel&&String(requestedChannel.accessTier||"free").toLowerCase()==="premium";
+ if(isPremium&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
   if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
   tvStatus("🔒 Premium access required");
+  return;
+ }
+ if(isPremium&&!ticketPlayback){
+  const channelId=requestedChannel.premiumChannelId||requestedChannel.playbackChannelId||requestedChannel.channelId||"";
+  if(!channelId||typeof window.jonGetPremiumPlaybackUrl!=="function"){
+   tvStatus("🔒 Secure Premium playback is not configured for this channel");
+   return;
+  }
+  tvStatus("🔐 Authorizing Premium playback...");
+  try{
+   const secureUrl=await window.jonGetPremiumPlaybackUrl(requestedChannel);
+   if((filteredTV[index]||tvChannels.find(c=>c.url===url))!==requestedChannel)return;
+   await playTVStream(secureUrl,name,index,0,resetRetry,true);
+  }catch(error){
+   console.warn("JON Premium playback authorization failed:",error);
+   tvStatus("🔒 Premium authorization failed — please sign in again or contact support");
+  }
   return;
  }
 
@@ -2991,10 +3009,11 @@ function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  clearTimeout(tvRetryTimer);
  tvRetryTimer=null;
  const startupAttemptId=++tvPlayAttemptId;
- const channel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
- const perfKey=String(channel.name||name||"TV")+"|"+String(channel.url||url||"");
+ const baseChannel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
+ const channel=ticketPlayback?{...baseChannel,backupUrls:[],backupStreams:[],backupUrl:"",gatewayUrl:"",gatewayURL:"",proxyUrl:"",proxyURL:"",hlsGateway:"",hlsUrl:""}:baseChannel;
+ const perfKey=String(channel.name||name||"TV")+"|"+String(baseChannel.url||url||"");
  if(perfKey!==tvPerfChannelKey||(resetRetry&&sourceIndex===0))resetTVPerformance(perfKey);
- currentTV={...channel,url:jonNormalizeStreamUrl(url)};currentTVIndex=index;tvSourceList=buildTVSources(currentTV).map(jonNormalizeStreamUrl).filter(Boolean);
+ currentTV={...channel,url:jonNormalizeStreamUrl(url)};currentTVIndex=index;tvSourceList=(ticketPlayback?[jonNormalizeStreamUrl(url)]:buildTVSources(currentTV).map(jonNormalizeStreamUrl)).filter(Boolean);
  tvSourceIndex=Math.max(0,Math.min(sourceIndex,tvSourceList.length-1));
  document.getElementById("tvPlayerBox").style.display="block";
  document.getElementById("tvPlayerBox").classList.add("tv-display-persistent");
@@ -3005,8 +3024,8 @@ function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  tvDiag("diagSource",tvSourceIndex===0?"Primary":"Backup "+tvSourceIndex);if(resetRetry)tvRetryAttempt=0;clearTimeout(tvReconnectTimer);cleanupPreviousTV();
  let source=tvSourceList[tvSourceIndex]||currentTV.url;
  if(!source){tvStatus("⚠️ No stream source");return}
- let kind=jonStreamKind(source);
- const gateway=jonGatewayForChannel({...currentTV,url:source},kind);
+ let kind=ticketPlayback?"hls":jonStreamKind(source);
+ const gateway=ticketPlayback?"":jonGatewayForChannel({...currentTV,url:source},kind);
  if(gateway&&gateway!==source){
    const originalKind=kind;
    source=gateway;
@@ -4201,6 +4220,23 @@ if(authPanel){
    }catch(e){console.info("Subscription status endpoint is not available yet.");}
  }
 
+ window.jonGetPremiumPlaybackUrl=async channel=>{
+   const channelId=String(channel&&(channel.premiumChannelId||channel.playbackChannelId||channel.channelId)||"").trim();
+   if(!/^[a-zA-Z0-9_-]{1,100}$/.test(channelId))throw new Error("Premium channel ID is missing");
+   const user=auth.currentUser;
+   if(!user||!user.emailVerified)throw new Error("Sign in with a verified email first");
+   const token=await user.getIdToken();
+   const response=await fetch("https://jon-stream.vercel.app/api/subscription/playback-ticket",{
+     method:"POST",
+     headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
+     body:JSON.stringify({channelId})
+   });
+   let data={};
+   try{data=await response.json()}catch(_){}
+   if(!response.ok)throw new Error(data.error||("Playback authorization failed ("+response.status+")"));
+   if(!data.playbackUrl||!data.ticket)throw new Error("Server returned an invalid playback ticket");
+   return new URL(data.playbackUrl,"https://jon-stream.vercel.app").href;
+ };
  window.jonShowPremiumUpgrade=()=>{
    if(authPanel)authPanel.hidden=false;
    const panel=document.getElementById("jonAccountPanel");
