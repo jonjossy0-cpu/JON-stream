@@ -92,3 +92,9 @@ Do not merge until the blocking items are closed and the deployed Preview is ver
 - Added `tests/worker-premium-prefix.test.js` covering valid directory paths, sibling-prefix rejection, different origins, malformed entries, and multiple configured directories.
 - GitHub Actions run **Premium playback authorization tests #23** completed successfully on commit `d78df98c4453568d6e044f816a1888fac6037812`; Dependency Review also succeeded. Security Audit and APK CI were still running at the last status poll, and Vercel Preview was still pending. This is unit-test evidence only, not real stream playback verification.
 - PR #234 remains Draft/unmerged. The missing Vercel ticket secret, private channel catalog, public raw source URLs, route topology verification, and real Free/Premium playback tests remain blockers.
+
+
+## Preview API routing correction (2026-10-24)
+- Found that the browser hard-coded `https://jon-stream.vercel.app/api/subscription/playback-ticket` and resolved the returned relative playback URL against that same production host. As a result, Preview UI testing would call Production API rather than the branch's Preview API.
+- Updated `index.html` to use `window.location.origin` for both ticket issuance and playback URL resolution. This makes Preview use its own deployment's API and Production use the active site's same-origin API, without embedding a secret or changing channel catalog data.
+- Commit: `5ad7cb23126f38e0da0ebafa0ca1764fd27d41b6`. Vercel Preview was pending at the last check; CI results for this exact commit had not yet appeared. Verify the resulting deployment and authenticated Preview playback before considering this correction tested.
