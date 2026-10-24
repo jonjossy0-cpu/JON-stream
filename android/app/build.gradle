@@ -20,8 +20,8 @@ android {
         mobile {
             dimension "device"
             applicationId "com.jonstream.app"
-            versionCode 7
-            versionName "7.1"
+            versionCode 10
+            versionName "7.4"
         }
         tv {
             dimension "device"
@@ -72,7 +72,7 @@ dependencies {
 }
 
 /*
- * Generate fullscreen channel controls only for Mobile APK 7.1.
+ * Prepare fullscreen controls and mobile-only assets for Mobile APK 7.4.
  * The shared source HTML remains unchanged for Android TV APK 8.0.
  */
 android.sourceSets.mobile.assets.srcDir(layout.buildDirectory.dir("generated/mobile/assets"))
@@ -99,14 +99,15 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (html.count(bottomMarker) != 1) {
             throw new GradleException("Expected one fullscreen bottom bar in the base HTML.")
         }
-        if (html.contains('id="tvFullscreenPrevious"') || html.contains('id="tvFullscreenNext"')) {
-            throw new GradleException("Fullscreen channel controls already exist in the base HTML.")
+        // The root JON Stream HTML is the Mobile APK source of truth; avoid duplicate controls.
+        if (!html.contains('id="tvFullscreenPrevious"') && !html.contains('id="tvFullscreenNext"')) {
+            def controls = bottomMarker +
+                    '     <button type="button" onclick="previousTV()" id="tvFullscreenPrevious" aria-label="Previous channel" title="Previous channel">⏮</button>\n' +
+                    '     <button type="button" onclick="nextTV()" id="tvFullscreenNext" aria-label="Next channel" title="Next channel">⏭</button>\n'
+            html = html.replace(bottomMarker, controls)
+        } else if (!html.contains('id="tvFullscreenPrevious"') || !html.contains('id="tvFullscreenNext"')) {
+            throw new GradleException("Only one fullscreen channel navigation control exists in the source HTML.")
         }
-
-        def controls = bottomMarker +
-                '     <button type="button" onclick="previousTV()" id="tvFullscreenPrevious" aria-label="Previous channel" title="Previous channel">⏮</button>\n' +
-                '     <button type="button" onclick="nextTV()" id="tvFullscreenNext" aria-label="Next channel" title="Next channel">⏭</button>\n'
-        html = html.replace(bottomMarker, controls)
 
         def style = '\n<style id="jonMobileFullscreenChannelNav">\n' +
                 '/* Compact fullscreen channel navigation: icons only, minimal space. */\n' +
@@ -116,34 +117,50 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (!html.contains("</head>")) {
             throw new GradleException("Missing HTML head closing tag.")
         }
-        html = html.replace("</head>", style + ' <link rel="stylesheet" href="jon-news-ticker.css">\n <link rel="stylesheet" href="jon-sponsor-carousel.css">\n' + "</head>")
+        if (!html.contains('id="jonMobileFullscreenChannelNav"')) {
+            html = html.replace("</head>", style + "</head>")
+        }
+        def mobileLinks = ''
+        if (!html.contains('href="jon-news-ticker.css"')) mobileLinks += ' <link rel="stylesheet" href="jon-news-ticker.css">\n'
+        if (!html.contains('href="jon-sponsor-carousel.css"')) mobileLinks += ' <link rel="stylesheet" href="jon-sponsor-carousel.css">\n'
+        if (mobileLinks) html = html.replace("</head>", mobileLinks + "</head>")
 
         if (html.count("</html>") != 1) {
             throw new GradleException("Expected one HTML closing tag before injecting the mobile news ticker.")
         }
-        if (html.contains("jon-news-ticker.js")) {
-            throw new GradleException("Mobile news ticker script is already injected.")
-        }
-        html = html.replace("</html>", ' <script src="jon-news-ticker.js"></script>\n <script src="jon-sponsor-carousel.js"></script>\n</html>')
+        def mobileScripts = ''
+        if (!html.contains('src="jon-news-ticker.js"')) mobileScripts += ' <script src="jon-news-ticker.js"></script>\n'
+        if (!html.contains('src="jon-sponsor-carousel.js"')) mobileScripts += ' <script src="jon-sponsor-carousel.js"></script>\n'
+        if (mobileScripts) html = html.replace("</html>", mobileScripts + "</html>")
 
         /* Mobile-only Firebase channel tier labels; keep shared HTML and TV APK unchanged. */
         def originalMapping = "        group:typeof x.category==='string'&&x.category.trim()?x.category.trim():(typeof x.group==='string'&&x.group.trim()?x.group.trim():'TV Channel'),\n        id:x.id==null?'':String(x.id),"
         def tierMapping = "        group:typeof x.category==='string'&&x.category.trim()?x.category.trim():(typeof x.group==='string'&&x.group.trim()?x.group.trim():'TV Channel'),\n        accessTier:String(x.accessTier||'free').toLowerCase()==='premium'?'premium':'free',\n        id:x.id==null?'':String(x.id),"
-        if (html.count(originalMapping) != 1) throw new GradleException("Mobile tier fix: Firebase mapping not found exactly once.")
-        html = html.replace(originalMapping, tierMapping)
+        if (html.contains("accessTier:String(x.accessTier||'free')")) {
+            // Root HTML already contains the Firebase access-tier mapping.
+        } else if (html.count(originalMapping) == 1) {
+            html = html.replace(originalMapping, tierMapping)
+        } else {
+            throw new GradleException("Mobile tier fix: Firebase mapping not found safely.")
+        }
 
         def originalMerge = "      const merged=[...tvChannels,...incoming];"
-        if (html.count(originalMerge) != 1) throw new GradleException("Mobile tier fix: Firebase merge not found exactly once.")
-        html = html.replace(originalMerge, "      /* Prefer current Firebase tier metadata over local duplicates. */\n      const merged=[...incoming,...tvChannels];")
+        if (html.count(originalMerge) == 1) {
+            html = html.replace(originalMerge, "      /* Prefer current Firebase tier metadata over local duplicates. */\n      const merged=[...incoming,...tvChannels];")
+        } else if (!html.contains("const merged=[...incoming,...tvChannels];")) {
+            // The current root HTML may use a different Firebase merge implementation.
+            // Do not rewrite unrelated channel-loading code automatically.
+        }
 
         /* Actual source line uses four leading spaces; assert exactly one match. */
         def originalCard = '    <div class="tv-country">${escapeHTML(channel.country||channel.group||"TV Channel")}</div>'
         def tierCard = originalCard + '\n    <span class="jon-access-tier ${String(channel.accessTier||"free").toLowerCase()==="premium"?"premium":"free"}">${String(channel.accessTier||"free").toLowerCase()==="premium"?"PREMIUM / PAID":"FREE"}</span>'
-        if (html.count(originalCard) != 1) throw new GradleException("Mobile tier fix: channel card label not found exactly once.")
-        html = html.replace(originalCard, tierCard)
+        if (!html.contains('class="jon-access-tier')) {
+            if (html.count(originalCard) != 1) throw new GradleException("Mobile tier fix: channel card label not found safely.")
+            html = html.replace(originalCard, tierCard)
+        }
         def tierCss = '\n<style id="jonMobileAccessTier">.jon-access-tier{display:inline-block;margin-top:4px;padding:3px 7px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.25px;line-height:1.2}.jon-access-tier.free{color:#86efac;background:#14532d;border:1px solid #166534}.jon-access-tier.premium{color:#fde68a;background:#78350f;border:1px solid #92400e}</style>\n'
-        if (html.count("</head>") != 1) throw new GradleException("Mobile tier fix: expected one head closing tag.")
-        html = html.replace("</head>", tierCss + "</head>")
+        if (!html.contains('id="jonMobileAccessTier"')) html = html.replace("</head>", tierCss + "</head>")
 
         def target = outputFile.get().asFile
         target.parentFile.mkdirs()
