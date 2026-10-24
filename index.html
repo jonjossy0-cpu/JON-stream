@@ -1007,6 +1007,44 @@ img.jon-ad-media{
 }
 </style>
 
+<style id="jonPremiumRadioPlayerV2CSS">
+.jon-radio-player-premium{position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(ellipse at 4% 0%,rgba(227,27,35,.19),transparent 48%),linear-gradient(145deg,#0a1322,#111f32 65%,#0a1422);border:1px solid rgba(255,255,255,.13);box-shadow:0 18px 42px rgba(0,0,0,.26),inset 0 1px rgba(255,255,255,.045)}
+.jon-radio-player-premium:before{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,#ff3745,#ff9b45,transparent);opacity:.95}
+.jon-radio-player-premium .live{display:flex;align-items:center;justify-content:center;gap:8px;color:#fff;font-size:12px;letter-spacing:1.5px;font-weight:900}
+.jon-live-dot{width:8px;height:8px;display:inline-block;border-radius:50%;background:#ff3545;box-shadow:0 0 0 4px rgba(255,53,69,.12),0 0 14px #ff3545;animation:jonRadioLivePulse 1.5s infinite}
+.jon-live-pill{padding:4px 7px;border-radius:6px;background:rgba(227,27,35,.16);border:1px solid rgba(255,75,85,.35);color:#ff7b84;font-size:9px;letter-spacing:1px}
+.jon-radio-station-hero{position:relative;display:flex;align-items:center;gap:15px;margin:17px 0 12px;padding:16px;border:1px solid rgba(255,255,255,.09);border-radius:18px;background:linear-gradient(120deg,rgba(255,255,255,.065),rgba(255,255,255,.018));box-shadow:inset 0 1px rgba(255,255,255,.035);min-width:0}
+.jon-radio-art-wrap{position:relative;flex:0 0 88px;width:88px;height:88px;display:grid;place-items:center}
+.jon-radio-art,.jon-radio-art-fallback{width:78px;height:78px;border-radius:17px;object-fit:contain;background:#fff;border:1px solid rgba(255,255,255,.2);box-shadow:0 7px 24px rgba(0,0,0,.28);position:relative;z-index:1}
+.jon-radio-art[hidden]{display:none}
+.jon-radio-art-fallback{display:grid;place-items:center;font-size:34px;color:#e31b23;background:linear-gradient(145deg,#fff,#e8edf5)}
+.jon-radio-art-ring{position:absolute;inset:0;border:1px solid rgba(255,68,80,.32);border-radius:23px;transform:rotate(45deg);animation:jonRadioRing 7s linear infinite}
+.jon-radio-identity{min-width:0;flex:1}
+.jon-radio-kicker{font-size:9px;font-weight:900;letter-spacing:1.7px;color:#ff6973;margin-bottom:6px}
+.jon-radio-title{font-size:clamp(17px,3vw,23px);line-height:1.2;font-weight:900;color:#fff;overflow-wrap:anywhere}
+.jon-radio-subtitle{margin-top:6px;color:#9cacc0;font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.jon-radio-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.jon-radio-tags span{font-size:9px;font-weight:800;letter-spacing:.5px;color:#dce6f4;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.045);padding:5px 7px;border-radius:6px}
+.jon-radio-tags span:first-child{color:#83efb2}
+.jon-radio-equalizer{height:28px;display:flex;align-items:center;gap:3px;flex:0 0 auto;margin-left:auto}
+.jon-radio-equalizer i{width:3px;height:8px;border-radius:3px;background:#ff4652;opacity:.85;animation:jonRadioBars .8s ease-in-out infinite alternate}
+.jon-radio-equalizer i:nth-child(2){height:17px;animation-delay:.13s}.jon-radio-equalizer i:nth-child(3){height:24px;animation-delay:.27s}.jon-radio-equalizer i:nth-child(4){height:13px;animation-delay:.39s}.jon-radio-equalizer i:nth-child(5){height:19px;animation-delay:.51s}
+.jon-radio-player-premium:not(.jon-radio-playing) .jon-radio-equalizer i{animation-play-state:paused;transform:scaleY(.45);opacity:.35}
+.jon-radio-player-premium audio{display:block;width:100%;height:48px;margin-top:14px;border-radius:12px;accent-color:#e31b23}
+.jon-radio-player-premium .now{font-size:12px;line-height:1.45;color:#b8c6d8;margin:7px 0 3px}
+.jon-radio-player-premium .buttons{gap:9px;margin-top:14px}
+.jon-radio-player-premium .buttons button{min-height:45px;border-radius:12px;box-shadow:0 5px 14px rgba(0,0,0,.12);transition:transform .18s,filter .18s}
+.jon-radio-player-premium .buttons button:first-child{background:linear-gradient(135deg,#ff3443,#bd101b)}
+.jon-radio-player-premium .buttons button:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.jon-radio-player-premium .volume-box{padding:10px 12px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(0,0,0,.13)}
+.jon-radio-player-premium .volume-box input{accent-color:#ff3545}
+.jon-radio-player-premium .status{font-weight:800;letter-spacing:.2px}
+@keyframes jonRadioBars{from{transform:scaleY(.35)}to{transform:scaleY(1)}}
+@keyframes jonRadioRing{to{transform:rotate(405deg)}}
+@keyframes jonRadioLivePulse{0%,100%{opacity:1}50%{opacity:.55}}
+@media(max-width:520px){.jon-radio-station-hero{gap:10px;padding:12px;margin-top:14px;border-radius:15px}.jon-radio-art-wrap{width:62px;height:62px;flex-basis:62px}.jon-radio-art,.jon-radio-art-fallback{width:56px;height:56px;border-radius:13px}.jon-radio-art-fallback{font-size:27px}.jon-radio-art-ring{border-radius:16px}.jon-radio-title{font-size:16px}.jon-radio-subtitle{font-size:10px}.jon-radio-tags{gap:4px;margin-top:7px}.jon-radio-tags span{font-size:8px;padding:4px 5px}.jon-radio-equalizer{gap:2px}.jon-radio-equalizer i{width:2px}.jon-radio-player-premium .buttons{gap:6px}.jon-radio-player-premium .buttons button{min-height:42px}}
+@media(prefers-reduced-motion:reduce){.jon-radio-art-ring,.jon-radio-equalizer i,.jon-live-dot{animation:none!important}}
+</style>
 </head>
 
 <body>
@@ -1084,8 +1122,22 @@ img.jon-ad-media{
   <h2>📻 RADIO</h2>
  </div>
 
- <div class="player">
-  <div class="live">🔴 LIVE RADIO</div>
+ <div class="player jon-radio-player-premium">
+  <div class="live"><span class="jon-live-dot"></span> LIVE RADIO <span class="jon-live-pill">ON AIR</span></div>
+  <div class="jon-radio-station-hero" id="radioStationHero">
+   <div class="jon-radio-art-wrap">
+    <img id="radioStationLogo" class="jon-radio-art" alt="Radio station logo" src="" hidden>
+    <div id="radioStationLogoFallback" class="jon-radio-art-fallback">📻</div>
+    <span class="jon-radio-art-ring"></span>
+   </div>
+   <div class="jon-radio-identity">
+    <div class="jon-radio-kicker">NOW STREAMING</div>
+    <div class="jon-radio-title" id="radioStationTitle">Choose a station</div>
+    <div class="jon-radio-subtitle" id="radioStationSubtitle">Select a station below to start listening</div>
+    <div class="jon-radio-tags"><span>● LIVE AUDIO</span><span id="radioStreamMode">DIRECT STREAM</span></div>
+   </div>
+   <div class="jon-radio-equalizer" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+  </div>
   <div class="now" id="nowPlaying">Select a radio station</div>
 
   <audio id="radioPlayer" controls preload="none"></audio>
@@ -1424,6 +1476,23 @@ let previousVolume=.8;
 
 let favorites=JSON.parse(localStorage.getItem("jonRadioFavorites")||"[]");
 
+function renderRadioStationIdentity(station){
+ const logo=document.getElementById("radioStationLogo");
+ const fallback=document.getElementById("radioStationLogoFallback");
+ const title=document.getElementById("radioStationTitle");
+ const subtitle=document.getElementById("radioStationSubtitle");
+ const mode=document.getElementById("radioStreamMode");
+ const player=document.querySelector(".radio-section .player");
+ if(!logo||!fallback||!title||!subtitle||!mode)return;
+ const name=station&&station.name?String(station.name):"Choose a station";
+ title.textContent=name;
+ subtitle.textContent=station?"Direct audio stream · "+(station.url?(()=>{try{return new URL(station.url).hostname}catch(_){return "Radio stream"}})():"Radio stream"):"Select a station below to start listening";
+ mode.textContent=station?"DIRECT STREAM":"READY TO PLAY";
+ logo.onload=()=>{logo.hidden=false;fallback.hidden=true};
+ logo.onerror=()=>{logo.hidden=true;fallback.hidden=false};
+ if(station&&station.logo){logo.src=station.logo}else{logo.removeAttribute("src");logo.hidden=true;fallback.hidden=false}
+ if(player)player.classList.remove("jon-radio-playing");
+}
 function selectStation(index){
  const requestedStation=stations[index];
  if(requestedStation&&String(requestedStation.accessTier||"free").toLowerCase()==="premium"&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
@@ -1436,6 +1505,7 @@ function selectStation(index){
  radioAdvancedRetryTimer=null;
  radioAdvancedRetryAttempts=0;
  currentStation=stations[index];
+ renderRadioStationIdentity(currentStation);
  const perfKey=String(currentStation.name||"Radio")+"|"+String(currentStation.url||"");
  resetRadioPerformance(perfKey);
  updateRadioMediaSession();
@@ -1468,19 +1538,26 @@ function playCurrent(){
 
 function pauseRadio(){
  radioPlayer.pause();
+ const radioBox=document.querySelector(".radio-section .player");
+ if(radioBox)radioBox.classList.remove("jon-radio-playing");
  radioStatus.innerHTML="⏸ Paused";
 }
 
 function stopRadio(){
  clearTimeout(reconnectTimer);
  radioPlayer.pause();
+ const radioBox=document.querySelector(".radio-section .player");
+ if(radioBox)radioBox.classList.remove("jon-radio-playing");
  radioPlayer.removeAttribute("src");
  radioPlayer.load();
  nowPlaying.innerHTML="Radio stopped";
+ renderRadioStationIdentity(null);
  radioStatus.innerHTML="⚪ Stopped";
 }
 
 radioPlayer.addEventListener("playing",()=>{
+ const radioBox=document.querySelector(".radio-section .player");
+ if(radioBox)radioBox.classList.add("jon-radio-playing");
  radioStatus.innerHTML="🟢 Connected";
  reconnectAttempts=0;
 });
