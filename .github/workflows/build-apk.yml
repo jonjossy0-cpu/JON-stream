@@ -65,14 +65,14 @@ jobs:
         run: gradle :app:assembleMobileDebug :app:assembleTvDebug
 
       - name: Upload Mobile debug APK
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: JON-Stream-Mobile-Debug-APK
           path: android/app/build/outputs/apk/mobile/debug/*.apk
           if-no-files-found: error
 
       - name: Upload Android TV debug APK
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: JON-Stream-Android-TV-Debug-APK
           path: android/app/build/outputs/apk/tv/debug/*.apk
@@ -140,14 +140,14 @@ jobs:
           gradle :app:assembleMobileRelease :app:assembleTvRelease
 
       - name: Upload Mobile signed Release APK
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: JON-Stream-Mobile-APK-7.4
           path: android/app/build/outputs/apk/mobile/release/*.apk
           if-no-files-found: error
 
       - name: Upload Android TV signed Release APK
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: JON-Stream-Android-TV-Release-APK
           path: android/app/build/outputs/apk/tv/release/*.apk
