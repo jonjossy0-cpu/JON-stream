@@ -147,10 +147,16 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
 
         /* Mobile APK 7.3 only: radio player glow and custom controls remain the visible controls. */
         def nativeRadioAudio = '<audio id="radioPlayer" controls preload="none"></audio>'
-        if (html.count(nativeRadioAudio) != 1) {
-            throw new GradleException("Mobile radio UI update: expected one native radio audio element.")
+        def mainRadioAudio = '<audio id="radioPlayer" preload="none" aria-label="Live radio audio"></audio>'
+        def nativeRadioAudioCount = html.count(nativeRadioAudio)
+        def mainRadioAudioCount = html.count(mainRadioAudio)
+        if (nativeRadioAudioCount == 1 && mainRadioAudioCount == 0) {
+            html = html.replace(nativeRadioAudio, mainRadioAudio)
+        } else if (nativeRadioAudioCount == 0 && mainRadioAudioCount == 1) {
+            // The source already uses the main JON Stream custom radio controls.
+        } else {
+            throw new GradleException("Mobile radio UI update: expected one main JON Stream radio audio element.")
         }
-        html = html.replace(nativeRadioAudio, '<audio id="radioPlayer" preload="none"></audio>')
 
         if (html.contains('id="jonMobileRadioPlayerGlow73"')) {
             throw new GradleException("Mobile radio UI update is already present in the generated HTML.")
@@ -158,8 +164,8 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         def radioGlowStyle = '''
 <style id="jonMobileRadioPlayerGlow73">
 @keyframes jonRadioPlayerGlow73{0%,100%{box-shadow:0 0 10px rgba(0,140,255,.48),0 0 24px rgba(0,140,255,.22),inset 0 0 8px rgba(0,140,255,.08);border-color:rgba(0,140,255,.72)}50%{box-shadow:0 0 10px rgba(255,35,55,.5),0 0 26px rgba(255,35,55,.24),inset 0 0 8px rgba(255,35,55,.08);border-color:rgba(255,45,65,.76)}}
-.radio-section .player{animation:jonRadioPlayerGlow73 3.2s ease-in-out infinite;transition:box-shadow .25s,border-color .25s}
-@media(prefers-reduced-motion:reduce){.radio-section .player{animation:none;box-shadow:0 0 12px rgba(0,140,255,.25),0 0 12px rgba(255,35,55,.18)}}
+.radio-section .player:not(.jon-radio-player-premium){animation:jonRadioPlayerGlow73 3.2s ease-in-out infinite;transition:box-shadow .25s,border-color .25s}
+@media(prefers-reduced-motion:reduce){.radio-section .player:not(.jon-radio-player-premium){animation:none;box-shadow:0 0 12px rgba(0,140,255,.25),0 0 12px rgba(255,35,55,.18)}}
 </style>
 '''
         if (html.count("</head>") != 1) {
