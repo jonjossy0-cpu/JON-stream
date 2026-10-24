@@ -100,6 +100,23 @@ function isAllowed(url) {
 }
 
 
+function premiumPlaylistReferencesAllowed(body, base, payload, env) {
+  const references = [];
+  for (const line of body.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    for (const match of line.matchAll(/URI="([^"]+)"/gi)) references.push(match[1]);
+    if (!trimmed.startsWith("#")) references.push(trimmed);
+  }
+  for (const reference of references) {
+    let url;
+    try { url = new URL(reference, base); } catch (_) { return false; }
+    if (!isAllowed(url) || url.hostname !== payload.host ||
+        !url.pathname.startsWith(payload.rootPath) || !isPremiumSource(url, env)) return false;
+  }
+  return true;
+}
+
 function premiumPrefixes(env) {
   return String(env && env.PREMIUM_SOURCE_PREFIXES || "").split(",").map(value => value.trim()).filter(Boolean);
 }
@@ -418,6 +435,12 @@ async function handle(request, env) {
       return new Response("Playlist too large", { status: 413, headers: corsHeaders() });
     }
 
+    if (ticketPayload && !premiumPlaylistReferencesAllowed(body, finalUrl, ticketPayload, env)) {
+      return new Response("Playlist contains a URL outside the authorized Premium source", {
+        status: 502,
+        headers: corsHeaders()
+      });
+    }
     const rewritten = rewritePlaylist(body, finalUrl, ticketPayload ? ticket : "");
 
     return new Response(rewritten, {
