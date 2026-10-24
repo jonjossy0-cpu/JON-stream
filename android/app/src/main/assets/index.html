@@ -233,6 +233,14 @@ button:active{transform:scale(.98)}
  margin-bottom:18px;
 }
 
+/* JON Mobile APK 7.3: premium alternating blue/red glow on the radio player card. */
+@keyframes jonRadioPlayerGlow73{
+ 0%,100%{box-shadow:0 0 10px rgba(0,140,255,.48),0 0 24px rgba(0,140,255,.22),inset 0 0 8px rgba(0,140,255,.08);border-color:rgba(0,140,255,.72)}
+ 50%{box-shadow:0 0 10px rgba(255,35,55,.5),0 0 26px rgba(255,35,55,.24),inset 0 0 8px rgba(255,35,55,.08);border-color:rgba(255,45,65,.76)}
+}
+.radio-section .player{animation:jonRadioPlayerGlow73 3.2s ease-in-out infinite;transition:box-shadow .25s,border-color .25s}
+@media(prefers-reduced-motion:reduce){.radio-section .player{animation:none;box-shadow:0 0 12px rgba(0,140,255,.25),0 0 12px rgba(255,35,55,.18)}}
+
 .live{
  text-align:center;
  color:#ff4b55;
@@ -945,7 +953,7 @@ img.jon-ad-media{
   <div class="live">🔴 LIVE RADIO</div>
   <div class="now" id="nowPlaying">Select a radio station</div>
 
-  <audio id="radioPlayer" controls preload="none"></audio>
+  <audio id="radioPlayer" preload="none"></audio>
 
   <div class="volume-box">
    <span id="volumeIcon">🔊</span>
