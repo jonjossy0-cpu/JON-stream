@@ -1758,6 +1758,7 @@ function pauseRadio(){
 
 function stopRadio(){
  clearTimeout(reconnectTimer);
+ if(radioPremiumHls){try{radioPremiumHls.destroy()}catch(_){}radioPremiumHls=null}
  radioPlayer.pause();
  const radioBox=document.querySelector(".radio-section .player");
  if(radioBox)radioBox.classList.remove("jon-radio-playing");
@@ -1926,9 +1927,7 @@ function setRadioAdvancedMode(mode){
  if(currentStation){
   setRadioAdvancedStatus("🔄 Applying playback mode...");
   try{
-   radioPlayer.load();
-   radioPlayer.src=currentStation.url;
-   const p=radioPlayer.play();
+   const p=loadRadioCurrentSource();
    if(p&&p.then)p.then(()=>{
     radioAdvancedRetryAttempts=0;
     setRadioAdvancedStatus("🟢 Connected");
