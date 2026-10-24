@@ -344,6 +344,9 @@ audio,video{
  color:var(--muted);
 }
 
+/* Channel access labels restored for Mobile APK 7.1. */
+.jon-access-tier{display:inline-flex;align-items:center;margin-top:5px;padding:4px 7px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.25px;line-height:1.2}.jon-access-tier.free{color:#86efac;background:#14532d;border:1px solid #166534}.jon-access-tier.premium{color:#fde68a;background:#78350f;border:1px solid #92400e}
+
 .live-dot{
  width:10px;
  height:10px;
@@ -580,6 +583,9 @@ audio,video{
  opacity:1 !important;
 }
 
+
+/* Mobile APK 7.1: isolated profile/subscription panel styles. */
+.topbar-actions{display:flex;align-items:center;gap:8px}.jon-account-panel[hidden]{display:none!important}.jon-account-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:15px;margin:14px 0}.jon-account-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}.jon-account-head span,.jon-account-note{font-size:12px;color:var(--muted)}.jon-account-panel label{display:block;font-size:12px;font-weight:700;margin:9px 0 4px}.jon-account-panel input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:16px;min-height:46px}.jon-password-entry{display:flex;gap:8px;align-items:stretch}.jon-password-entry input{flex:1;min-width:0;margin:0}.jon-password-toggle{flex:0 0 auto;min-width:58px;border:1px solid var(--border);border-radius:10px;background:var(--card2);color:var(--text);padding:0 12px;font-size:13px;font-weight:700}.jon-forgot-password{display:inline-block;margin-top:10px;padding:8px 0;border:0;background:transparent;color:var(--accent,#60a5fa);font-size:13px;text-decoration:underline}.jon-account-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.jon-account-secondary{background:#263750}.jon-account-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}.jon-account-row span{color:var(--muted)}.jon-account-row strong{text-align:right;overflow-wrap:anywhere}.jon-account-error{color:#fca5a5;font-size:12px;white-space:pre-wrap}
 </style>
 
 <style id="jonGithubMediaFix">.jonMediaHeroImage{visibility:visible!important}.jonMediaHeroImage.show{visibility:visible!important;opacity:1!important}.jon-ad-media{visibility:visible!important}</style>
@@ -894,7 +900,10 @@ img.jon-ad-media{
 
 <div class="topbar">
  <div class="clock" id="clock">🕐 --:--:--</div>
- <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+ <div class="topbar-actions">
+  <button class="theme-btn" id="profileToggleBtn" type="button" onclick="toggleProfilePanel()" aria-label="Open profile" aria-controls="jonAccountPanel" aria-expanded="false" title="Profile">👤</button>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+ </div>
 </div>
 
 <div class="time-panel">
@@ -906,6 +915,26 @@ img.jon-ad-media{
  <button id="radioModeBtn" class="active" onclick="setMode('radio')">📻 RADIO</button>
  <button id="tvModeBtn" onclick="setMode('tv')">📺 TV</button>
 </div>
+
+<section id="jonAccountPanel" class="jon-account-panel" hidden>
+ <div class="jon-account-head"><strong>👤 My Profile / Premium</strong><span id="jonAccountState">Not signed in</span></div>
+ <div id="jonAccountSignedOut">
+  <p class="jon-account-note">Sign up or sign in with your email to manage your Premium subscription.</p>
+  <label for="jonAccountEmail">Email address</label><input id="jonAccountEmail" type="email" autocomplete="email" placeholder="name@example.com">
+  <label for="jonAccountPassword">Password</label><div class="jon-password-entry"><input id="jonAccountPassword" type="password" autocomplete="current-password" placeholder="Enter your password" autocapitalize="off" spellcheck="false"><button id="jonPasswordToggle" class="jon-password-toggle" type="button" aria-label="Show password" aria-pressed="false">Show</button></div><button id="jonForgotPassword" class="jon-forgot-password" type="button">Forgot password?</button>
+  <div class="jon-account-actions"><button id="jonAccountSignup" type="button">Create account</button><button id="jonAccountSignin" type="button" class="jon-account-secondary">Sign in</button></div>
+ </div>
+ <div id="jonAccountSignedIn" hidden>
+  <div class="jon-account-row"><span>Email</span><strong id="jonProfileEmail">—</strong></div>
+  <div class="jon-account-row"><span>Email verification</span><strong id="jonProfileVerified">—</strong></div>
+  <div class="jon-account-row"><span>Subscription</span><strong id="jonProfilePlan">Checking…</strong></div>
+  <div class="jon-account-row"><span>Time remaining</span><strong id="jonProfileRemaining">Checking…</strong></div>
+  <div class="jon-account-row"><span>Payment</span><strong id="jonProfilePayment">—</strong></div>
+  <p id="jonAccountMessage" class="jon-account-note" aria-live="polite"></p>
+  <div class="jon-account-actions"><button id="jonResendVerification" type="button" class="jon-account-secondary">Resend verification</button><button id="jonAccountSignout" type="button" class="jon-account-secondary">Sign out</button></div>
+ </div>
+ <p id="jonAccountError" class="jon-account-error" role="status" aria-live="polite"></p>
+</section>
 
 <div class="brand">
  <img data-logo class="logo" alt="JON FM ETHIOPIA">
@@ -1280,7 +1309,16 @@ let previousVolume=.8;
 
 let favorites=JSON.parse(localStorage.getItem("jonRadioFavorites")||"[]");
 
+function jonIsPremiumTier(value){return ["premium","paid","subscription","subscriber"].includes(String(value||"free").trim().toLowerCase());}
+function jonPremiumAllowed(){const a=window.jonPremiumAccess;return !!(a&&a.ready&&a.allowed);}
+
 function selectStation(index){
+ const requestedStation=stations[index];
+ if(requestedStation&&jonIsPremiumTier(requestedStation.accessTier)&&!jonPremiumAllowed()){
+  if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
+  radioStatus.innerHTML="🔒 Premium access required";
+  return;
+ }
  clearTimeout(radioAdvancedRetryTimer);
  radioAdvancedRetryTimer=null;
  radioAdvancedRetryAttempts=0;
@@ -1304,6 +1342,7 @@ function selectStation(index){
 }
 
 function playCurrent(){
+ if(currentStation&&jonIsPremiumTier(currentStation.accessTier)&&!jonPremiumAllowed()){if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();radioStatus.innerHTML="🔒 Premium access required";return;}
  if(!currentStation){
   selectStation(0);
   return;
@@ -1347,6 +1386,7 @@ radioPlayer.addEventListener("error",()=>{
 function reconnectRadio(){
  clearTimeout(reconnectTimer);
  if(!currentStation)return;
+ if(jonIsPremiumTier(currentStation.accessTier)&&!jonPremiumAllowed()){stopRadio();currentStation=null;radioStatus.innerHTML="🔒 Premium access required";return;}
 
  reconnectAttempts++;
 
@@ -1692,6 +1732,7 @@ function renderStations(list){
    <div class="station-info">
     <div class="station-name">${escapeHTML(station.name)}</div>
     <div class="station-status">🔴 Live Stream</div>
+    <span class="jon-access-tier ${String(station.accessTier||"free").toLowerCase()==="premium"?"premium":"free"}">${String(station.accessTier||"free").toLowerCase()==="premium"?"PREMIUM / PAID":"FREE"}</span>
    </div>
    <button class="station-play" onclick="selectStation(${index})">▶</button>
    <button class="favorite-btn ${fav?"active":""}" onclick="toggleFavorite(${index})">${fav?"★":"☆"}</button>
@@ -2258,6 +2299,7 @@ function renderTV(list){
    <div class="tv-info">
     <div class="tv-name">${escapeHTML(channel.name)}</div>
     <div class="tv-country">${escapeHTML(channel.country||channel.group||"TV Channel")}</div>
+    <span class="jon-access-tier ${String(channel.accessTier||"free").toLowerCase()==="premium"?"premium":"free"}">${String(channel.accessTier||"free").toLowerCase()==="premium"?"PREMIUM / PAID":"FREE"}</span>
    </div>
 
    <span class="tv-stream-health testing" data-tv-health="${escapeHTML(channel.url)}" title="Checking TV stream…">●</span>
@@ -2531,6 +2573,12 @@ function jonGatewayForChannel(channel,kind){
  return "";
 }
 function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
+ const requestedChannel=filteredTV[index]||tvChannels.find(c=>c.url===url);
+ if(requestedChannel&&jonIsPremiumTier(requestedChannel.accessTier)&&!jonPremiumAllowed()){
+  if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
+  tvStatus("🔒 Premium access required");
+  return;
+ }
  clearTimeout(tvStartupTimer);
  // A new playback attempt must not inherit a delayed retry from the previous channel/source.
  clearTimeout(tvRetryTimer);
@@ -3222,12 +3270,17 @@ body.jon-ad-visible{padding-bottom:85px}
         logo:typeof x.logo==='string'?x.logo:'',
         country:typeof x.country==='string'?x.country:'',
         group:typeof x.category==='string'&&x.category.trim()?x.category.trim():(typeof x.group==='string'&&x.group.trim()?x.group.trim():'TV Channel'),
+        accessTier:String(x.accessTier||'free').toLowerCase()==='premium'?'premium':'free',
         id:x.id==null?'':String(x.id),
+        gatewayUrl:cleanStreamUrl(x.gatewayUrl||x.gatewayURL||x.hlsGateway||x.hlsUrl),
+        proxyUrl:cleanStreamUrl(x.proxyUrl||x.proxyURL),
         backupUrl:cleanStreamUrl(x.backupUrl),
         backupUrls:Array.isArray(x.backupUrls)?x.backupUrls.filter(isHttpUrl).map(u=>u.trim()):[],
         backupStreams:Array.isArray(x.backupStreams)?x.backupStreams.filter(isHttpUrl).map(u=>u.trim()):[]
       }));
-      const merged=[...tvChannels,...incoming];
+      /* Prefer Firebase rows so current channel URLs, access tiers, gateways,
+         and configured backups are not shadowed by stale bundled entries. */
+      const merged=[...incoming,...tvChannels];
       const seen=new Set();
       tvChannels=merged.filter(x=>{const k=String(x.url||'').trim(); if(!k||seen.has(k)) return false; seen.add(k); return true;});
       /* Firebase may arrive after the local order was restored. Always apply
@@ -3241,9 +3294,10 @@ body.jon-ad-visible{padding-bottom:85px}
       const incoming=remote.radio.filter(x=>x&&x.enabled!==false&&typeof x.name==='string'&&x.name.trim()&&isHttpUrl(x.url)).map(x=>({
         name:x.name.trim(),
         url:x.url.trim(),
-        logo:typeof x.logo==='string'?x.logo:''
+        logo:typeof x.logo==='string'?x.logo:'',
+        accessTier:String(x.accessTier||'free').toLowerCase()==='premium'?'premium':'free'
       }));
-      const merged=[...stations,...incoming];
+      const merged=[...incoming,...stations];
       const seen=new Set();
       stations=merged.filter(x=>{const k=String(x.url||'').trim(); if(!k||seen.has(k)) return false; seen.add(k); return true;});
       renderStations(getRadioList());
@@ -3658,6 +3712,147 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 })();
 </script>
 
+<script id="jonMobileProfilePanelToggle">
+function toggleProfilePanel(){
+ const panel=document.getElementById("jonAccountPanel");
+ const button=document.getElementById("profileToggleBtn");
+ if(!panel||!button)return;
+ const opening=panel.hidden;
+ panel.hidden=!opening;
+ button.setAttribute("aria-expanded",String(opening));
+ button.setAttribute("aria-label",opening?"Close profile":"Open profile");
+ button.title=opening?"Close profile":"Profile";
+ if(opening)window.dispatchEvent(new Event("jon-account-panel-open"));
+}
+</script>
+<script type="module">
+import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, signOut, reload } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+const authPanel=document.getElementById("jonAccountPanel");
+window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
+
+if(authPanel){
+ const auth=getAuth(getApp());
+ const $=id=>document.getElementById(id);
+ const message=(text,isError=false)=>{ $("jonAccountError").textContent=text||""; $("jonAccountError").style.color=isError?"#fca5a5":"#86efac"; };
+ const authErrorText=(error,action)=>{
+   const code=String(error&&error.code||"");
+   const messages={
+     "auth/operation-not-allowed":"Email sign-up is not enabled yet. The site owner must enable Authentication → Sign-in method → Email/Password in the Firebase Console for the jon-stream project.",
+     "auth/unauthorized-domain":"This website domain is not authorized for Firebase sign-in. Add this domain under Firebase Authentication → Settings → Authorized domains.",
+     "auth/email-already-in-use":"This email already has an account. Choose Sign in instead, or use password recovery if needed.",
+     "auth/invalid-email":"Enter a valid email address.",
+     "auth/weak-password":"Choose a stronger password with at least 6 characters.",
+     "auth/invalid-credential":"Email or password is incorrect. Check both and try again.",
+     "auth/user-disabled":"This account has been disabled. Contact JON Stream support.",
+     "auth/too-many-requests":"Too many attempts. Please wait a little and try again.",
+     "auth/network-request-failed":"Network connection failed. Check your internet connection and try again.",
+     "auth/missing-password":"Enter your password.",
+     "auth/invalid-password":"The password is incorrect. Please try again."
+   };
+   return messages[code]||((action||"Request")+" failed ("+(code||"unknown error")+"). Please try again.");
+ };
+ const setBusy=(busy)=>["jonAccountSignup","jonAccountSignin","jonForgotPassword","jonResendVerification","jonAccountSignout"].forEach(id=>{const el=$(id);if(el)el.disabled=busy;});
+ let jonSubscriptionRequestId=0;
+ async function showSubscription(user){
+   const requestId=++jonSubscriptionRequestId;
+   if(auth.currentUser!==user)return;
+   window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
+   window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+   $("jonProfileEmail").textContent=user.email||"—";
+   $("jonProfileVerified").textContent=user.emailVerified?"Verified":"Not verified";
+   $("jonProfilePlan").textContent=user.emailVerified?"Loading subscription…":"Verify your email first";
+   $("jonProfileRemaining").textContent="—";
+   $("jonProfilePayment").textContent="Checking…";
+   if(!user.emailVerified){
+     window.jonPremiumAccess={ready:true,allowed:false,status:"email_verification_required"};
+     window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+     $("jonProfilePlan").textContent="Email verification required";
+     $("jonProfilePayment").textContent="Not active";
+     $("jonAccountMessage").textContent="Verify your email before starting a trial or using Premium access.";
+     return;
+   }
+   try{
+     const token=await user.getIdToken(true);
+     const response=await fetch("https://jon-stream.vercel.app/api/subscription/status",{
+       method:"GET",
+       headers:{Authorization:"Bearer "+token,Accept:"application/json"},
+       cache:"no-store"
+     });
+     const data=await response.json().catch(()=>({}));
+     if(requestId!==jonSubscriptionRequestId||auth.currentUser!==user)return;
+     if(!response.ok)throw new Error(data.error||("Subscription API returned HTTP "+response.status));
+     window.jonPremiumAccess={ready:true,allowed:data.hasPremium===true,status:String(data.status||"free")};
+     window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+     $("jonProfilePlan").textContent=data.planLabel||data.status||"No active subscription";
+     $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
+     $("jonProfilePayment").textContent=data.paymentLabel||"—";
+     $("jonAccountMessage").textContent=data.message||(data.hasPremium?"Premium access is active.":"Free channels remain available. Premium requires an active trial or entitlement.");
+     message("");
+   }catch(e){
+     if(requestId!==jonSubscriptionRequestId||auth.currentUser!==user)return;
+     // Fail closed for Premium-only channels, but do not block free channels.
+     window.jonPremiumAccess={ready:true,allowed:false,status:"api_error"};
+     window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+     $("jonProfilePlan").textContent="Status unavailable";
+     $("jonProfileRemaining").textContent="—";
+     $("jonProfilePayment").textContent="Could not verify";
+     $("jonAccountMessage").textContent="Subscription could not be verified right now. Free channels remain available. Reopen Profile to retry.";
+     message("Could not load subscription status: "+(e&&e.message?e.message:"network error")+". Reopen Profile to retry.",true);
+     console.error("JON subscription status request failed",e);
+   }
+ }
+
+ window.jonShowPremiumUpgrade=()=>{
+   if(authPanel)authPanel.hidden=false;
+   const panel=document.getElementById("jonAccountPanel");
+   if(panel&&typeof panel.scrollIntoView==="function")panel.scrollIntoView({behavior:"smooth",block:"center"});
+   const error=document.getElementById("jonAccountError");
+   if(error)error.textContent="This is a Premium channel. Sign in with a verified email and an active 3-day trial or Premium entitlement to continue.";
+ };
+ onAuthStateChanged(auth,async user=>{
+   jonSubscriptionRequestId++;
+   if(!user){window.jonPremiumAccess={ready:true,allowed:false,status:"signed_out"};window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));}
+
+   $("jonAccountState").textContent=user?(user.emailVerified?"Signed in":"Verify email"):"Not signed in";
+   $("jonAccountSignedOut").hidden=!!user;
+   $("jonAccountSignedIn").hidden=!user;
+   message("");
+   if(user)await showSubscription(user);
+ });
+ window.addEventListener("jon-account-panel-open",()=>{if(auth.currentUser)showSubscription(auth.currentUser);});
+ $("jonPasswordToggle").addEventListener("click",()=>{const input=$("jonAccountPassword"),button=$("jonPasswordToggle");const reveal=input.type==="password";input.type=reveal?"text":"password";button.textContent=reveal?"Hide":"Show";button.setAttribute("aria-label",reveal?"Hide password":"Show password");button.setAttribute("aria-pressed",String(reveal));input.focus();});
+ $("jonForgotPassword").addEventListener("click",async()=>{const email=$("jonAccountEmail").value.trim();if(!email){message("Enter your account email first, then tap Forgot password.",true);$("jonAccountEmail").focus();return;}if(!auth){message("Firebase Authentication is unavailable. Please try again later.",true);return;}setBusy(true);message("Sending password reset email…");try{await sendPasswordResetEmail(auth,email);message("If an account exists for "+email+", a password reset link has been sent. Check your Inbox and Spam/Junk.");}catch(e){message(authErrorText(e,"Password reset"),true);}finally{setBusy(false);}});
+ $("jonAccountSignup").addEventListener("click",async()=>{
+   const email=$("jonAccountEmail").value.trim(),password=$("jonAccountPassword").value;
+   if(!email||password.length<6){message("Enter a valid email and a password with at least 6 characters.",true);return;}
+   setBusy(true);message("Creating account…");
+   try{
+     const cred=await createUserWithEmailAndPassword(auth,email,password);
+     await sendEmailVerification(cred.user);
+     $("jonAccountMessage").textContent="Account created successfully. Open the verification email sent to "+email+" and follow its link. Check Spam/Junk if it does not arrive.";
+     message("");
+   }catch(e){message(authErrorText(e,"Sign up"),true);}
+   finally{setBusy(false);}
+ });
+ $("jonAccountSignin").addEventListener("click",async()=>{
+   const email=$("jonAccountEmail").value.trim(),password=$("jonAccountPassword").value;
+   if(!email||!password){message("Enter your email and password.",true);return;}
+   setBusy(true);message("Signing in…");
+   try{
+     const cred=await signInWithEmailAndPassword(auth,email,password);
+     await reload(cred.user);
+     if(!cred.user.emailVerified){$("jonAccountMessage").textContent="Please verify your email. Use Resend verification below.";message("");}
+   }catch(e){message(authErrorText(e,"Sign in"),true);}
+   finally{setBusy(false);}
+ });
+ $("jonResendVerification").addEventListener("click",async()=>{
+   const user=auth.currentUser;if(!user){message("Sign in first.",true);return;}
+   setBusy(true);try{await sendEmailVerification(user);$("jonAccountMessage").textContent="Verification email sent to "+(user.email||"your email")+". Check Inbox and Spam/Junk.";message("");}catch(e){message(authErrorText(e,"Resend verification"),true);}finally{setBusy(false);}
+ });
+ $("jonAccountSignout").addEventListener("click",async()=>{setBusy(true);try{await signOut(auth);}catch(e){message("Sign out failed: "+(e.code||e.message),true);}finally{setBusy(false);}});
+}
+</script>
 </body>
 <script id="jonStreamCompatibilityPatch">
 (function(){
@@ -3783,4 +3978,93 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
  render();
 })();
 </script>
+
+<style id="jonPremiumFullscreenPreferencesCSS">
+#tvVideoFrame.jon-hide-news #jonFullscreenNewsTicker{display:none!important}
+#tvVideoFrame.jon-hide-sponsor #jonSponsorLogoCarousel{display:none!important}
+#jonPremiumFullscreenPreferencesUI{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+#jonPremiumFullscreenPreferencesUI button{font:600 11px/1.2 system-ui,sans-serif;border:1px solid rgba(255,255,255,.35);border-radius:7px;background:rgba(12,25,40,.92);color:#fff;padding:6px 8px;cursor:pointer}
+#jonPremiumFullscreenPreferencesUI[hidden]{display:none!important}
+</style>
+<script type="module" id="jonPremiumFullscreenPreferencesModule">
+import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+(() => {
+ const frame=document.getElementById("tvVideoFrame");
+ const controls=document.querySelector("#tvFullscreenOverlay .tv-fullscreen-bottom");
+ if(!frame||!controls)return;
+ const panel=document.createElement("span");
+ panel.id="jonPremiumFullscreenPreferencesUI";
+ panel.hidden=true;
+ panel.innerHTML='<button type="button" data-pref="sponsorAds">Sponsored: ON</button><button type="button" data-pref="newsTicker">News: ON</button>';
+ controls.insertBefore(panel,controls.lastElementChild||null);
+ let user=null,prefs={sponsorAds:true,newsTicker:true},allowed=false,requestId=0;
+ const buttons=()=>panel.querySelectorAll("button[data-pref]");
+ function apply(){
+  frame.classList.toggle("jon-hide-sponsor",prefs.sponsorAds===false);
+  frame.classList.toggle("jon-hide-news",prefs.newsTicker===false);
+  panel.hidden=!allowed;
+  buttons().forEach(b=>{const k=b.dataset.pref;b.textContent=(k==="sponsorAds"?"Sponsored: ":"News: ")+(prefs[k]===false?"OFF":"ON");b.setAttribute("aria-pressed",String(prefs[k]!==false));});
+ }
+ async function refresh(){
+  const current=++requestId;
+  allowed=!!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed&&user);
+  if(allowed){
+   try{
+    const token=await user.getIdToken();
+    const res=await fetch("https://jon-stream.vercel.app/api/subscription/fullscreen-preferences",{headers:{Authorization:"Bearer "+token,Accept:"application/json"},cache:"no-store"});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok)throw new Error(data.error||("HTTP "+res.status));
+    if(current===requestId&&data.preferences)prefs=data.preferences;
+   }catch(e){console.warn("Could not load Premium fullscreen preferences",e);}
+  }else{prefs={sponsorAds:true,newsTicker:true};}
+  if(current===requestId)apply();
+ }
+ panel.addEventListener("click",async event=>{
+  const button=event.target.closest("button[data-pref]");
+  if(!button||!allowed||!user)return;
+  const key=button.dataset.pref,previous=prefs[key]!==false;
+  prefs={...prefs,[key]:!previous};apply();
+  try{
+   const token=await user.getIdToken();
+   const res=await fetch("https://jon-stream.vercel.app/api/subscription/fullscreen-preferences",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({[key]:prefs[key]}),cache:"no-store"});
+   const data=await res.json().catch(()=>({}));
+   if(!res.ok)throw new Error(data.error||("HTTP "+res.status));
+   prefs=data.preferences||prefs;apply();
+  }catch(error){prefs={...prefs,[key]:previous};apply();window.alert(error.message||"Could not save Premium preference");}
+ });
+ window.addEventListener("jon-premium-access-changed",refresh);
+ const auth=getAuth(getApp());
+ onAuthStateChanged(auth,nextUser=>{user=nextUser;refresh();});
+})();
+</script>
+
+<script id="jonPremiumSignoutPlaybackLock">
+(function(){
+ "use strict";
+ function enforcePremiumPlaybackLock(){
+  if(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)return;
+  try{
+   if(typeof currentTV!=="undefined"&&currentTV&&typeof jonIsPremiumTier==="function"&&jonIsPremiumTier(currentTV.accessTier)){
+    clearTimeout(tvStartupTimer);clearTimeout(tvRetryTimer);clearTimeout(tvReconnectTimer);
+    tvRetryTimer=null;tvReconnectTimer=null;tvPlayAttemptId++;
+    if(typeof cleanupPreviousTV==="function")cleanupPreviousTV();
+    if(typeof tvPlayer!=="undefined"&&tvPlayer){tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load();}
+    currentTV=null;
+    if(typeof tvStatus==="function")tvStatus("🔒 Premium access required — sign in again");
+   }
+  }catch(e){console.warn("Could not stop Premium TV playback after access loss",e);}
+  try{
+   if(typeof currentStation!=="undefined"&&currentStation&&typeof jonIsPremiumTier==="function"&&jonIsPremiumTier(currentStation.accessTier)){
+    if(typeof stopRadio==="function")stopRadio();
+    currentStation=null;
+    if(typeof radioStatus!=="undefined"&&radioStatus)radioStatus.textContent="🔒 Premium access required — sign in again";
+   }
+  }catch(e){console.warn("Could not stop Premium radio playback after access loss",e);}
+ }
+ window.addEventListener("jon-premium-access-changed",enforcePremiumPlaybackLock);
+ window.addEventListener("pageshow",enforcePremiumPlaybackLock);
+})();
+</script>
+
 </html>
