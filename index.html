@@ -1629,11 +1629,48 @@ const radioStatus=document.getElementById("radioStatus");
 const volume=document.getElementById("volume");
 
 let currentStation=null;
+let radioPremiumHls=null;
 let reconnectTimer=null;
 let reconnectAttempts=0;
 let previousVolume=.8;
 
 let favorites=JSON.parse(localStorage.getItem("jonRadioFavorites")||"[]");
+
+function loadRadioCurrentSource(){
+ if(radioPremiumHls){try{radioPremiumHls.destroy()}catch(_){}radioPremiumHls=null}
+ radioPlayer.pause();
+ radioPlayer.removeAttribute("src");
+ radioPlayer.load();
+ if(!currentStation||!currentStation.url)return null;
+ const url=currentStation.url;
+ if(currentStation.premiumHls&&window.Hls&&Hls.isSupported()){
+  try{
+   const player=new Hls({enableWorker:true,lowLatencyMode:false,maxBufferLength:30,maxMaxBufferLength:60});
+   radioPremiumHls=player;
+   player.attachMedia(radioPlayer);
+   player.on(Hls.Events.MEDIA_ATTACHED,()=>{
+    if(currentStation&&currentStation.url===url&&radioPremiumHls===player)player.loadSource(url);
+   });
+   player.on(Hls.Events.MANIFEST_PARSED,()=>{
+    if(!currentStation||currentStation.url!==url||radioPremiumHls!==player)return;
+    radioPlayer.play().catch(()=>setRadioAdvancedStatus("▶ Tap PLAY"));
+   });
+   player.on(Hls.Events.ERROR,(_event,data)=>{
+    if(data&&data.fatal&&radioPremiumHls===player){
+     setRadioAdvancedStatus("🔄 Premium HLS stream error — reconnecting...");
+     recoverRadioAdvanced();
+    }
+   });
+   return null;
+  }catch(error){
+   console.warn("Premium radio HLS setup failed:",error);
+   try{if(radioPremiumHls)radioPremiumHls.destroy()}catch(_){}
+   radioPremiumHls=null;
+  }
+ }
+ radioPlayer.src=url;
+ return radioPlayer.play();
+}
 
 function renderRadioStationIdentity(station){
  const logo=document.getElementById("radioStationLogo");
@@ -1652,7 +1689,7 @@ function renderRadioStationIdentity(station){
  if(station&&station.logo){logo.src=station.logo}else{logo.removeAttribute("src");logo.hidden=true;fallback.hidden=false}
  if(player)player.classList.remove("jon-radio-playing");
 }
-async function selectStation(index,ticketPlayback=false,playbackUrl=""){
+async function selectStation(index,ticketPlayback=false,playbackUrl="",playbackIsHls=false){
  const requestedStation=stations[index];
  const isPremium=!!requestedStation&&String(requestedStation.accessTier||"free").toLowerCase()==="premium";
  if(isPremium&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
@@ -1668,9 +1705,9 @@ async function selectStation(index,ticketPlayback=false,playbackUrl=""){
   }
   radioStatus.innerHTML="🔐 Authorizing Premium radio...";
   try{
-   const secureUrl=await window.jonGetPremiumPlaybackUrl(requestedStation);
+   const securePlayback=await window.jonGetPremiumPlaybackUrl(requestedStation);
    if(stations[index]!==requestedStation)return;
-   await selectStation(index,true,secureUrl);
+   await selectStation(index,true,securePlayback.url,securePlayback.isHls);
   }catch(error){
    console.warn("JON Premium radio authorization failed:",error);
    radioStatus.innerHTML="🔒 Premium authorization failed — please sign in again or contact support";
@@ -1681,20 +1718,19 @@ async function selectStation(index,ticketPlayback=false,playbackUrl=""){
  clearTimeout(radioAdvancedRetryTimer);
  radioAdvancedRetryTimer=null;
  radioAdvancedRetryAttempts=0;
- currentStation=ticketPlayback?{...requestedStation,url:playbackUrl,backupUrls:[],backupStreams:[],backupUrl:"",gatewayUrl:"",gatewayURL:"",proxyUrl:"",proxyURL:"",hlsGateway:"",hlsUrl:""}:requestedStation;
+ currentStation=ticketPlayback?{...requestedStation,url:playbackUrl,premiumHls:playbackIsHls,backupUrls:[],backupStreams:[],backupUrl:"",gatewayUrl:"",gatewayURL:"",proxyUrl:"",proxyURL:"",hlsGateway:"",hlsUrl:""}:requestedStation;
  renderRadioStationIdentity(currentStation);
  const perfKey=String(currentStation.name||"Radio")+"|"+String(currentStation.url||"");
  resetRadioPerformance(perfKey);
  updateRadioMediaSession();
  clearTimeout(reconnectTimer);
 
- radioPlayer.src=currentStation.url;
-
  nowPlaying.innerHTML="🔴 Now Playing: <b>"+escapeHTML(currentStation.name)+"</b>";
  radioStatus.innerHTML="🔄 Connecting...";
  reconnectAttempts=0;
 
- radioPlayer.play().then(()=>{
+ const initialPlayback=loadRadioCurrentSource();
+ if(initialPlayback&&initialPlayback.then)initialPlayback.then(()=>{
   radioStatus.innerHTML="🟢 Connected";
  }).catch(()=>{
   radioStatus.innerHTML="▶ Tap PLAY";
@@ -1758,10 +1794,8 @@ function reconnectRadio(){
  const delay=Math.min(30000,Math.max(10000,reconnectAttempts*10000));
 
  reconnectTimer=setTimeout(()=>{
-  radioPlayer.src=currentStation.url;
-  radioPlayer.play().catch(()=>{
-   reconnectRadio();
-  });
+  const p=loadRadioCurrentSource();
+  if(p&&p.catch)p.catch(()=>reconnectRadio());
  },delay);
 }
 
@@ -1879,9 +1913,7 @@ function recoverRadioAdvanced(){
   radioAdvancedRetryTimer=null;
   if(!currentStation)return;
   try{
-   radioPlayer.load();
-   radioPlayer.src=currentStation.url;
-   const p=radioPlayer.play();
+   const p=loadRadioCurrentSource();
    if(p&&p.catch)p.catch(()=>recoverRadioAdvanced());
   }catch(_){recoverRadioAdvanced()}
  },delay);
@@ -1916,9 +1948,7 @@ function recoverRadioOnNetworkChange(){
  setRadioAdvancedStatus("📶 Network changed — recovering...");
  radioAdvancedRetryAttempts=0;
  try{
-  radioPlayer.load();
-  radioPlayer.src=currentStation.url;
-  const p=radioPlayer.play();
+  const p=loadRadioCurrentSource();
   if(p&&p.catch)p.catch(()=>recoverRadioAdvanced());
  }catch(_){recoverRadioAdvanced()}
 }
@@ -3012,9 +3042,9 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,ticketP
   }
   tvStatus("🔐 Authorizing Premium playback...");
   try{
-   const secureUrl=await window.jonGetPremiumPlaybackUrl(requestedChannel);
+   const securePlayback=await window.jonGetPremiumPlaybackUrl(requestedChannel);
    if((filteredTV[index]||tvChannels.find(c=>c.url===url))!==requestedChannel)return;
-   await playTVStream(secureUrl,name,index,0,resetRetry,true);
+   await playTVStream(securePlayback.url,name,index,0,resetRetry,true);
   }catch(error){
    console.warn("JON Premium playback authorization failed:",error);
    tvStatus("🔒 Premium authorization failed — please sign in again or contact support");
@@ -4253,7 +4283,7 @@ if(authPanel){
    try{data=await response.json()}catch(_){}
    if(!response.ok)throw new Error(data.error||("Playback authorization failed ("+response.status+")"));
    if(!data.playbackUrl||!data.ticket)throw new Error("Server returned an invalid playback ticket");
-   return new URL(data.playbackUrl,"https://jon-stream.vercel.app").href;
+   return {url:new URL(data.playbackUrl,"https://jon-stream.vercel.app").href,isHls:data.isHls===true};
  };
  window.jonShowPremiumUpgrade=()=>{
    if(authPanel)authPanel.hidden=false;
