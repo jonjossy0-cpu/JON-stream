@@ -292,7 +292,7 @@ async function fetchFixedChannel(sources, request) {
     if (!isAllowed(target)) continue;
 
     try {
-      const result = await fetchAllowed(target, request, ticketPayload, env);
+      const result = await fetchAllowed(target, request, null, {});
       lastResult = result;
 
       // Try the next known mirror if this one rejects the request or is unavailable.
