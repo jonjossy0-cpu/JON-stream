@@ -22,7 +22,10 @@ function decodeTicket(ticket, secret) {
 function isWithinChannelRoot(target, sourceUrl) {
   try {
     const source = new URL(sourceUrl);
-    if (target.origin !== source.origin) return false;
+    if (![ "http:", "https:" ].includes(source.protocol) ||
+        ![ "http:", "https:" ].includes(target.protocol) ||
+        source.username || source.password || target.username || target.password ||
+        source.port || target.port || target.origin !== source.origin) return false;
     const slash = source.pathname.lastIndexOf("/");
     const root = source.pathname.slice(0, slash + 1) || "/";
     return target.pathname.startsWith(root);
