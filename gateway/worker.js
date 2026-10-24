@@ -374,7 +374,7 @@ async function handle(request, env) {
   try {
     result = sourceList
       ? await fetchFixedChannel(sourceList, request)
-      : await fetchAllowed(target, request);
+      : await fetchAllowed(target, request, ticketPayload, env);
   } catch (_) {
     return new Response("Upstream connection failed", {
       status: 502,
