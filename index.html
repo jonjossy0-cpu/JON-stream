@@ -1046,6 +1046,59 @@ img.jon-ad-media{
 @media(prefers-reduced-motion:reduce){.jon-radio-art-ring,.jon-radio-equalizer i,.jon-live-dot{animation:none!important}}
 </style>
 
+<style id="jonRadioMoreBlueRedGlowCSS">
+/* Premium MORE button: sculpted shape with alternating electric blue/red glow */
+.radio-section .player.jon-radio-player-premium .buttons .more-control-btn{
+ position:relative;isolation:isolate;overflow:hidden;
+ min-height:46px;padding:0 20px;border-radius:14px 7px 14px 7px;
+ border:1px solid rgba(64,178,255,.8);
+ color:#fff;font-weight:900;letter-spacing:1.1px;
+ background:linear-gradient(115deg,rgba(0,116,255,.22),rgba(12,22,42,.96) 48%,rgba(255,24,63,.2));
+ box-shadow:0 0 9px rgba(0,140,255,.4),inset 0 0 12px rgba(0,140,255,.12);
+ animation:jonMoreBlueRedGlow 3s ease-in-out infinite;
+ transition:border-radius .35s ease,transform .25s ease,box-shadow .35s ease;
+}
+.radio-section .player.jon-radio-player-premium .buttons .more-control-btn::before{
+ content:"";position:absolute;z-index:-1;inset:-2px;
+ background:linear-gradient(110deg,transparent 0%,rgba(0,174,255,.7) 25%,transparent 43%,rgba(255,25,67,.8) 70%,transparent 90%);
+ background-size:220% 100%;animation:jonMoreShimmer 3.5s linear infinite;opacity:.7;
+}
+.radio-section .player.jon-radio-player-premium .buttons .more-control-btn:hover,
+.radio-section .player.jon-radio-player-premium .buttons .more-control-btn[aria-expanded="true"]{
+ border-radius:8px 16px 8px 16px;transform:translateY(-2px);
+ border-color:rgba(255,65,90,.95);
+ box-shadow:0 0 13px rgba(0,150,255,.55),0 0 22px rgba(255,25,65,.35),inset 0 0 14px rgba(255,25,65,.14);
+}
+.radio-section .player.jon-radio-player-premium .more-controls-panel{
+ border:1px solid rgba(65,160,255,.36);border-radius:16px 8px 16px 8px;
+ background:linear-gradient(130deg,rgba(0,110,255,.09),rgba(8,18,34,.97) 52%,rgba(255,24,63,.08));
+ box-shadow:0 0 16px rgba(0,115,255,.12),inset 0 0 16px rgba(255,30,65,.06);
+}
+.radio-section .player.jon-radio-player-premium .more-controls-title{
+ color:#e8f5ff;text-shadow:0 0 10px rgba(0,160,255,.45);
+}
+.radio-section .player.jon-radio-player-premium .more-controls-panel .more-control-grid button{
+ border:1px solid rgba(83,164,255,.32);border-radius:10px 6px 10px 6px;
+ background:linear-gradient(120deg,rgba(0,122,255,.14),rgba(255,255,255,.035),rgba(255,25,65,.1));
+ transition:border-color .3s ease,box-shadow .3s ease,transform .3s ease;
+}
+.radio-section .player.jon-radio-player-premium .more-controls-panel .more-control-grid button:hover{
+ border-color:rgba(255,65,90,.8);transform:translateY(-1px);
+ box-shadow:0 0 12px rgba(0,140,255,.2),0 0 13px rgba(255,25,65,.2);
+}
+@keyframes jonMoreBlueRedGlow{
+ 0%,100%{border-color:rgba(40,157,255,.9);box-shadow:0 0 10px rgba(0,140,255,.48),inset 0 0 12px rgba(0,140,255,.13)}
+ 50%{border-color:rgba(255,48,79,.95);box-shadow:0 0 12px rgba(0,140,255,.25),0 0 18px rgba(255,25,65,.48),inset 0 0 12px rgba(255,25,65,.13)}
+}
+@keyframes jonMoreShimmer{0%{background-position:100% 0}100%{background-position:-120% 0}}
+@media(prefers-reduced-motion:reduce){
+ .radio-section .player.jon-radio-player-premium .buttons .more-control-btn,
+ .radio-section .player.jon-radio-player-premium .buttons .more-control-btn::before{animation:none!important}
+}
+@media(max-width:520px){.radio-section .player.jon-radio-player-premium .buttons .more-control-btn{min-height:42px;padding:0 12px;border-radius:12px 6px 12px 6px}}
+</style>
+
+
 <style id="jonRadioProfessionalRefinement">
 /* Refined radio player: restrained, clean, responsive. Playback logic unchanged. */
 .radio-section .player.jon-radio-player-premium{
