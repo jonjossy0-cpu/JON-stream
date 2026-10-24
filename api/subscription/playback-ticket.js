@@ -109,6 +109,7 @@ module.exports = async function handler(req, res) {
       channelId,
       uid: user.uid,
       host: source.hostname,
+      rootPath: source.pathname.slice(0, source.pathname.lastIndexOf("/") + 1) || "/",
       exp: expiresAt,
       nonce: crypto.randomBytes(12).toString("base64url")
     }, secret);
@@ -119,7 +120,7 @@ module.exports = async function handler(req, res) {
       expiresAt,
       ttlSeconds: TICKET_TTL_SECONDS,
       // Gateway enforcement must be deployed before clients use this URL.
-      playbackUrl: "/api/hls?url=" + encodeURIComponent(source.toString()) + "&ticket=" + encodeURIComponent(ticket)
+      playbackUrl: "/api/hls?channelId=" + encodeURIComponent(channelId) + "&ticket=" + encodeURIComponent(ticket)
     });
   } catch (error) {
     return sendError(res, error);
