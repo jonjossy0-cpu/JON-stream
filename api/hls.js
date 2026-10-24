@@ -39,6 +39,22 @@ function rewriteUriAttributes(line, baseUrl, gatewayOrigin, ticket) {
   });
 }
 
+function premiumPlaylistReferencesAllowed(body, baseUrl, payload, sourceUrl) {
+  const references = [];
+  for (const line of body.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    for (const match of line.matchAll(/URI="([^"]+)"/gi)) references.push(match[1]);
+    if (!trimmed.startsWith("#")) references.push(trimmed);
+  }
+  for (const reference of references) {
+    let target;
+    try { target = new URL(reference, baseUrl); } catch (_) { return false; }
+    if (!isAllowed(target) || target.hostname !== payload.host || !isWithinChannelRoot(target, sourceUrl)) return false;
+  }
+  return true;
+}
+
 function rewritePlaylist(body, baseUrl, gatewayOrigin, ticket) {
   return body.split(/\r?\n/).map(line => {
     const trimmed = line.trim();
@@ -168,6 +184,9 @@ module.exports = async function handler(req, res) {
     if (looksLikePlaylist && upstream.ok) {
       const body = await upstream.text();
       if (Buffer.byteLength(body, "utf8") > MAX_PLAYLIST_BYTES) return res.status(413).send("Playlist too large");
+      if (payload && !premiumPlaylistReferencesAllowed(body, finalTarget.toString(), payload, channel.sourceUrl)) {
+        return res.status(502).send("Playlist contains a URL outside the authorized Premium source");
+      }
       res.statusCode = upstream.status;
       if (req.method === "HEAD") return res.end();
       const requestHost = String(req.headers.host || "");
