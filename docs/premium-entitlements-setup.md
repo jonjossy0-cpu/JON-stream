@@ -34,3 +34,21 @@ The API uses Firebase Admin SDK on the server, which bypasses Firestore client r
 ## Important rollout limitation
 
 These endpoints do not themselves protect raw stream URLs or force the player to call the status endpoint before playback. Do not describe Premium access as enforced until the player/gateway has been integrated and tested to deny Premium playback to a Free account. Price storage is not payment processing; Telebirr payment verification is not implemented by these routes.
+
+## Private Premium playback catalog (required before enabling Premium TV)
+Create a **server-only** Firestore collection named `premiumPlaybackChannels`. Each document ID must match the stable ID referenced by the public channel metadata field `premiumChannelId` (the Web TV client also accepts `playbackChannelId` or `channelId`).
+
+Example private document:
+```json
+{
+  "active": true,
+  "accessTier": "premium",
+  "sourceUrl": "https://<allowlisted-upstream-host>/<channel-directory>/index.m3u8"
+}
+```
+
+Use only an upstream host already in the server-side allowlist and ensure the full HLS playlist/segment path remains within that source directory. Do not put `sourceUrl` in public `jonStream/appData`. Public channel records may retain `accessTier: "premium"` and the stable `premiumChannelId`, but should not expose the upstream source URL. The client-side Web TV ticket integration fails closed if a Premium channel has no stable ID.
+
+Set `PREMIUM_PLAYBACK_TICKET_SECRET` to a cryptographically random secret of at least 32 characters in Vercel and the same secret as a Cloudflare Worker secret binding. Configure Worker variable `PREMIUM_SOURCE_PREFIXES` with the exact allowed Premium source directory prefixes. Never commit secrets.
+
+The current ticket lifetime is four hours. Radio Premium ticket integration and full end-to-end playback tests remain outstanding. Do not merge or claim production security until public source URLs are removed/restricted, the private catalog and channel IDs are populated, and Free/Premium regression tests pass.
