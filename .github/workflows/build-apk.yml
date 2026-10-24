@@ -6,6 +6,7 @@ on:
     branches:
       - mainv
       - fix/mobile-7-2-premium-session-expiry
+      - fix/mobile-636-radio-glow-20261024
       - security/mobile-7-3-origin-hardening-20261022
   pull_request:
     branches:
