@@ -1652,18 +1652,36 @@ function renderRadioStationIdentity(station){
  if(station&&station.logo){logo.src=station.logo}else{logo.removeAttribute("src");logo.hidden=true;fallback.hidden=false}
  if(player)player.classList.remove("jon-radio-playing");
 }
-function selectStation(index){
+async function selectStation(index,ticketPlayback=false,playbackUrl=""){
  const requestedStation=stations[index];
- if(requestedStation&&String(requestedStation.accessTier||"free").toLowerCase()==="premium"&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
+ const isPremium=!!requestedStation&&String(requestedStation.accessTier||"free").toLowerCase()==="premium";
+ if(isPremium&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
   if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
   radioStatus.innerHTML="🔒 Premium access required";
+  return;
+ }
+ if(isPremium&&!ticketPlayback){
+  const channelId=requestedStation.premiumChannelId||requestedStation.playbackChannelId||requestedStation.channelId||"";
+  if(!channelId||typeof window.jonGetPremiumPlaybackUrl!=="function"){
+   radioStatus.innerHTML="🔒 Secure Premium playback is not configured for this station";
+   return;
+  }
+  radioStatus.innerHTML="🔐 Authorizing Premium radio...";
+  try{
+   const secureUrl=await window.jonGetPremiumPlaybackUrl(requestedStation);
+   if(stations[index]!==requestedStation)return;
+   await selectStation(index,true,secureUrl);
+  }catch(error){
+   console.warn("JON Premium radio authorization failed:",error);
+   radioStatus.innerHTML="🔒 Premium authorization failed — please sign in again or contact support";
+  }
   return;
  }
 
  clearTimeout(radioAdvancedRetryTimer);
  radioAdvancedRetryTimer=null;
  radioAdvancedRetryAttempts=0;
- currentStation=stations[index];
+ currentStation=ticketPlayback?{...requestedStation,url:playbackUrl,backupUrls:[],backupStreams:[],backupUrl:"",gatewayUrl:"",gatewayURL:"",proxyUrl:"",proxyURL:"",hlsGateway:"",hlsUrl:""}:requestedStation;
  renderRadioStationIdentity(currentStation);
  const perfKey=String(currentStation.name||"Radio")+"|"+String(currentStation.url||"");
  resetRadioPerformance(perfKey);
