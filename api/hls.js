@@ -16,7 +16,7 @@ function corsHeaders() {
 
 function isAllowed(url) {
   return ["http:", "https:"].includes(url.protocol) &&
-    !url.username && !url.password && ALLOWED_HOSTS.has(url.hostname);
+    !url.username && !url.password && !url.port && ALLOWED_HOSTS.has(url.hostname);
 }
 
 function absolutize(value, base) {
