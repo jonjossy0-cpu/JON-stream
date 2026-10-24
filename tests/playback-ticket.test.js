@@ -51,6 +51,19 @@ test("rejects malformed payloads and weak server secrets", () => {
 test("limits a ticket to its authorized source directory", () => {
   const source = "https://88.212.15.19/live/channel/index.m3u8";
   assert.equal(isWithinChannelRoot(new URL("https://88.212.15.19/live/channel/segment.ts"), source), true);
+  assert.equal(isWithinChannelRoot(new URL("https://88.212.15.19/live/channel/sub/segment.ts"), source), true);
   assert.equal(isWithinChannelRoot(new URL("https://88.212.15.19/live/other/segment.ts"), source), false);
   assert.equal(isWithinChannelRoot(new URL("https://154.58.202.18/live/channel/segment.ts"), source), false);
+});
+
+test("rejects path traversal outside the source directory", () => {
+  const source = "https://88.212.15.19/live/channel/index.m3u8";
+  assert.equal(isWithinChannelRoot(new URL("https://88.212.15.19/live/channel/../secret.ts"), source), false);
+  assert.equal(isWithinChannelRoot(new URL("https://88.212.15.19/live/channel/%2e%2e/secret.ts"), source), false);
+});
+
+test("rejects nonstandard ports and non-HTTP schemes", () => {
+  const source = "https://88.212.15.19/live/channel/index.m3u8";
+  assert.equal(isWithinChannelRoot(new URL("https://88.212.15.19:8443/live/channel/segment.ts"), source), false);
+  assert.equal(isWithinChannelRoot(new URL("ftp://88.212.15.19/live/channel/segment.ts"), source), false);
 });
