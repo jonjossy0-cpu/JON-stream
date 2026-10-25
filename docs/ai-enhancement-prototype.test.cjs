@@ -114,6 +114,9 @@ test('local image A/B page keeps the reviewed model hash and expected output sha
   const html = fs.readFileSync(require('node:path').join(__dirname, 'ai-local-image-sr-ab-test.html'), 'utf8');
   assert.match(html, /85f36ff88cc504a24af5e0602148bc56a8aa09a58eca8c0da2756f3e8186035e/);
   assert.match(html, /out\.dims\[2\]!==672\|\|out\.dims\[3\]!==672/);
+  assert.match(html, /dims\.some\(\(d,i\)=>Number\.isInteger\(d\)&&d>0&&d!==\[1,1,224,224\]\[i\]\)/);
+  assert.match(html, /dims\.some\(\(d,i\)=>typeof d==='number'&&d===0\)/);
+  assert.doesNotMatch(html, /typeof d==='number'&&d<=0/);
   assert.match(html, /networkStreamUsed:false/);
   assert.match(html, /playerConnected:false/);
   assert.match(html, /uploadIntended:false/);
