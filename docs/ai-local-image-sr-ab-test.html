@@ -50,7 +50,7 @@
    if($('backend').value==='webgpu'&&!navigator.gpu)throw new Error('WebGPU API is unavailable here. Select WASM / CPU.');
    say('INITIALIZING','Creating local ONNX session…');
    session=await window.ort.InferenceSession.create(modelBytes,{executionProviders:[$('backend').value],graphOptimizationLevel:'all'});
-   if(thisRun!==runId)return;
+   if(thisRun!==runId){try{await session.release()}catch{}session=null;return;}
    const img=await loadImage(imageFile);if(thisRun!==runId)return;
    const inputCanvas=document.createElement('canvas');inputCanvas.width=224;inputCanvas.height=224;
    const ictx=inputCanvas.getContext('2d',{willReadFrequently:true});ictx.drawImage(img,0,0,224,224);
