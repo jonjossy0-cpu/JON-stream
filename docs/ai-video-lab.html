@@ -11,7 +11,7 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px Arial,Helvetica,sans-serif}
 main{max-width:960px;margin:auto;padding:16px}.notice{border:1px solid #8b6b22;background:#30270e;color:#ffe6a0;padding:12px;border-radius:12px;line-height:1.5}
 h1{font-size:24px;margin:8px 0}p{line-height:1.5;color:var(--muted)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin:14px 0}
-video{width:100%;max-height:60vh;background:#000;border-radius:10px;margin-top:10px}
+video{width:100%;max-height:60vh;background:#000;border-radius:10px;margin-top:10px}.video-wrap{position:relative}.ai-icon-preview{position:absolute;right:12px;top:22px;z-index:2;display:none;padding:5px 8px;border-radius:999px;background:rgba(18,29,46,.88);border:1px solid #65758b;color:#d9e4f2;font-size:12px;font-weight:700;pointer-events:none}.ai-icon-preview.visible{display:inline-flex}
 label{display:block;font-weight:700;margin:10px 0 6px}input[type=url],select{width:100%;padding:12px;background:#07111f;border:1px solid var(--line);border-radius:9px;color:#fff}
 button{padding:11px 14px;border:0;border-radius:9px;background:var(--red);color:#fff;font-weight:700;margin:8px 6px 0 0}
 button.secondary{background:#263750}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}.metric{background:#07111f;border:1px solid var(--line);padding:10px;border-radius:10px}.metric strong{display:block;font-size:12px;color:var(--muted);margin-bottom:7px}.metric span{overflow-wrap:anywhere}
@@ -30,7 +30,7 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
 <label for="mode">Playback mode</label>
 <select id="mode"><option value="data" selected>Low Data (recommended)</option><option value="balanced">Balanced</option></select>
 <button id="start">Start baseline test</button><button id="stop" class="secondary">Stop</button><button id="report" class="secondary">Export test report (CSV)</button>
-<video id="video" controls playsinline preload="metadata"></video>
+<div class="video-wrap"><video id="video" controls playsinline preload="metadata"></video><span id="aiIconPreview" class="ai-icon-preview" aria-hidden="true">AI ✦ · preview</span></div><p class="small">Icon timing preview only — this does not mean AI enhancement is running. The icon appears after player interaction and hides after 3 seconds.</p>
 <p id="status" role="status">Ready — no stream loaded.</p>
 </section>
 <section class="panel">
@@ -58,6 +58,15 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
  const video=document.getElementById('video'), source=document.getElementById('source'), mode=document.getElementById('mode');
  let hls=null, stalls=0, raf=0, startedAt=0, firstFrameAt=0, bufferingStartedAt=0, bufferingTotalMs=0;
  const el=id=>document.getElementById(id);
+ let iconTimer=0;
+ function showIconPreview(){
+  const icon=el('aiIconPreview');
+  icon.classList.add('visible');
+  if(iconTimer)clearTimeout(iconTimer);
+  iconTimer=setTimeout(()=>{icon.classList.remove('visible');iconTimer=0},3000);
+ }
+ ['pointermove','pointerdown','keydown','touchstart'].forEach(evt=>video.addEventListener(evt,showIconPreview,{passive:true}));
+ video.addEventListener('playing',showIconPreview);
  function state(s){el('status').textContent=s;el('state').textContent=s}
  function stop(){if(raf)cancelAnimationFrame(raf);raf=0;if(hls){hls.destroy();hls=null}video.pause();video.removeAttribute('src');video.load();el('quality').textContent='Not playing';el('buffer').textContent='0 s';if(bufferingStartedAt){bufferingTotalMs+=performance.now()-bufferingStartedAt;bufferingStartedAt=0}el('stalltime').textContent=(bufferingTotalMs/1000).toFixed(1)+' s';state('Stopped')}
  function tick(){if(video.buffered.length){el('buffer').textContent=Math.max(0,video.buffered.end(video.buffered.length-1)-video.currentTime).toFixed(1)+' s'}else{el('buffer').textContent='0 s'}raf=requestAnimationFrame(tick)}
