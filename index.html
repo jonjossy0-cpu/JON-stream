@@ -4734,7 +4734,7 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 
 <!-- JON AI LIVE VIDEO ENHANCEMENT — EXPERIMENT ONLY. Kept off production branch. -->
 <style id="jonAiLiveEnhancementStyles">
-#tvVideoFrame #jonAiEnhanceCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2;pointer-events:none;background:#000;display:none;opacity:.28}
+#tvVideoFrame #jonAiEnhanceCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2;pointer-events:none;background:#000;display:none;opacity:1}
 #tvVideoFrame.jon-ai-enhance-active #jonAiEnhanceCanvas{display:block}
 #tvVideoFrame.jon-ai-enhance-active #tvPlayer{opacity:1}
 #tvVideoFrame .tv-fullscreen-overlay{z-index:5}
@@ -4742,8 +4742,8 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 #tvVideoFrame:fullscreen #jonAiEnhanceControl{display:inline-flex}
 #jonAiEnhanceControl[aria-pressed="true"]{background:#123c2b;border-color:#39d98a}
 #jonAiEnhanceControl:disabled{opacity:.6;cursor:wait}
-#jonAiEnhanceStatus{display:none;font-size:11px;font-weight:700;color:#e6edf8;background:rgba(0,0,0,.68);padding:5px 8px;border-radius:7px;max-width:min(85vw,420px)}
-#tvVideoFrame:fullscreen #jonAiEnhanceStatus{display:block}
+#jonAiEnhanceStatus{display:none!important}
+#tvVideoFrame:fullscreen #jonAiEnhanceStatus{display:none!important}
 </style>
 <script id="jonAiLiveEnhancementExperiment">
 (function(){
@@ -4770,7 +4770,7 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
  const cropCtx=crop.getContext("2d",{willReadFrequently:true,alpha:false});
  let session=null,ortLoading=null,enabled=false,busy=false,frameToken=0,lastPaint=0,frames=0,started=0,slowRuns=0;
  const FULLSCREEN=()=>document.fullscreenElement===frame||document.webkitFullscreenElement===frame;
- function setStatus(s){status.textContent=s}
+ function setStatus(s){status.textContent=""}
  function fitSource(){
   srcCtx.fillStyle="#000";srcCtx.fillRect(0,0,224,224);
   const vw=video.videoWidth,vh=video.videoHeight;if(!vw||!vh)return false;
@@ -4788,19 +4788,19 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
   if(!window.isSecureContext)throw new Error("HTTPS is required");
   if(!("requestVideoFrameCallback" in HTMLVideoElement.prototype))throw new Error("This browser lacks live frame processing support");
   if(!session){
-   setStatus("Loading AI runtime and model…");
+   setStatus("");
    const ort=await loadOrt();try{ort.env.wasm.numThreads=1}catch(_){}
    session=await ort.InferenceSession.create(MODEL_URL,{executionProviders:["wasm"],graphOptimizationLevel:"all"});
   }
   enabled=true;frame.classList.add("jon-ai-enhance-active");
   button.setAttribute("aria-pressed","true");button.textContent="✨ AI Enhance: ON";
   frames=0;slowRuns=0;started=performance.now();lastPaint=0;frameToken++;schedule();
-  setStatus("AI model active. Original video remains visible to keep playback smooth.");
+  setStatus("");
  }
  function disable(message){
   enabled=false;busy=false;frameToken++;frame.classList.remove("jon-ai-enhance-active");
   button.setAttribute("aria-pressed","false");button.textContent="✨ AI Enhance: OFF";
-  setStatus(message||"AI off — original Live TV playback is unchanged.");
+  setStatus("");
  }
  function schedule(){
   if(!enabled||!video.requestVideoFrameCallback)return;
@@ -4835,23 +4835,22 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
      dst[di]=nr*255;dst[di+1]=ng*255;dst[di+2]=nb*255;dst[di+3]=255;
     }
    }
-   cropCtx.putImageData(pixels,0,0);out.clearRect(0,0,672,378);out.drawImage(crop,0,0);frames++;
+   cropCtx.putImageData(pixels,0,0);if(canvas.width!==video.videoWidth||canvas.height!==video.videoHeight){canvas.width=Math.max(672,video.videoWidth||672);canvas.height=Math.max(378,video.videoHeight||378)}out.clearRect(0,0,canvas.width,canvas.height);out.drawImage(crop,0,0,canvas.width,canvas.height);frames++;
    const elapsed=performance.now()-t0;
    if(elapsed>450)slowRuns++;else slowRuns=0;
    if(slowRuns>=3){disable("This device cannot process AI frames fast enough. AI stopped to prevent playback stutter.");return}
-   if(frames===1)setStatus("AI inference is running on live frames. If playback stutters, this device may be too slow for this model.");
-   else if(frames%4===0){const sec=(performance.now()-started)/1000;setStatus("AI active • "+(frames/Math.max(1,sec)).toFixed(1)+" enhanced frames/sec • experimental");}
+   if(frames===1){button.textContent="✨ AI Enhance: ON";}
   }finally{busy=false}
  }
  button.addEventListener("click",async()=>{
   if(enabled){disable();return}
-  if(!FULLSCREEN()){setStatus("Enter fullscreen to use AI Enhance.");return}
+  if(!FULLSCREEN()){setStatus("");return}
   button.disabled=true;
   try{await enable()}catch(err){console.warn("JON AI enhancement unavailable:",err);disable("AI unavailable: "+(err&&err.message?err.message:"model load failed")+". Original playback is unchanged.");}
   finally{button.disabled=false}
  });
  video.addEventListener("emptied",()=>{if(enabled)disable("Channel changed — AI switched off. Enable it again if needed.")});
- document.addEventListener("fullscreenchange",()=>{if(!FULLSCREEN()&&enabled)disable("Exited fullscreen — AI enhancement switched off.");else if(FULLSCREEN())setStatus("AI Enhance is available inside fullscreen only.")});
+ document.addEventListener("fullscreenchange",()=>{if(!FULLSCREEN()&&enabled)disable("Exited fullscreen — AI enhancement switched off.");else if(FULLSCREEN())setStatus("")});
 })();
 </script>
 
