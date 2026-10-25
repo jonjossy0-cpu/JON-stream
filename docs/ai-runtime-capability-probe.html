@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>JON Stream — AI Runtime Capability Probe</title>
+  <style>
+    :root{color-scheme:dark;font:16px/1.5 system-ui,sans-serif;background:#07111f;color:#eef4ff}
+    body{max-width:850px;margin:auto;padding:22px} h1{font-size:1.55rem} h2{font-size:1.1rem}
+    .panel{border:1px solid #2b3c52;border-radius:12px;padding:16px;margin:14px 0;background:#0d1a2b}
+    .muted{color:#afbdd0}.tag{display:inline-block;border:1px solid #60738a;border-radius:99px;padding:2px 9px;font-size:.82rem}
+    button{background:#e31b23;color:white;border:0;border-radius:8px;padding:10px 14px;font-weight:700}
+    table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:9px 5px;border-bottom:1px solid #2b3c52;overflow-wrap:anywhere}
+    .good{color:#86efac}.warn{color:#fcd34d}.bad{color:#fca5a5}code{overflow-wrap:anywhere}
+  </style>
+</head>
+<body>
+  <h1>JON Stream — AI Runtime Capability Probe</h1>
+  <p class="muted">Experiment branch only. This page checks browser capabilities; it does not load a model, process video, or alter the JON Stream player.</p>
+  <div class="panel"><span class="tag">NO AI INFERENCE</span> <span class="tag">LOCAL CHECK ONLY</span>
+    <h2>Device and browser capability</h2>
+    <p id="summary">Waiting for capability check…</p>
+    <button id="run" type="button">Run capability check</button>
+    <table><thead><tr><th>Check</th><th>Result</th><th>Meaning</th></tr></thead><tbody id="results"></tbody></table>
+  </div>
+  <div class="panel"><h2>Interpretation</h2>
+    <p>WebGPU availability is only a prerequisite, not proof that real-time super-resolution will run smoothly. Actual model speed, memory use, thermal behavior, dropped frames, and buffering must be measured on the target device.</p>
+    <p>For low-memory Android TV devices, keep AI disabled unless a real model passes repeatable tests. Never send video frames to a server as part of this probe.</p>
+    <p class="muted">This report does not inspect or collect your exact location, stream URL, account, or personal files.</p>
+    <button id="export" type="button">Export capability report (JSON)</button>
+  </div>
+<script>
+(() => {
+  'use strict';
+  const rows = [];
+  const tbody = document.getElementById('results');
+  const summary = document.getElementById('summary');
+  const add = (name, value, meaning, cls = '') => {
+    rows.push({name, value, meaning});
+    const tr = document.createElement('tr');
+    for (const [txt, className] of [[name, '' ], [value, cls], [meaning, 'muted']]) {
+      const td = document.createElement('td'); td.textContent = txt; if (className) td.className = className; tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  };
+  async function run() {
+    rows.length = 0; tbody.replaceChildren();
+    const gpuAvailable = typeof navigator !== 'undefined' && 'gpu' in navigator;
+    add('WebGPU API', gpuAvailable ? 'Available' : 'Unavailable', gpuAvailable ? 'GPU API exists; adapter still must be requested and benchmarked.' : 'Do not attempt WebGPU inference in this browser.', gpuAvailable ? 'good' : 'warn');
+    let adapter = null;
+    if (gpuAvailable && navigator.gpu && typeof navigator.gpu.requestAdapter === 'function') {
+      try { adapter = await navigator.gpu.requestAdapter(); } catch (_) { adapter = null; }
+    }
+    add('WebGPU adapter', adapter ? 'Found' : 'Not found', adapter ? 'A compatible adapter was returned; model compatibility and speed remain unknown.' : 'Could be unsupported, blocked, or unavailable on this device.', adapter ? 'good' : 'warn');
+    add('WebCodecs VideoFrame', typeof VideoFrame === 'function' ? 'Available' : 'Unavailable', typeof VideoFrame === 'function' ? 'VideoFrame API exists; frame transfer/capture still needs a real test.' : 'Use only a separately validated capture path; do not infer AI capability.', typeof VideoFrame === 'function' ? 'good' : 'warn');
+    add('WebGL', (() => { try { const c = document.createElement('canvas'); return c.getContext('webgl2') ? 'WebGL2 available' : (c.getContext('webgl') ? 'WebGL available' : 'Unavailable'); } catch (_) { return 'Unavailable'; } })(), 'Fallback graphics API availability does not prove real-time model performance.', '');
+    add('Logical CPU cores', Number.isFinite(navigator.hardwareConcurrency) ? String(navigator.hardwareConcurrency) : 'Not exposed', 'Browser-reported hint only; not a reliable speed or thermal benchmark.', '');
+    add('Device memory hint', Number.isFinite(navigator.deviceMemory) ? navigator.deviceMemory + ' GB (approx.)' : 'Not exposed', 'Optional browser estimate; may be rounded or omitted, and is not a full RAM measurement.', '');
+    add('Secure context', window.isSecureContext ? 'Yes' : 'No', window.isSecureContext ? 'Modern GPU APIs generally require a secure context.' : 'Serve this test from HTTPS or localhost before assessing modern GPU APIs.', window.isSecureContext ? 'good' : 'warn');
+    add('Model inference', 'NOT RUN', 'No model, weights, video frames, or AI runtime were loaded by this check.', 'warn');
+    const webgpu = rows.find(r => r.name === 'WebGPU API').value === 'Available' && rows.find(r => r.name === 'WebGPU adapter').value === 'Found';
+    summary.textContent = webgpu ? 'WebGPU adapter detected. This device may be eligible for a separate benchmark; AI suitability is not yet established.' : 'No usable WebGPU adapter detected. Keep AI enhancement disabled unless another validated runtime is selected.';
+  }
+  document.getElementById('run').addEventListener('click', run);
+  document.getElementById('export').addEventListener('click', () => {
+    const report = {tool: 'JON Stream AI Runtime Capability Probe', version: 1, generatedAt: new Date().toISOString(), aiInferenceRun: false, results: rows};
+    const blob = new Blob([JSON.stringify(report, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'jon-stream-ai-capability-report.json'; a.click(); URL.revokeObjectURL(url);
+  });
+  run();
+})();
+</script>
+</body>
+</html>
