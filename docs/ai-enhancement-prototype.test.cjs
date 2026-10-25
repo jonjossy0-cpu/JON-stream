@@ -134,4 +134,7 @@ test('local image A/B page does not add live-video, HLS, Firebase, or upload API
   assert.match(html, /before\.imageSmoothingEnabled=true/);
   assert.match(html, /before\.imageSmoothingQuality='high'/);
   assert.match(html, /standard browser smooth scaling/);
+  assert.doesNotMatch(html, /srcY=Math\.min\(223,Math\.floor\(yy\/3\)\)/);
+  assert.match(html, /const outY=out\.data/);
+  assert.match(html, /const outputPixels=new Uint8ClampedArray\(672\*672\*4\)/);
 });
