@@ -45,6 +45,9 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
 <div class="metric"><strong>Time to first frame</strong><span id="startup">—</span></div>
 <div class="metric"><strong>Estimated throughput</strong><span id="throughput">—</span></div>
 <div class="metric"><strong>Playback state</strong><span id="state">Idle</span></div>
+<div class="metric"><strong>Presented frames</strong><span id="frames">0</span></div>
+<div class="metric"><strong>Dropped frames</strong><span id="dropped">Not reported</span></div>
+<div class="metric"><strong>Observed frame rate</strong><span id="fps">—</span></div>
 </div>
 <p class="small">Browser GPU support is only a capability signal; it does not prove that an AI model is installed or fast enough. Network estimates may be unavailable or inaccurate.</p>
 </section>
@@ -56,7 +59,7 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
 <script>
 (function(){
  const video=document.getElementById('video'), source=document.getElementById('source'), mode=document.getElementById('mode');
- let hls=null, stalls=0, raf=0, startedAt=0, firstFrameAt=0, bufferingStartedAt=0, bufferingTotalMs=0;
+ let hls=null, stalls=0, raf=0, startedAt=0, firstFrameAt=0, bufferingStartedAt=0, bufferingTotalMs=0, frameCallbackId=0, presentedFrames=0, fpsWindowStart=0, fpsWindowFrames=0, observedFps=0;
  const el=id=>document.getElementById(id);
  let iconTimer=0;
  function showIconPreview(){
@@ -67,12 +70,44 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
  }
  ['pointermove','pointerdown','keydown','touchstart'].forEach(evt=>video.addEventListener(evt,showIconPreview,{passive:true}));
  video.addEventListener('playing',showIconPreview);
+ function updateFrameMetrics(){
+  el('frames').textContent=String(presentedFrames);
+  el('fps').textContent=observedFps>0?observedFps.toFixed(1)+' fps':'—';
+  if(typeof video.getVideoPlaybackQuality==='function'){
+   const q=video.getVideoPlaybackQuality();
+   el('dropped').textContent=String(q.droppedVideoFrames||0);
+  }else if(Number.isFinite(video.webkitDroppedFrameCount)){
+   el('dropped').textContent=String(video.webkitDroppedFrameCount);
+  }else{
+   el('dropped').textContent='Not reported by browser';
+  }
+ }
+ function watchPresentedFrames(){
+  if(typeof video.requestVideoFrameCallback!=='function')return;
+  const callback=(now,metadata)=>{
+   presentedFrames++;
+   if(!fpsWindowStart)fpsWindowStart=now;
+   fpsWindowFrames++;
+   const elapsed=now-fpsWindowStart;
+   if(elapsed>=1000){
+    observedFps=fpsWindowFrames*1000/elapsed;
+    fpsWindowStart=now;fpsWindowFrames=0;
+   }
+   updateFrameMetrics();
+   frameCallbackId=video.requestVideoFrameCallback(callback);
+  };
+  frameCallbackId=video.requestVideoFrameCallback(callback);
+ }
+ function stopFrameWatch(){
+  if(frameCallbackId&&typeof video.cancelVideoFrameCallback==='function')video.cancelVideoFrameCallback(frameCallbackId);
+  frameCallbackId=0;fpsWindowStart=0;fpsWindowFrames=0;observedFps=0;
+ }
  function state(s){el('status').textContent=s;el('state').textContent=s}
- function stop(){if(raf)cancelAnimationFrame(raf);raf=0;if(hls){hls.destroy();hls=null}video.pause();video.removeAttribute('src');video.load();el('quality').textContent='Not playing';el('buffer').textContent='0 s';if(bufferingStartedAt){bufferingTotalMs+=performance.now()-bufferingStartedAt;bufferingStartedAt=0}el('stalltime').textContent=(bufferingTotalMs/1000).toFixed(1)+' s';state('Stopped')}
+ function stop(){stopFrameWatch();if(raf)cancelAnimationFrame(raf);raf=0;if(hls){hls.destroy();hls=null}video.pause();video.removeAttribute('src');video.load();el('quality').textContent='Not playing';el('buffer').textContent='0 s';if(bufferingStartedAt){bufferingTotalMs+=performance.now()-bufferingStartedAt;bufferingStartedAt=0}el('stalltime').textContent=(bufferingTotalMs/1000).toFixed(1)+' s';state('Stopped')}
  function tick(){if(video.buffered.length){el('buffer').textContent=Math.max(0,video.buffered.end(video.buffered.length-1)-video.currentTime).toFixed(1)+' s'}else{el('buffer').textContent='0 s'}raf=requestAnimationFrame(tick)}
  function start(){
   const url=source.value.trim();if(!url){state('Enter a test HLS URL first.');return}
-  stop();stalls=0;startedAt=performance.now();firstFrameAt=0;bufferingStartedAt=0;bufferingTotalMs=0;el('stalls').textContent='0';el('stalltime').textContent='0.0 s';el('startup').textContent='—';el('throughput').textContent='—';state('Loading stream…');
+  stop();stalls=0;startedAt=performance.now();firstFrameAt=0;bufferingStartedAt=0;bufferingTotalMs=0;presentedFrames=0;fpsWindowStart=0;fpsWindowFrames=0;observedFps=0;el('frames').textContent='0';el('dropped').textContent='Not reported';el('fps').textContent='—';el('stalls').textContent='0';el('stalltime').textContent='0.0 s';el('startup').textContent='—';el('throughput').textContent='—';state('Loading stream…');
   const low=mode.value==='data';
   if(window.Hls&&Hls.isSupported()){
    hls=new Hls({enableWorker:true,lowLatencyMode:false,maxBufferLength:low?18:30,maxMaxBufferLength:low?36:60,backBufferLength:low?8:20,maxBufferSize:low?12*1000*1000:40*1000*1000,startLevel:-1,testBandwidth:true,abrBandWidthFactor:low?0.6:0.85,abrBandWidthUpFactor:low?0.4:0.65,capLevelToPlayerSize:true,manifestLoadingMaxRetry:2,levelLoadingMaxRetry:2,fragLoadingMaxRetry:2});
@@ -87,7 +122,8 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
   raf=requestAnimationFrame(tick);
  }
  video.addEventListener('waiting',()=>{if(!bufferingStartedAt)bufferingStartedAt=performance.now();stalls++;el('stalls').textContent=String(stalls);state('Buffering — baseline measurement')});
- video.addEventListener('playing',()=>{if(!firstFrameAt){firstFrameAt=performance.now();el('startup').textContent=((firstFrameAt-startedAt)/1000).toFixed(2)+' s'}if(bufferingStartedAt){bufferingTotalMs+=performance.now()-bufferingStartedAt;bufferingStartedAt=0}el('stalltime').textContent=(bufferingTotalMs/1000).toFixed(1)+' s';state('Playing — baseline measurement')});
+ video.addEventListener('playing',()=>{if(!firstFrameAt){firstFrameAt=performance.now();el('startup').textContent=((firstFrameAt-startedAt)/1000).toFixed(2)+' s';watchPresentedFrames()}if(bufferingStartedAt){bufferingTotalMs+=performance.now()-bufferingStartedAt;bufferingStartedAt=0}el('stalltime').textContent=(bufferingTotalMs/1000).toFixed(1)+' s';updateFrameMetrics();state('Playing — baseline measurement')});
+ video.addEventListener('pause',updateFrameMetrics);
  video.addEventListener('error',()=>{if(video.error)state('Media error code '+video.error.code)});
  el('start').addEventListener('click',start);el('stop').addEventListener('click',stop);el('fullscreenPreview').addEventListener('click',async()=>{try{const wrap=video.closest('.video-wrap');if(!document.fullscreenElement){await wrap.requestFullscreen();showIconPreview()}else{await document.exitFullscreen()}}catch(e){state('Fullscreen preview is unavailable in this browser.')}});
  el('report').addEventListener('click',()=>{
@@ -104,6 +140,9 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
    ['Current quality',el('quality').textContent],
    ['Buffered ahead',el('buffer').textContent],
    ['Playback state',el('state').textContent],
+   ['Presented frames',el('frames').textContent],
+   ['Dropped frames',el('dropped').textContent],
+   ['Observed frame rate',el('fps').textContent],
    ['Note','Browser estimates only; repeat on the same channel and network to compare.']
   ];
   const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r
