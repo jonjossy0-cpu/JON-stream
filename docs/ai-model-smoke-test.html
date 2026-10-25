@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JON Stream — AI Model Smoke Test</title>
+<style>
+:root{color-scheme:dark;font:16px system-ui,sans-serif;background:#07111f;color:#f3f6fb}body{max-width:850px;margin:auto;padding:20px}h1{font-size:1.5rem}p,.muted{color:#b8c5d8;line-height:1.5}.panel{border:1px solid #34445a;border-radius:14px;padding:16px;margin:14px 0}label{display:block;margin:12px 0 6px}input,select,button{font:inherit;padding:10px;border-radius:8px;max-width:100%}button{background:#e31b23;color:white;border:0;font-weight:650}button:disabled{opacity:.45}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#02070d;border-radius:8px;padding:12px;min-height:90px}.warning{border-left:4px solid #e31b23;padding-left:12px}.status{font-weight:700}small{color:#aebdd0}
+</style>
+</head>
+<body>
+<h1>JON Stream — AI Model Smoke Test</h1>
+<p>Isolated experiment only. This page loads a model file you select from your device, creates a small zero-input tensor, and measures whether ONNX Runtime can initialize and execute it. It does not open a stream, upload frames, or connect to the production player.</p>
+<div class="panel warning"><strong>Important:</strong> A successful smoke test is not proof of visual quality, real-time video speed, low memory use, or temporal stability. Do not use the results to claim AI enhancement is active.</div>
+<div class="panel">
+<label for="model">1. Choose the model file you obtained and verified</label>
+<input id="model" type="file" accept=".onnx,application/octet-stream">
+<label for="backend">2. Runtime backend</label>
+<select id="backend"><option value="wasm">WASM / CPU (baseline)</option><option value="webgpu">WebGPU (only if supported)</option></select>
+<p class="muted">The ONNX Runtime Web library is loaded from jsDelivr when you press Run; internet access is required for the library. Your selected model stays in this browser tab and is not uploaded to a server by this page.</p>
+<button id="run">Run model smoke test</button>
+<button id="stop" disabled>Stop / reset</button>
+<button id="export" disabled>Export JSON report</button>
+</div>
+<div class="panel"><div class="status" id="status">Status: NOT RUN</div><pre id="output">Select a model file, then run the smoke test.</pre></div>
+<div class="panel"><strong>Safety gate</strong><ul><li>No player or HLS integration.</li><li>No model is bundled or downloaded automatically.</li><li>Zero-input inference only; no image or video is processed.</li><li>Stop/reset releases the session best-effort.</li><li>Use the same target device for this and the frame-budget benchmark.</li></ul></div>
+<script>
+(()=> {
+ const $=id=>document.getElementById(id);
+ let session=null, report=null, cancelled=false, ortScript=null;
+ const say=(s,v)=>{$('status').textContent='Status: '+s;$('output').textContent=v};
+ const shapeText=x=>JSON.stringify(x);
+ $('stop').onclick=async()=>{cancelled=true;try{if(session)await session.release()}catch{}session=null;report=null;$('run').disabled=false;$('stop').disabled=true;$('export').disabled=true;say('RESET','Session released best-effort. No player or stream was touched.')};
+ $('export').onclick=()=>{if(!report)return;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));a.download='jon-stream-ai-model-smoke-test.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+ $('run').onclick=async()=>{
+  const file=$('model').files[0];if(!file){say('NEEDS MODEL','Choose a local .onnx file first.');return}
+  cancelled=false;report=null;$('run').disabled=true;$('stop').disabled=false;$('export').disabled=true;
+  const started=performance.now(), r={tool:'JON Stream AI model smoke test',date:new Date().toISOString(),modelFileName:file.name,modelBytes:file.size,backend:$('backend').value,privacy:'Local model file processed in this browser; this page does not upload it.',streamConnected:false,visualQualityTested:false};
+  try{
+   say('LOADING RUNTIME','Loading ONNX Runtime Web from jsDelivr. Internet is required for this library.');
+   if(!window.ort){
+    await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js';s.onload=resolve;s.onerror=()=>reject(new Error('Could not load ONNX Runtime Web from CDN. Check internet access.'));document.head.appendChild(s);ortScript=s});
+   }
+   if(cancelled)return;
+   if($('backend').value==='webgpu'&&!navigator.gpu)throw new Error('WebGPU API is not available in this browser. Try WASM / CPU.');
+   say('INITIALIZING MODEL','Reading local model and creating ONNX Runtime session…');
+   const bytes=await file.arrayBuffer();
+   session=await window.ort.InferenceSession.create(bytes,{executionProviders:[$('backend').value],graphOptimizationLevel:'all'});
+   if(cancelled)return;
+   r.inputNames=session.inputNames;r.outputNames=session.outputNames;
+   r.inputs=session.inputNames.map(n=>({name:n,shape:session.inputMetadata[n]?.dimensions??null,type:session.inputMetadata[n]?.type??null}));
+   r.outputs=session.outputNames.map(n=>({name:n,shape:session.outputMetadata[n]?.dimensions??null,type:session.outputMetadata[n]?.type??null}));
+   const first=session.inputNames[0], meta=session.inputMetadata[first], dims=meta?.dimensions;
+   if(!dims||dims.some(d=>!Number.isInteger(d)||d<=0))throw new Error('The first input has dynamic/unknown dimensions. This safe smoke test does not guess dynamic input shapes.');
+   const count=dims.reduce((a,b)=>a*b,1);
+   if(count>2000000)throw new Error('Input tensor is larger than the safety limit of 2,000,000 elements; no inference was run.');
+   let tensor;
+   if(meta.type==='float32'||meta.type==='float'){
+    tensor=new window.ort.Tensor('float32',new Float32Array(count),dims);
+   }else if(meta.type==='float16'){
+    throw new Error('Float16 input tensor needs model-specific preprocessing; smoke test stopped safely.');
+   }else if(meta.type==='uint8'){
+    tensor=new window.ort.Tensor('uint8',new Uint8Array(count),dims);
+   }else throw new Error('Unsupported first input type for generic zero tensor: '+meta.type);
+   say('RUNNING ZERO-INPUT TEST','Executing one zero-input inference. This is not video enhancement.');
+   const t0=performance.now();const outputs=await session.run({[first]:tensor});const inferMs=performance.now()-t0;
+   if(cancelled)return;
+   r.inferenceMs=Number(inferMs.toFixed(2));r.totalMs=Number((performance.now()-started).toFixed(2));
+   r.outputSummary=Object.entries(outputs).map(([name,t])=>({name,dims:t.dims,type:t.type,elementCount:t.data?.length??null}));
+   r.result='PASS_ZERO_INPUT_SMOKE_TEST_ONLY';r.caveat='No visual quality, frame-rate, temporal consistency, or production compatibility was tested.';
+   report=r;$('export').disabled=false;
+   say('PASS — ZERO-INPUT TEST ONLY','Model initialized and executed one zero-input inference.\n\n'+JSON.stringify(r,null,2)+'\n\nThis does not mean the model is suitable for video or real-time playback.');
+  }catch(e){if(!cancelled){r.result='FAIL';r.error=String(e?.message||e);r.totalMs=Number((performance.now()-started).toFixed(2));report=r;$('export').disabled=false;say('FAIL / SAFE STOP',JSON.stringify(r,null,2))}}
+  finally{if(!cancelled){$('run').disabled=false;$('stop').disabled=true}}
+ };
+})();
+</script>
+</body></html>
