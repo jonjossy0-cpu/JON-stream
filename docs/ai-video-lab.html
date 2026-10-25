@@ -29,7 +29,7 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
 <input id="source" type="url" autocomplete="url" placeholder="Paste a test HLS URL">
 <label for="mode">Playback mode</label>
 <select id="mode"><option value="data" selected>Low Data (recommended)</option><option value="balanced">Balanced</option></select>
-<button id="start">Start baseline test</button><button id="stop" class="secondary">Stop</button>
+<button id="start">Start baseline test</button><button id="stop" class="secondary">Stop</button><button id="report" class="secondary">Export test report (CSV)</button>
 <video id="video" controls playsinline preload="metadata"></video>
 <p id="status" role="status">Ready — no stream loaded.</p>
 </section>
@@ -80,6 +80,27 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
  video.addEventListener('playing',()=>{if(!firstFrameAt){firstFrameAt=performance.now();el('startup').textContent=((firstFrameAt-startedAt)/1000).toFixed(2)+' s'}if(bufferingStartedAt){bufferingTotalMs+=performance.now()-bufferingStartedAt;bufferingStartedAt=0}el('stalltime').textContent=(bufferingTotalMs/1000).toFixed(1)+' s';state('Playing — baseline measurement')});
  video.addEventListener('error',()=>{if(video.error)state('Media error code '+video.error.code)});
  el('start').addEventListener('click',start);el('stop').addEventListener('click',stop);
+ el('report').addEventListener('click',()=>{
+  const rows=[
+   ['JON Stream AI Video Lab — baseline report','Value'],
+   ['AI processing','NOT RUNNING — baseline only'],
+   ['Date (device local)',new Date().toLocaleString()],
+   ['Playback mode',mode.value],
+   ['Stream URL',source.value.trim()],
+   ['Startup to first frame (s)',el('startup').textContent],
+   ['Rebuffer events',el('stalls').textContent],
+   ['Total rebuffer time (s)',el('stalltime').textContent],
+   ['Estimated throughput',el('throughput').textContent],
+   ['Current quality',el('quality').textContent],
+   ['Buffered ahead',el('buffer').textContent],
+   ['Playback state',el('state').textContent],
+   ['Note','Browser estimates only; repeat on the same channel and network to compare.']
+  ];
+  const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\\r\\n');
+  const blob=new Blob(['\\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='jon-stream-ai-video-baseline.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ });
  (async()=>{try{if(!navigator.gpu){el('gpu').textContent='WebGPU unavailable';return}const adapter=await navigator.gpu.requestAdapter();el('gpu').textContent=adapter?'WebGPU adapter available; AI model not installed':'No usable WebGPU adapter'}catch(e){el('gpu').textContent='GPU check unavailable'}})();
  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
  if(c)el('network').textContent=[c.effectiveType||'',c.downlink?c.downlink+' Mbps':'',c.saveData?'Data Saver on':''].filter(Boolean).join(' • ')||'Unknown';
