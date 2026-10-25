@@ -131,4 +131,7 @@ test('local image A/B page does not add live-video, HLS, Firebase, or upload API
   assert.match(html, /aspect-ratio-preserving contain fit with black letterbox to 224x224/);
   assert.match(html, /Math\.min\(224\/img\.naturalWidth,224\/img\.naturalHeight\)/);
   assert.match(html, /sourceImageWidth=img\.naturalWidth/);
+  assert.match(html, /before\.imageSmoothingEnabled=true/);
+  assert.match(html, /before\.imageSmoothingQuality='high'/);
+  assert.match(html, /standard browser smooth scaling/);
 });
