@@ -8,6 +8,9 @@ on:
       - 'docs/ai-enhancement-prototype.js'
       - 'docs/ai-enhancement-prototype.test.cjs'
       - 'docs/ai-local-image-sr-ab-test.html'
+      - 'docs/AI-SR-IMAGE-TEST-REPORT-TEMPLATE.md'
+      - 'docs/AI-SR-AB-TEST-INSTRUCTIONS.md'
+      - 'docs/AI-SR-MODEL-CANDIDATE-REVIEW.md'
       - '.github/workflows/ai-enhancement-prototype-tests.yml'
   pull_request:
     paths:
