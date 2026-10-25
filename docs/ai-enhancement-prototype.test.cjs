@@ -1,0 +1,68 @@
+/* Node built-in tests for the isolated prototype contract. No third-party packages. */
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+require('./ai-enhancement-prototype.js');
+
+const { createEnhancementSession } = globalThis.JONStreamAIPrototype;
+
+test('no model adapter means unavailable and never active', async () => {
+  const session = createEnhancementSession(null);
+  const status = await session.initialize();
+  assert.equal(status.state, 'unavailable');
+  assert.equal(status.modelActive, false);
+  const frame = { id: 'original' };
+  const result = await session.processFrame(frame);
+  assert.equal(result.enhanced, false);
+  assert.equal(result.frame, frame);
+});
+
+test('reviewed adapter can initialize and return a processed frame', async () => {
+  const output = { id: 'processed' };
+  const session = createEnhancementSession({
+    modelName: 'test-adapter-not-an-AI-model',
+    async initialize() { return { ready: true }; },
+    async processFrame() { return { frame: output }; },
+    async dispose() {}
+  });
+  const initialized = await session.initialize();
+  assert.equal(initialized.state, 'ready');
+  const result = await session.processFrame({ id: 'input' });
+  assert.equal(result.enhanced, true);
+  assert.equal(result.frame, output);
+  assert.equal(typeof result.elapsedMs, 'number');
+  await session.dispose();
+  assert.equal(session.getStatus().state, 'disposed');
+});
+
+test('adapter exceptions fall back to the original frame and disable processing', async () => {
+  const session = createEnhancementSession({
+    async initialize() { return { ready: true }; },
+    async processFrame() { throw new Error('test failure'); }
+  });
+  await session.initialize();
+  const frame = { id: 'original' };
+  const result = await session.processFrame(frame);
+  assert.equal(result.enhanced, false);
+  assert.equal(result.frame, frame);
+  assert.equal(result.reason, 'model-error');
+  assert.equal(session.getStatus().state, 'disabled');
+});
+
+test('repeated over-budget frames disable processing', async () => {
+  const session = createEnhancementSession({
+    async initialize() { return { ready: true }; },
+    async processFrame(frame) {
+      await new Promise(resolve => setTimeout(resolve, 8));
+      return { frame: { id: 'processed', original: frame.id } };
+    }
+  }, { targetFrameBudgetMs: 1, maxConsecutiveOverBudget: 2 });
+  await session.initialize();
+  const first = await session.processFrame({ id: 'one' });
+  assert.equal(first.enhanced, true);
+  const second = await session.processFrame({ id: 'two' });
+  assert.equal(second.enhanced, false);
+  assert.equal(second.reason, 'frame-budget-exceeded');
+  assert.equal(session.getStatus().state, 'disabled');
+});
