@@ -128,4 +128,7 @@ test('local image A/B page does not add live-video, HLS, Firebase, or upload API
   assert.doesNotMatch(html, /<video\b|hls\.js|firebase|XMLHttpRequest|\bfetch\s*\(/i);
   assert.match(html, /Select a test image/);
   assert.match(html, /SHA-256/);
+  assert.match(html, /aspect-ratio-preserving contain fit with black letterbox to 224x224/);
+  assert.match(html, /Math\.min\(224\/img\.naturalWidth,224\/img\.naturalHeight\)/);
+  assert.match(html, /sourceImageWidth=img\.naturalWidth/);
 });
