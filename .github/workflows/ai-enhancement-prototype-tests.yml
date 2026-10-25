@@ -7,6 +7,7 @@ on:
     paths:
       - 'docs/ai-enhancement-prototype.js'
       - 'docs/ai-enhancement-prototype.test.cjs'
+      - 'docs/ai-local-image-sr-ab-test.html'
       - '.github/workflows/ai-enhancement-prototype-tests.yml'
   pull_request:
     paths:
