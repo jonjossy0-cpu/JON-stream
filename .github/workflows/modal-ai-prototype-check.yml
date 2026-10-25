@@ -1,0 +1,28 @@
+name: Modal AI prototype checks
+
+on:
+  push:
+    branches:
+      - experiment/modal-ai-video-enhancement
+    paths:
+      - "experiments/modal-ai-video-enhancement/**"
+      - ".github/workflows/modal-ai-prototype-check.yml"
+  pull_request:
+    paths:
+      - "experiments/modal-ai-video-enhancement/**"
+      - ".github/workflows/modal-ai-prototype-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Compile prototype source
+        run: python -m py_compile experiments/modal-ai-video-enhancement/modal_app.py
