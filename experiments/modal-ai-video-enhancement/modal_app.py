@@ -99,7 +99,8 @@ def enhance_frame(image_bytes: bytes) -> bytes:
 
 
 web_image = modal.Image.debian_slim(python_version="3.10").uv_pip_install(
-    "fastapi==0.115.6"
+    "fastapi==0.115.6",
+    "Pillow==10.4.0",
 )
 web_app = FastAPI(title="JON Stream AI Frame Enhancement")
 
