@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>JON Stream — AI Frame Budget Benchmark</title>
+  <style>
+    :root{color-scheme:dark;font:16px/1.5 system-ui,sans-serif;background:#07111f;color:#eef4ff}
+    body{max-width:850px;margin:auto;padding:22px}h1{font-size:1.55rem}h2{font-size:1.1rem}
+    .panel{border:1px solid #2b3c52;border-radius:12px;padding:16px;margin:14px 0;background:#0d1a2b}
+    .muted{color:#afbdd0}.warn{color:#fcd34d}.good{color:#86efac}button{background:#e31b23;color:white;border:0;border-radius:8px;padding:10px 14px;font-weight:700;margin:4px}
+    label{display:block;margin:8px 0}input,select{background:#07111f;color:#eef4ff;border:1px solid #60738a;border-radius:6px;padding:8px;max-width:100%}
+    table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:8px 4px;border-bottom:1px solid #2b3c52;overflow-wrap:anywhere}
+  </style>
+</head>
+<body>
+  <h1>JON Stream — Frame Budget Benchmark</h1>
+  <p class="muted">Experiment-only synthetic workload. This does not load AI, decode video, or connect to a stream. It measures how long small CPU tasks take on this browser/device; it is not a video-quality or AI-performance certification.</p>
+  <section class="panel">
+    <h2>Test setup</h2>
+    <label>Device class <select id="device"><option>Android TV / TV box</option><option>Android phone</option><option>Desktop / laptop</option><option>Other</option></select></label>
+    <label>Reported RAM (optional) <select id="ram"><option value="unknown">Unknown / not reported</option><option>1 GB</option><option>2 GB</option><option>3 GB</option><option>4 GB</option><option>6 GB</option><option>8 GB+</option></select></label>
+    <label>Benchmark workload <select id="workload"><option value="small">Small (quick check)</option><option value="medium" selected>Medium</option><option value="large">Large (heavier CPU load)</option></select></label>
+    <p><button id="run" type="button">Run CPU frame-budget test</button><button id="stop" type="button">Stop</button><button id="export" type="button">Export JSON</button></p>
+    <p id="status" aria-live="polite">Ready. No test is running.</p>
+    <table><thead><tr><th>Metric</th><th>Result</th><th>Interpretation</th></tr></thead><tbody id="results"></tbody></table>
+  </section>
+  <section class="panel"><h2>How to read the result</h2>
+    <p>At 30 FPS, a frame budget is about 33.3 ms; at 60 FPS it is about 16.7 ms. A CPU synthetic task finishing under this budget does <strong>not</strong> mean a super-resolution model can meet it: model inference, memory transfer, video capture, GPU contention, heat and sustained performance all add cost.</p>
+    <p class="warn">Do not enable AI from this score alone. Compare against real playback baseline and test for sustained dropped frames, buffering, heat, artifacts, and A/V sync.</p>
+  </section>
+<script>
+(() => {
+  'use strict';
+  const status = document.getElementById('status');
+  const tbody = document.getElementById('results');
+  let stopped = false;
+  let report = null;
+  const now = () => (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  const yieldTask = () => new Promise(resolve => setTimeout(resolve, 0));
+  function addMetric(metric, result, interpretation) {
+    const tr = document.createElement('tr');
+    for (const value of [metric, result, interpretation]) { const td = document.createElement('td'); td.textContent = value; tr.appendChild(td); }
+    tbody.appendChild(tr);
+  }
+  function syntheticWork(iterations) {
+    let x = 0.1234567; let checksum = 0;
+    for (let i = 0; i < iterations; i++) { x = Math.sin(x + i * 0.000001) * Math.cos(x + 0.1); checksum += x; }
+    return checksum;
+  }
+  async function run() {
+    stopped = false; report = null; tbody.replaceChildren();
+    const scale = document.getElementById('workload').value;
+    const iterations = scale === 'small' ? 50000 : scale === 'large' ? 500000 : 180000;
+    const samples = []; const frameBudgetMs = 1000 / 30; let checksum = 0;
+    status.textContent = 'Running short synthetic CPU samples…';
+    try {
+      for (let i = 0; i < 12; i++) {
+        if (stopped) { status.textContent = 'Stopped by user. Partial results are not scored.'; return; }
+        const start = now(); checksum += syntheticWork(iterations); samples.push(Math.max(0, now() - start));
+        await yieldTask();
+      }
+    } catch (_) { status.textContent = 'Test could not complete in this browser.'; return; }
+    samples.sort((a,b) => a-b);
+    const percentile = p => samples[Math.min(samples.length - 1, Math.ceil(p * samples.length) - 1)];
+    const median = (samples[5] + samples[6]) / 2;
+    const p95 = percentile(0.95); const worst = samples[samples.length - 1];
+    const reportAt = new Date().toISOString();
+    report = {tool:'JON Stream AI Frame Budget Benchmark',version:1,generatedAt:reportAt,syntheticOnly:true,aiInferenceRun:false,videoDecoded:false,deviceClass:document.getElementById('device').value,ramHint:document.getElementById('ram').value,workload:scale,iterationsPerSample:iterations,samplesMs:samples,medianMs:median,p95Ms:p95,worstMs:worst,frameBudget30FpsMs:frameBudgetMs,checksum};
+    addMetric('Samples', String(samples.length), 'Short CPU-only synthetic samples.');
+    addMetric('Median task time', median.toFixed(2)+' ms', median < frameBudgetMs ? 'Below 30 FPS budget for this task only.' : 'Exceeds 30 FPS budget for this task.');
+    addMetric('95th percentile', p95.toFixed(2)+' ms', p95 < frameBudgetMs ? 'This synthetic task stayed below budget in most samples.' : 'Slow samples exceed the 30 FPS frame budget.');
+    addMetric('Worst sample', worst.toFixed(2)+' ms', 'Short run only; not a sustained thermal test.');
+    addMetric('30 FPS budget', frameBudgetMs.toFixed(2)+' ms', 'Target budget for one frame, not a guaranteed AI budget.');
+    addMetric('AI inference', 'NOT RUN', 'No model loaded and no video processed.');
+    status.textContent = 'Completed. Do not use this result alone to enable AI enhancement.';
+  }
+  document.getElementById('run').addEventListener('click', run);
+  document.getElementById('stop').addEventListener('click', () => { stopped = true; });
+  document.getElementById('export').addEventListener('click', () => {
+    if (!report) { status.textContent = 'Run the test to create a report first.'; return; }
+    const blob = new Blob([JSON.stringify(report,null,2)],{type:'application/json'});
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'jon-stream-ai-frame-budget-report.json'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+})();
+</script>
+</body>
+</html>
