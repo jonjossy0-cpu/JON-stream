@@ -22,7 +22,7 @@
 <button id="run">Run local image A/B test</button><button id="reset">Reset / release</button><button id="export" disabled>Export JSON report</button>
 </div>
 <div class="panel"><div class="status" id="status">Status: NOT RUN</div><pre id="output">Choose the exact model file and a local image. Runtime library loading requires internet access.</pre></div>
-<div class="panel"><div class="images"><figure><canvas id="before" width="672" height="672"></canvas><figcaption>Baseline — original image fitted to 224 × 224 then displayed at 3×</figcaption></figure><figure><canvas id="after" width="672" height="672"></canvas><figcaption>Experimental output — 3× luminance SR + resized chroma</figcaption></figure></div></div>
+<div class="panel"><div class="images"><figure><canvas id="before" width="672" height="672"></canvas><figcaption>Baseline — aspect-preserved image in 224 × 224 letterbox, displayed at 3×</figcaption></figure><figure><canvas id="after" width="672" height="672"></canvas><figcaption>Experimental output — 3× luminance SR + resized chroma</figcaption></figure></div></div>
 <div class="panel"><strong>Known limitations</strong><ul><li>The reference preprocessing resizes to 224 × 224 and extracts Y from YCbCr. This prototype uses browser canvas scaling and standard RGB↔YCbCr formulas, which may not match the reference pipeline pixel-for-pixel.</li><li>Output chroma is resized with browser canvas smoothing, not a guaranteed Pillow bicubic implementation.</li><li>One still image does not test temporal flicker, frame latency, thermal throttling, memory stability, or live HLS compatibility.</li><li>Model hash verification protects against accidental file mismatch, but does not independently audit model licensing or provenance.</li></ul></div>
 <script>
 (()=> {
@@ -54,7 +54,14 @@
    const activeSession=session;
    const img=await loadImage(imageFile);if(thisRun!==runId)return;
    const inputCanvas=document.createElement('canvas');inputCanvas.width=224;inputCanvas.height=224;
-   const ictx=inputCanvas.getContext('2d',{willReadFrequently:true});ictx.drawImage(img,0,0,224,224);
+   const ictx=inputCanvas.getContext('2d',{willReadFrequently:true});
+   // Preserve the source aspect ratio; letterbox instead of stretching portrait/landscape images.
+   ictx.fillStyle='rgb(0,0,0)';ictx.fillRect(0,0,224,224);
+   const fitScale=Math.min(224/img.naturalWidth,224/img.naturalHeight);
+   const fitWidth=Math.max(1,Math.round(img.naturalWidth*fitScale)),fitHeight=Math.max(1,Math.round(img.naturalHeight*fitScale));
+   const fitX=Math.floor((224-fitWidth)/2),fitY=Math.floor((224-fitHeight)/2);
+   ictx.drawImage(img,fitX,fitY,fitWidth,fitHeight);
+   r.sourceImageWidth=img.naturalWidth;r.sourceImageHeight=img.naturalHeight;r.preprocessing='aspect-ratio-preserving contain fit with black letterbox to 224x224';
    const pix=ictx.getImageData(0,0,224,224).data, y=new Float32Array(224*224), cb=new Float32Array(224*224), cr=new Float32Array(224*224);
    for(let i=0,j=0;i<pix.length;i+=4,j++){
     const R=pix[i],G=pix[i+1],B=pix[i+2];
