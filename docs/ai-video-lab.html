@@ -78,7 +78,8 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
    hls=new Hls({enableWorker:true,lowLatencyMode:false,maxBufferLength:low?18:30,maxMaxBufferLength:low?36:60,backBufferLength:low?8:20,maxBufferSize:low?12*1000*1000:40*1000*1000,startLevel:-1,testBandwidth:true,abrBandWidthFactor:low?0.6:0.85,abrBandWidthUpFactor:low?0.4:0.65,capLevelToPlayerSize:true,manifestLoadingMaxRetry:2,levelLoadingMaxRetry:2,fragLoadingMaxRetry:2});
    hls.on(Hls.Events.MEDIA_ATTACHED,()=>hls.loadSource(url));
    hls.on(Hls.Events.MANIFEST_PARSED,()=>{state('Manifest loaded — press Play if playback does not start.');video.play().catch(()=>state('Ready — press Play (autoplay blocked).'))});
-   hls.on(Hls.Events.LEVEL_SWITCHED,(_,d)=>{const l=hls.levels[d.level];el('quality').textContent=l?((l.height||'?')+'p • '+((l.bitrate||0)/1e6).toFixed(2)+' Mbps'):'Auto'});\n   hls.on(Hls.Events.FRAG_LOADED,()=>{if(hls.bandwidthEstimate)el('throughput').textContent=(hls.bandwidthEstimate/1e6).toFixed(2)+' Mbps (estimate)'});
+   hls.on(Hls.Events.LEVEL_SWITCHED,(_,d)=>{const l=hls.levels[d.level];el('quality').textContent=l?((l.height||'?')+'p • '+((l.bitrate||0)/1e6).toFixed(2)+' Mbps'):'Auto'});
+   hls.on(Hls.Events.FRAG_LOADED,()=>{if(hls.bandwidthEstimate)el('throughput').textContent=(hls.bandwidthEstimate/1e6).toFixed(2)+' Mbps (estimate)'});
    hls.on(Hls.Events.ERROR,(_,d)=>{if(d.fatal)state('Stream error: '+d.type+' — baseline playback only; try another test URL.')});
    hls.attachMedia(video);
   }else if(video.canPlayType('application/vnd.apple.mpegurl')){video.src=url;video.addEventListener('loadedmetadata',()=>{state('Stream loaded — press Play.');video.play().catch(()=>{})},{once:true})}
@@ -105,7 +106,8 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
    ['Playback state',el('state').textContent],
    ['Note','Browser estimates only; repeat on the same channel and network to compare.']
   ];
-  const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r
+');
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='jon-stream-ai-video-baseline.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
