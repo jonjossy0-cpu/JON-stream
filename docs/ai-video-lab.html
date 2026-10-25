@@ -12,7 +12,7 @@
 main{max-width:960px;margin:auto;padding:16px}.notice{border:1px solid #8b6b22;background:#30270e;color:#ffe6a0;padding:12px;border-radius:12px;line-height:1.5}
 h1{font-size:24px;margin:8px 0}p{line-height:1.5;color:var(--muted)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin:14px 0}
 video{width:100%;max-height:60vh;background:#000;border-radius:10px;margin-top:10px}.video-wrap{position:relative}.ai-icon-preview{position:absolute;right:12px;top:22px;z-index:2;display:none;padding:5px 8px;border-radius:999px;background:rgba(18,29,46,.88);border:1px solid #65758b;color:#d9e4f2;font-size:12px;font-weight:700;pointer-events:none}.ai-icon-preview.visible{display:inline-flex}.video-wrap:fullscreen{background:#000;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}.video-wrap:fullscreen video{width:100%;height:100%;max-height:100vh;object-fit:contain;margin:0;border-radius:0}.video-wrap:fullscreen .ai-icon-preview{top:12px;right:12px}
-label{display:block;font-weight:700;margin:10px 0 6px}input[type=url],select{width:100%;padding:12px;background:#07111f;border:1px solid var(--line);border-radius:9px;color:#fff}
+label{display:block;font-weight:700;margin:10px 0 6px}input[type=url],input[type=text],input[type=number],select{width:100%;padding:12px;background:#07111f;border:1px solid var(--line);border-radius:9px;color:#fff}
 button{padding:11px 14px;border:0;border-radius:9px;background:var(--red);color:#fff;font-weight:700;margin:8px 6px 0 0}
 button.secondary{background:#263750}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}.metric{background:#07111f;border:1px solid var(--line);padding:10px;border-radius:10px}.metric strong{display:block;font-size:12px;color:var(--muted);margin-bottom:7px}.metric span{overflow-wrap:anywhere}
 #status{font-weight:700;color:#f8c86b}.small{font-size:12px}
@@ -34,7 +34,19 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
 <p id="status" role="status">Ready — no stream loaded.</p>
 </section>
 <section class="panel">
-<h2>2. Device and playback diagnostics</h2>
+<h2>2. Test context (for comparable TV runs)</h2>
+<div class="grid">
+<div><label for="tvModel">TV / display make and model</label><input id="tvModel" type="text" placeholder="e.g. brand and model"></div>
+<div><label for="tvResolution">TV native resolution</label><select id="tvResolution"><option value="Not recorded">Select / not recorded</option><option>HD 720p</option><option>Full HD 1080p</option><option>4K UHD 2160p</option><option>8K 4320p</option><option>Other / unknown</option></select></div>
+<div><label for="outputResolution">Actual device output resolution</label><select id="outputResolution"><option value="Not recorded">Select / not recorded</option><option>720p</option><option>1080p</option><option>2160p (4K)</option><option>4320p (8K)</option><option>Unknown</option></select></div>
+<div><label for="deviceModel">Playback device / Android TV box</label><input id="deviceModel" type="text" placeholder="Device model"></div>
+<div><label for="deviceRam">Device RAM (GB, if known)</label><input id="deviceRam" type="number" min="0" step="0.5" placeholder="e.g. 2 or 4"></div>
+<div><label for="sourceResolution">Known source resolution</label><select id="sourceResolution"><option value="Not recorded">Select / not recorded</option><option>480p</option><option>720p</option><option>1080p</option><option>2160p (4K)</option><option>Unknown / adaptive</option></select></div>
+</div>
+<p class="small">Record the TV panel resolution, device output, and stream source separately. A 4K output does not mean the stream contains native 4K detail.</p>
+</section>
+<section class="panel">
+<h2>3. Device and playback diagnostics</h2>
 <div class="grid">
 <div class="metric"><strong>AI inference capability</strong><span id="gpu">Checking…</span></div>
 <div class="metric"><strong>Network estimate</strong><span id="network">Not reported by browser</span></div>
@@ -131,6 +143,12 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
    ['JON Stream AI Video Lab — baseline report','Value'],
    ['AI processing','NOT RUNNING — baseline only'],
    ['Date (device local)',new Date().toLocaleString()],
+   ['TV / display make and model',el('tvModel').value.trim()||'Not recorded'],
+   ['TV native resolution',el('tvResolution').value],
+   ['Actual device output resolution',el('outputResolution').value],
+   ['Playback device / Android TV box',el('deviceModel').value.trim()||'Not recorded'],
+   ['Device RAM (GB)',el('deviceRam').value||'Not recorded'],
+   ['Known source resolution',el('sourceResolution').value],
    ['Playback mode',mode.value],
    ['Stream URL',source.value.trim()],
    ['Startup to first frame (s)',el('startup').textContent],
@@ -145,8 +163,7 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
    ['Observed frame rate',el('fps').textContent],
    ['Note','Browser estimates only; repeat on the same channel and network to compare.']
   ];
-  const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r
-');
+  const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\\r\\n');
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='jon-stream-ai-video-baseline.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
