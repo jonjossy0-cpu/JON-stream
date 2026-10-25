@@ -76,14 +76,7 @@
    const t0=performance.now();const outputs=await activeSession.run({[inputName]:new window.ort.Tensor('float32',y,[1,1,224,224])});r.inferenceMs=Number((performance.now()-t0).toFixed(2));
    if(thisRun!==runId)return;
    const outName=activeSession.outputNames[0],out=outputs[outName];if(!out||out.dims.length!==4||out.dims[0]!==1||out.dims[1]!==1||out.dims[2]!==672||out.dims[3]!==672)throw new Error('Output shape did not match expected [1,1,672,672].');
-   const outputPixels=new Uint8ClampedArray(672*672*4),outY=out.data;
-   for(let yy=0;yy<672;yy++)for(let xx=0;xx<672;xx++){
-    const k=yy*672+xx,srcY=Math.min(223,Math.floor(yy/3)),srcX=Math.min(223,Math.floor(xx/3)),src=srcY*224+srcX;
-    const Y=Math.max(0,Math.min(255,outY[k]*255)),Cbb=cb[src]-128,Crr=cr[src]-128;
-    outputPixels[k*4]=Math.max(0,Math.min(255,Y+1.402*Crr));
-    outputPixels[k*4+1]=Math.max(0,Math.min(255,Y-0.344136*Cbb-0.714136*Crr));
-    outputPixels[k*4+2]=Math.max(0,Math.min(255,Y+1.772*Cbb));outputPixels[k*4+3]=255;
-   }
+   const outY=out.data;
    // Resize chroma using canvas smoothing before combining with model luminance.
    const chromaCanvas=document.createElement('canvas');chromaCanvas.width=224;chromaCanvas.height=224;
    const cc=chromaCanvas.getContext('2d');const cd=cc.createImageData(224,224);
@@ -93,6 +86,7 @@
    const chromaLarge=document.createElement('canvas');chromaLarge.width=672;chromaLarge.height=672;
    const cl=chromaLarge.getContext('2d');cl.imageSmoothingEnabled=true;cl.imageSmoothingQuality='high';cl.drawImage(chromaCanvas,0,0,672,672);
    const chroma=cl.getImageData(0,0,672,672).data;
+   const outputPixels=new Uint8ClampedArray(672*672*4);
    for(let k=0;k<672*672;k++){const Y=Math.max(0,Math.min(255,outY[k]*255)),Cbb=chroma[k*4]-128,Crr=chroma[k*4+1]-128;outputPixels[k*4]=Math.max(0,Math.min(255,Y+1.402*Crr));outputPixels[k*4+1]=Math.max(0,Math.min(255,Y-0.344136*Cbb-0.714136*Crr));outputPixels[k*4+2]=Math.max(0,Math.min(255,Y+1.772*Cbb));}
    const before=$('before').getContext('2d'),after=$('after').getContext('2d');before.clearRect(0,0,672,672);before.imageSmoothingEnabled=true;before.imageSmoothingQuality='high';before.drawImage(inputCanvas,0,0,672,672);
    const imageData=new ImageData(outputPixels,672,672);after.putImageData(imageData,0,0);
