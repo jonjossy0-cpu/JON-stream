@@ -12,7 +12,9 @@ Status: planning and validation only. This document does not enable AI processin
 
 ## Compact AI status icon (including fullscreen)
 - Use a small `AI ✦` icon/chip over the video instead of a text banner, to save screen space.
-- Keep it visible in both normal playback and fullscreen, anchored to a safe video corner so it does not cover the main controls or captions; make it small enough for phone and Android TV layouts.
+- When fullscreen playback controls appear, show the AI icon in the same overlay group and start a 3-second visibility window. Hide the icon when that 3-second window ends, in sync with the fullscreen controls; when the controls are shown again, show the icon again and restart the 3-second window.
+- In normal (non-fullscreen) playback, follow the same 3-second control-overlay visibility lifecycle if that player uses the same auto-hiding controls.
+- Keep it anchored to a safe video corner so it does not cover the main controls or captions; make it small enough for phone and Android TV layouts.
 - Show the active styling only while the real enhancement processor confirms that it is initialized and processing video frames. Merely enabling a setting, detecting WebGPU, or applying a CSS filter is not sufficient.
 - If AI is unavailable, stopped, or has fallen back to the original stream, do not show the active icon; optionally show a subdued/off state only where the player already provides status feedback.
 - The icon must not intercept remote-control focus, block playback controls, or alter channel switching, PIP, fullscreen, or audio/video behavior.
