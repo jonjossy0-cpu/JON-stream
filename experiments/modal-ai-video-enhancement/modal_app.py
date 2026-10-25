@@ -11,6 +11,7 @@ import os
 from typing import Any
 
 import modal
+from fastapi import FastAPI, HTTPException, Request, Response
 
 APP_NAME = "jon-stream-ai-frame-enhancer"
 MODEL_URL = (
@@ -99,7 +100,7 @@ def enhance_frame(image_bytes: bytes) -> bytes:
 web_image = modal.Image.debian_slim(python_version="3.10").uv_pip_install(
     "fastapi==0.115.6"
 )
-web_app = __import__("fastapi").FastAPI(title="JON Stream AI Frame Enhancement")
+web_app = FastAPI(title="JON Stream AI Frame Enhancement")
 
 
 @web_app.get("/health")
@@ -113,10 +114,8 @@ def health() -> dict[str, str]:
 
 
 @web_app.post("/enhance-frame")
-def enhance_endpoint(request: __import__("fastapi").Request) -> Any:
+async def enhance_endpoint(request: Request) -> Response:
     """Accept one image body; authentication is required before GPU use."""
-    from fastapi import HTTPException, Response
-
     expected_key = os.environ.get("JON_AI_API_KEY")
     supplied_key = request.headers.get("x-api-key")
     if not expected_key:
@@ -127,32 +126,40 @@ def enhance_endpoint(request: __import__("fastapi").Request) -> Any:
     if not supplied_key or supplied_key != expected_key:
         raise HTTPException(status_code=401, detail="Invalid API key.")
 
-    # This sync handler is run in FastAPI's worker thread; the remote GPU call
-    # does not happen unless authentication and basic size checks pass.
-    body = request.body()
-    if hasattr(body, "__await__"):
-        # Request.body() is async in FastAPI; sync handlers cannot await it.
-        raise HTTPException(
-            status_code=500,
-            detail="Internal request-handler configuration error.",
-        )
+    body = await request.body()
     if len(body) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="Image must be 4 MB or smaller.")
     if not body:
         raise HTTPException(status_code=400, detail="Upload an image in the request body.")
+
     try:
-        from PIL import Image, UnidentifiedImageError
+        from PIL import Image
 
         with Image.open(io.BytesIO(body)) as image:
             image.verify()
+            width, height = image.size
+            if width * height > MAX_INPUT_PIXELS:
+                raise HTTPException(
+                    status_code=413, detail="Image must be 1280×720 pixels or smaller."
+                )
+    except HTTPException:
+        raise
     except Exception as exc:
-        raise HTTPException(status_code=415, detail="Body must be a valid PNG or JPEG.") from exc
+        raise HTTPException(status_code=415, detail="Body must be a valid image.") from exc
 
-    enhanced = enhance_frame.remote(body)
+    try:
+        enhanced = await enhance_frame.remote.aio(body)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return Response(content=enhanced, media_type="image/webp")
 
 
-@app.function(image=web_image, timeout=120, scaledown_window=120)
+@app.function(
+    image=web_image,
+    secrets=[modal.Secret.from_name("jon-stream-ai-secret")],
+    timeout=120,
+    scaledown_window=120,
+)
 @modal.asgi_app()
 def api():
     return web_app
