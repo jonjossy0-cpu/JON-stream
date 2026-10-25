@@ -4734,7 +4734,7 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 
 <!-- JON AI LIVE VIDEO ENHANCEMENT — EXPERIMENT ONLY. Kept off production branch. -->
 <style id="jonAiLiveEnhancementStyles">
-#tvVideoFrame #jonAiEnhanceCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2;pointer-events:none;background:#000;display:none;opacity:1}
+#tvVideoFrame #jonAiEnhanceCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2;pointer-events:none;background:#000;display:none;opacity:.72}
 #tvVideoFrame.jon-ai-enhance-active #jonAiEnhanceCanvas{display:block}
 #tvVideoFrame.jon-ai-enhance-active #tvPlayer{opacity:1}
 #tvVideoFrame .tv-fullscreen-overlay{z-index:5}
@@ -4793,7 +4793,7 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
    session=await ort.InferenceSession.create(MODEL_URL,{executionProviders:["wasm"],graphOptimizationLevel:"all"});
   }
   enabled=true;frame.classList.add("jon-ai-enhance-active");
-  button.setAttribute("aria-pressed","true");button.textContent="✨ AI Enhance: ON";
+  button.setAttribute("aria-pressed","true");button.textContent="✨ AI Enhance: LOADING";
   frames=0;slowRuns=0;started=performance.now();lastPaint=0;frameToken++;schedule();
   setStatus("");
  }
