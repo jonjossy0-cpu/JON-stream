@@ -22,7 +22,7 @@
 <button id="run">Run local image A/B test</button><button id="reset">Reset / release</button><button id="export" disabled>Export JSON report</button>
 </div>
 <div class="panel"><div class="status" id="status">Status: NOT RUN</div><pre id="output">Choose the exact model file and a local image. Runtime library loading requires internet access.</pre></div>
-<div class="panel"><div class="images"><figure><canvas id="before" width="672" height="672"></canvas><figcaption>Baseline — aspect-preserved image in 224 × 224 letterbox, displayed at 3×</figcaption></figure><figure><canvas id="after" width="672" height="672"></canvas><figcaption>Experimental output — 3× luminance SR + resized chroma</figcaption></figure></div></div>
+<div class="panel"><div class="images"><figure><canvas id="before" width="672" height="672"></canvas><figcaption>Baseline — standard browser smooth scaling of the aspect-preserved image at 3×</figcaption></figure><figure><canvas id="after" width="672" height="672"></canvas><figcaption>Experimental output — 3× luminance SR + resized chroma</figcaption></figure></div></div>
 <div class="panel"><strong>Known limitations</strong><ul><li>The reference preprocessing resizes to 224 × 224 and extracts Y from YCbCr. This prototype uses browser canvas scaling and standard RGB↔YCbCr formulas, which may not match the reference pipeline pixel-for-pixel.</li><li>Output chroma is resized with browser canvas smoothing, not a guaranteed Pillow bicubic implementation.</li><li>One still image does not test temporal flicker, frame latency, thermal throttling, memory stability, or live HLS compatibility.</li><li>Model hash verification protects against accidental file mismatch, but does not independently audit model licensing or provenance.</li></ul></div>
 <script>
 (()=> {
@@ -94,7 +94,7 @@
    const cl=chromaLarge.getContext('2d');cl.imageSmoothingEnabled=true;cl.imageSmoothingQuality='high';cl.drawImage(chromaCanvas,0,0,672,672);
    const chroma=cl.getImageData(0,0,672,672).data;
    for(let k=0;k<672*672;k++){const Y=Math.max(0,Math.min(255,outY[k]*255)),Cbb=chroma[k*4]-128,Crr=chroma[k*4+1]-128;outputPixels[k*4]=Math.max(0,Math.min(255,Y+1.402*Crr));outputPixels[k*4+1]=Math.max(0,Math.min(255,Y-0.344136*Cbb-0.714136*Crr));outputPixels[k*4+2]=Math.max(0,Math.min(255,Y+1.772*Cbb));}
-   const before=$('before').getContext('2d'),after=$('after').getContext('2d');before.clearRect(0,0,672,672);before.imageSmoothingEnabled=false;before.drawImage(inputCanvas,0,0,672,672);
+   const before=$('before').getContext('2d'),after=$('after').getContext('2d');before.clearRect(0,0,672,672);before.imageSmoothingEnabled=true;before.imageSmoothingQuality='high';before.drawImage(inputCanvas,0,0,672,672);
    const imageData=new ImageData(outputPixels,672,672);after.putImageData(imageData,0,0);
    r.result='LOCAL_IMAGE_INFERENCE_COMPLETED';r.inputName=inputName;r.inputShape=dims;r.outputName=outName;r.outputShape=out.dims;r.outputPixels='672x672';r.totalMs=Number((performance.now()-started).toFixed(2));r.qualityAssessment='NOT AUTOMATED; inspect the side-by-side result';r.caveat='Still image only. Pre/postprocessing is an approximation of the reference pipeline; no video, streaming, device-performance, or temporal stability test.';
    report=r;$('export').disabled=false;say('COMPLETE — REVIEW OUTPUT VISUALLY',JSON.stringify(r,null,2));
