@@ -41,6 +41,9 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
 <div class="metric"><strong>Current quality</strong><span id="quality">Not playing</span></div>
 <div class="metric"><strong>Buffered ahead</strong><span id="buffer">0 s</span></div>
 <div class="metric"><strong>Rebuffer events</strong><span id="stalls">0</span></div>
+<div class="metric"><strong>Rebuffer time</strong><span id="stalltime">0.0 s</span></div>
+<div class="metric"><strong>Time to first frame</strong><span id="startup">—</span></div>
+<div class="metric"><strong>Estimated throughput</strong><span id="throughput">—</span></div>
 <div class="metric"><strong>Playback state</strong><span id="state">Idle</span></div>
 </div>
 <p class="small">Browser GPU support is only a capability signal; it does not prove that an AI model is installed or fast enough. Network estimates may be unavailable or inaccurate.</p>
@@ -53,28 +56,28 @@ button.secondary{background:#263750}.grid{display:grid;grid-template-columns:rep
 <script>
 (function(){
  const video=document.getElementById('video'), source=document.getElementById('source'), mode=document.getElementById('mode');
- let hls=null, stalls=0, raf=0;
+ let hls=null, stalls=0, raf=0, startedAt=0, firstFrameAt=0, bufferingStartedAt=0, bufferingTotalMs=0;
  const el=id=>document.getElementById(id);
  function state(s){el('status').textContent=s;el('state').textContent=s}
- function stop(){if(raf)cancelAnimationFrame(raf);raf=0;if(hls){hls.destroy();hls=null}video.pause();video.removeAttribute('src');video.load();el('quality').textContent='Not playing';el('buffer').textContent='0 s';state('Stopped')}
+ function stop(){if(raf)cancelAnimationFrame(raf);raf=0;if(hls){hls.destroy();hls=null}video.pause();video.removeAttribute('src');video.load();el('quality').textContent='Not playing';el('buffer').textContent='0 s';if(bufferingStartedAt){bufferingTotalMs+=performance.now()-bufferingStartedAt;bufferingStartedAt=0}el('stalltime').textContent=(bufferingTotalMs/1000).toFixed(1)+' s';state('Stopped')}
  function tick(){if(video.buffered.length){el('buffer').textContent=Math.max(0,video.buffered.end(video.buffered.length-1)-video.currentTime).toFixed(1)+' s'}else{el('buffer').textContent='0 s'}raf=requestAnimationFrame(tick)}
  function start(){
   const url=source.value.trim();if(!url){state('Enter a test HLS URL first.');return}
-  stop();stalls=0;el('stalls').textContent='0';state('Loading stream…');
+  stop();stalls=0;startedAt=performance.now();firstFrameAt=0;bufferingStartedAt=0;bufferingTotalMs=0;el('stalls').textContent='0';el('stalltime').textContent='0.0 s';el('startup').textContent='—';el('throughput').textContent='—';state('Loading stream…');
   const low=mode.value==='data';
   if(window.Hls&&Hls.isSupported()){
    hls=new Hls({enableWorker:true,lowLatencyMode:false,maxBufferLength:low?18:30,maxMaxBufferLength:low?36:60,backBufferLength:low?8:20,maxBufferSize:low?12*1000*1000:40*1000*1000,startLevel:-1,testBandwidth:true,abrBandWidthFactor:low?0.6:0.85,abrBandWidthUpFactor:low?0.4:0.65,capLevelToPlayerSize:true,manifestLoadingMaxRetry:2,levelLoadingMaxRetry:2,fragLoadingMaxRetry:2});
    hls.on(Hls.Events.MEDIA_ATTACHED,()=>hls.loadSource(url));
    hls.on(Hls.Events.MANIFEST_PARSED,()=>{state('Manifest loaded — press Play if playback does not start.');video.play().catch(()=>state('Ready — press Play (autoplay blocked).'))});
-   hls.on(Hls.Events.LEVEL_SWITCHED,(_,d)=>{const l=hls.levels[d.level];el('quality').textContent=l?((l.height||'?')+'p • '+((l.bitrate||0)/1e6).toFixed(2)+' Mbps'):'Auto'});
+   hls.on(Hls.Events.LEVEL_SWITCHED,(_,d)=>{const l=hls.levels[d.level];el('quality').textContent=l?((l.height||'?')+'p • '+((l.bitrate||0)/1e6).toFixed(2)+' Mbps'):'Auto'});\n   hls.on(Hls.Events.FRAG_LOADED,()=>{if(hls.bandwidthEstimate)el('throughput').textContent=(hls.bandwidthEstimate/1e6).toFixed(2)+' Mbps (estimate)'});
    hls.on(Hls.Events.ERROR,(_,d)=>{if(d.fatal)state('Stream error: '+d.type+' — baseline playback only; try another test URL.')});
    hls.attachMedia(video);
   }else if(video.canPlayType('application/vnd.apple.mpegurl')){video.src=url;video.addEventListener('loadedmetadata',()=>{state('Stream loaded — press Play.');video.play().catch(()=>{})},{once:true})}
   else{state('This browser does not support HLS playback in this test.')}
   raf=requestAnimationFrame(tick);
  }
- video.addEventListener('waiting',()=>{stalls++;el('stalls').textContent=String(stalls);state('Buffering — baseline measurement')});
- video.addEventListener('playing',()=>state('Playing — baseline measurement'));
+ video.addEventListener('waiting',()=>{if(!bufferingStartedAt)bufferingStartedAt=performance.now();stalls++;el('stalls').textContent=String(stalls);state('Buffering — baseline measurement')});
+ video.addEventListener('playing',()=>{if(!firstFrameAt){firstFrameAt=performance.now();el('startup').textContent=((firstFrameAt-startedAt)/1000).toFixed(2)+' s'}if(bufferingStartedAt){bufferingTotalMs+=performance.now()-bufferingStartedAt;bufferingStartedAt=0}el('stalltime').textContent=(bufferingTotalMs/1000).toFixed(1)+' s';state('Playing — baseline measurement')});
  video.addEventListener('error',()=>{if(video.error)state('Media error code '+video.error.code)});
  el('start').addEventListener('click',start);el('stop').addEventListener('click',stop);
  (async()=>{try{if(!navigator.gpu){el('gpu').textContent='WebGPU unavailable';return}const adapter=await navigator.gpu.requestAdapter();el('gpu').textContent=adapter?'WebGPU adapter available; AI model not installed':'No usable WebGPU adapter'}catch(e){el('gpu').textContent='GPU check unavailable'}})();
