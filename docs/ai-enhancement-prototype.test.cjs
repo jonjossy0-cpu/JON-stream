@@ -108,3 +108,21 @@ test('dispose during inference prevents late enhanced output', async () => {
   assert.equal(result.frame.id, 'original');
   assert.equal(session.getStatus().state, 'disposed');
 });
+
+test('local image A/B page keeps the reviewed model hash and expected output shape', () => {
+  const fs = require('node:fs');
+  const html = fs.readFileSync(require('node:path').join(__dirname, 'ai-local-image-sr-ab-test.html'), 'utf8');
+  assert.match(html, /85f36ff88cc504a24af5e0602148bc56a8aa09a58eca8c0da2756f3e8186035e/);
+  assert.match(html, /out\.dims\[2\]!==672\|\|out\.dims\[3\]!==672/);
+  assert.match(html, /networkStreamUsed:false/);
+  assert.match(html, /playerConnected:false/);
+  assert.match(html, /uploadIntended:false/);
+});
+
+test('local image A/B page does not add live-video, HLS, Firebase, or upload APIs', () => {
+  const fs = require('node:fs');
+  const html = fs.readFileSync(require('node:path').join(__dirname, 'ai-local-image-sr-ab-test.html'), 'utf8');
+  assert.doesNotMatch(html, /<video\b|hls\.js|firebase|XMLHttpRequest|\bfetch\s*\(/i);
+  assert.match(html, /Select a test image/);
+  assert.match(html, /SHA-256/);
+});
