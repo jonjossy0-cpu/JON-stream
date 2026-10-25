@@ -30,7 +30,11 @@ jobs:
           cache-dependency-path: experiments/modal-ai-video-enhancement/modal-requirements.txt
       - name: Install Modal SDK and API dependencies
         run: python -m pip install -r experiments/modal-ai-video-enhancement/modal-requirements.txt
-      - name: Compile prototype source
-        run: python -m py_compile experiments/modal-ai-video-enhancement/modal_app.py
+      - name: Install CPU-only test dependencies
+        run: python -m pip install pytest httpx
+      - name: Compile prototype and tests
+        run: python -m py_compile experiments/modal-ai-video-enhancement/modal_app.py experiments/modal-ai-video-enhancement/tests/test_modal_api.py
       - name: Validate Modal decorators and FastAPI app import
         run: python -c "import runpy; runpy.run_path('experiments/modal-ai-video-enhancement/modal_app.py')"
+      - name: Run API security and health smoke tests (no GPU)
+        run: python -m pytest -q experiments/modal-ai-video-enhancement/tests/test_modal_api.py
