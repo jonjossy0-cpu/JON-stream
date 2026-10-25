@@ -45,6 +45,7 @@ const FIXED_CHANNELS = new Map([
     "http://45.177.114.115/SONY_MOVIES/index.m3u8",
     "http://168.197.104.22/SONY_MOVIES/index.m3u8",
     "http://170.83.16.50/SONY_MOVIES/index.m3u8",
+    "http://45.162.64.114/SONY_MOVIES/tracks-v1a1/mono.ts.m3u8",
     "https://cdn-5.nxplay.com.br/SONY_MOVIES/index.m3u8"
   ]]
 ]);
