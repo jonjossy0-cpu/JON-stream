@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07111f">
+<title>JON Stream — AI Video Lab (Experimental)</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.7.3"></script>
+<style>
+:root{color-scheme:dark;--bg:#07111f;--panel:#111d2e;--line:#263750;--text:#fff;--muted:#9aabc0;--red:#e31b23}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px Arial,Helvetica,sans-serif}
+main{max-width:960px;margin:auto;padding:16px}.notice{border:1px solid #8b6b22;background:#30270e;color:#ffe6a0;padding:12px;border-radius:12px;line-height:1.5}
+h1{font-size:24px;margin:8px 0}p{line-height:1.5;color:var(--muted)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin:14px 0}
+video{width:100%;max-height:60vh;background:#000;border-radius:10px;margin-top:10px}
+label{display:block;font-weight:700;margin:10px 0 6px}input[type=url],select{width:100%;padding:12px;background:#07111f;border:1px solid var(--line);border-radius:9px;color:#fff}
+button{padding:11px 14px;border:0;border-radius:9px;background:var(--red);color:#fff;font-weight:700;margin:8px 6px 0 0}
+button.secondary{background:#263750}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}.metric{background:#07111f;border:1px solid var(--line);padding:10px;border-radius:10px}.metric strong{display:block;font-size:12px;color:var(--muted);margin-bottom:7px}.metric span{overflow-wrap:anywhere}
+#status{font-weight:700;color:#f8c86b}.small{font-size:12px}
+</style>
+</head>
+<body>
+<main>
+<h1>JON Stream — AI Video Lab</h1>
+<p>Isolated experiment branch only. This page does not replace the JON Stream player.</p>
+<div class="notice"><strong>Important:</strong> AI enhancement is NOT running in this lab yet. This page checks playback, low-data behavior, browser/device capabilities and baseline performance. It must not claim AI is active until a real model processes frames.</div>
+<section class="panel">
+<h2>1. Test stream</h2>
+<label for="source">HLS (.m3u8) test URL</label>
+<input id="source" type="url" autocomplete="url" placeholder="Paste a test HLS URL">
+<label for="mode">Playback mode</label>
+<select id="mode"><option value="data" selected>Low Data (recommended)</option><option value="balanced">Balanced</option></select>
+<button id="start">Start baseline test</button><button id="stop" class="secondary">Stop</button>
+<video id="video" controls playsinline preload="metadata"></video>
+<p id="status" role="status">Ready — no stream loaded.</p>
+</section>
+<section class="panel">
+<h2>2. Device and playback diagnostics</h2>
+<div class="grid">
+<div class="metric"><strong>AI inference capability</strong><span id="gpu">Checking…</span></div>
+<div class="metric"><strong>Network estimate</strong><span id="network">Not reported by browser</span></div>
+<div class="metric"><strong>Current quality</strong><span id="quality">Not playing</span></div>
+<div class="metric"><strong>Buffered ahead</strong><span id="buffer">0 s</span></div>
+<div class="metric"><strong>Rebuffer events</strong><span id="stalls">0</span></div>
+<div class="metric"><strong>Playback state</strong><span id="state">Idle</span></div>
+</div>
+<p class="small">Browser GPU support is only a capability signal; it does not prove that an AI model is installed or fast enough. Network estimates may be unavailable or inaccurate.</p>
+</section>
+<section class="panel">
+<h2>3. Acceptance rule</h2>
+<p>Compare the same stream with JON Stream's normal player at the same network speed. The future AI path can only be enabled if it shows measured visual improvement without increasing startup delay, buffering, audio/video sync errors, or device overheating. If unsupported or slower, normal playback remains the fallback.</p>
+</section>
+</main>
+<script>
+(function(){
+ const video=document.getElementById('video'), source=document.getElementById('source'), mode=document.getElementById('mode');
+ let hls=null, stalls=0, raf=0;
+ const el=id=>document.getElementById(id);
+ function state(s){el('status').textContent=s;el('state').textContent=s}
+ function stop(){if(raf)cancelAnimationFrame(raf);raf=0;if(hls){hls.destroy();hls=null}video.pause();video.removeAttribute('src');video.load();el('quality').textContent='Not playing';el('buffer').textContent='0 s';state('Stopped')}
+ function tick(){if(video.buffered.length){el('buffer').textContent=Math.max(0,video.buffered.end(video.buffered.length-1)-video.currentTime).toFixed(1)+' s'}else{el('buffer').textContent='0 s'}raf=requestAnimationFrame(tick)}
+ function start(){
+  const url=source.value.trim();if(!url){state('Enter a test HLS URL first.');return}
+  stop();stalls=0;el('stalls').textContent='0';state('Loading stream…');
+  const low=mode.value==='data';
+  if(window.Hls&&Hls.isSupported()){
+   hls=new Hls({enableWorker:true,lowLatencyMode:false,maxBufferLength:low?18:30,maxMaxBufferLength:low?36:60,backBufferLength:low?8:20,maxBufferSize:low?12*1000*1000:40*1000*1000,startLevel:-1,testBandwidth:true,abrBandWidthFactor:low?0.6:0.85,abrBandWidthUpFactor:low?0.4:0.65,capLevelToPlayerSize:true,manifestLoadingMaxRetry:2,levelLoadingMaxRetry:2,fragLoadingMaxRetry:2});
+   hls.on(Hls.Events.MEDIA_ATTACHED,()=>hls.loadSource(url));
+   hls.on(Hls.Events.MANIFEST_PARSED,()=>{state('Manifest loaded — press Play if playback does not start.');video.play().catch(()=>state('Ready — press Play (autoplay blocked).'))});
+   hls.on(Hls.Events.LEVEL_SWITCHED,(_,d)=>{const l=hls.levels[d.level];el('quality').textContent=l?((l.height||'?')+'p • '+((l.bitrate||0)/1e6).toFixed(2)+' Mbps'):'Auto'});
+   hls.on(Hls.Events.ERROR,(_,d)=>{if(d.fatal)state('Stream error: '+d.type+' — baseline playback only; try another test URL.')});
+   hls.attachMedia(video);
+  }else if(video.canPlayType('application/vnd.apple.mpegurl')){video.src=url;video.addEventListener('loadedmetadata',()=>{state('Stream loaded — press Play.');video.play().catch(()=>{})},{once:true})}
+  else{state('This browser does not support HLS playback in this test.')}
+  raf=requestAnimationFrame(tick);
+ }
+ video.addEventListener('waiting',()=>{stalls++;el('stalls').textContent=String(stalls);state('Buffering — baseline measurement')});
+ video.addEventListener('playing',()=>state('Playing — baseline measurement'));
+ video.addEventListener('error',()=>{if(video.error)state('Media error code '+video.error.code)});
+ el('start').addEventListener('click',start);el('stop').addEventListener('click',stop);
+ (async()=>{try{if(!navigator.gpu){el('gpu').textContent='WebGPU unavailable';return}const adapter=await navigator.gpu.requestAdapter();el('gpu').textContent=adapter?'WebGPU adapter available; AI model not installed':'No usable WebGPU adapter'}catch(e){el('gpu').textContent='GPU check unavailable'}})();
+ const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+ if(c)el('network').textContent=[c.effectiveType||'',c.downlink?c.downlink+' Mbps':'',c.saveData?'Data Saver on':''].filter(Boolean).join(' • ')||'Unknown';
+ window.addEventListener('beforeunload',stop);
+})();
+</script>
+</body>
+</html>
