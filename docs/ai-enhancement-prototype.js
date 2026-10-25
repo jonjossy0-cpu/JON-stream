@@ -9,7 +9,6 @@
 
   const DEFAULTS = Object.freeze({
     maxConsecutiveOverBudget: 3,
-    maxFrameQueue: 1,
     targetFrameBudgetMs: 33.3
   });
 
@@ -18,13 +17,16 @@
     let state = 'unavailable';
     let consecutiveOverBudget = 0;
     let disposed = false;
+    let inFlight = false;
 
     function getStatus() {
       return Object.freeze({
         state,
         modelActive: state === 'processing',
         modelName: adapter && adapter.modelName ? String(adapter.modelName) : null,
-        reason: state === 'unavailable' ? 'No reviewed model adapter supplied' : null
+        reason: state === 'unavailable' ? 'No reviewed model adapter supplied' :
+          state === 'disabled' ? 'Enhancement disabled after a processing error or frame-budget failure' :
+          state === 'disposed' ? 'Session disposed' : null
       });
     }
 
@@ -36,6 +38,7 @@
       }
       try {
         const result = await adapter.initialize(context || {});
+        if (disposed) return getStatus();
         if (!result || result.ready !== true) {
           state = 'unavailable';
           return getStatus();
@@ -43,22 +46,27 @@
         state = 'ready';
         return getStatus();
       } catch (_) {
-        state = 'unavailable';
+        if (!disposed) state = 'unavailable';
         return getStatus();
       }
     }
 
     async function processFrame(frame) {
       if (disposed || state !== 'ready' || !frame) {
-        return { enhanced: false, frame, reason: 'not-ready' };
+        return { enhanced: false, frame, reason: disposed ? 'disposed' : 'not-ready' };
       }
-      // Single-frame call only: callers must not enqueue frames behind playback.
+      // Never queue or overlap frames: a busy model must not add playback latency.
+      if (inFlight) {
+        return { enhanced: false, frame, reason: 'busy-fallback' };
+      }
+      inFlight = true;
       state = 'processing';
       const started = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
       try {
         const result = await adapter.processFrame(frame);
         const ended = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
         const elapsedMs = Math.max(0, ended - started);
+        if (disposed) return { enhanced: false, frame, reason: 'disposed-during-processing', elapsedMs };
         if (elapsedMs > config.targetFrameBudgetMs) consecutiveOverBudget++;
         else consecutiveOverBudget = 0;
         if (consecutiveOverBudget >= config.maxConsecutiveOverBudget) {
@@ -72,14 +80,18 @@
         state = 'ready';
         return { enhanced: true, frame: result.frame, elapsedMs };
       } catch (_) {
-        state = 'disabled';
-        return { enhanced: false, frame, reason: 'model-error' };
+        if (!disposed) state = 'disabled';
+        return { enhanced: false, frame, reason: disposed ? 'disposed-during-processing' : 'model-error' };
+      } finally {
+        inFlight = false;
       }
     }
 
     async function dispose() {
-      disposed = true;
-      state = 'disposed';
+      if (!disposed) {
+        disposed = true;
+        state = 'disposed';
+      }
       if (adapter && typeof adapter.dispose === 'function') {
         try { await adapter.dispose(); } catch (_) { /* keep teardown best-effort */ }
       }
