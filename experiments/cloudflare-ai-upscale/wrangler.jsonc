@@ -1,0 +1,9 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "jon-stream-ai-upscale-test",
+  "main": "worker.js",
+  "compatibility_date": "2026-10-25",
+  "images": {
+    "binding": "IMAGES"
+  }
+}
