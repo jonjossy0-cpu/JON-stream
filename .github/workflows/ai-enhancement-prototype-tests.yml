@@ -1,0 +1,31 @@
+name: AI enhancement prototype contract tests
+
+on:
+  push:
+    branches:
+      - experiment/ai-video-enhancement
+    paths:
+      - 'docs/ai-enhancement-prototype.js'
+      - 'docs/ai-enhancement-prototype.test.cjs'
+      - '.github/workflows/ai-enhancement-prototype-tests.yml'
+  pull_request:
+    paths:
+      - 'docs/ai-enhancement-prototype.js'
+      - 'docs/ai-enhancement-prototype.test.cjs'
+      - '.github/workflows/ai-enhancement-prototype-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  prototype-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out experiment branch
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run isolated prototype contract tests
+        run: node --test docs/ai-enhancement-prototype.test.cjs
