@@ -25,3 +25,28 @@ Improve perceived video quality where the device can process frames efficiently,
 
 ## Current truth
 The isolated lab currently measures baseline playback only. No real enhancement model has been selected or wired into the player; the AI icon must therefore not indicate active processing yet. `mainv` remains unchanged.
+
+## Large-screen TV quality profile (up to 100-inch displays)
+
+### Quality target
+- Optimize perceived detail and stable motion for large screens; do not treat screen diagonal alone as a resolution setting.
+- Prefer the highest source rendition that the device and current network can sustain without repeated rebuffering. Keep an adaptive safety margin instead of forcing 4K.
+- Preserve source aspect ratio and correct pixel aspect ratio. Never stretch 16:9 content to fill a different aspect ratio; allow letterboxing/pillarboxing when appropriate.
+- Keep sharpening conservative and edge-aware to avoid halos, ringing, oversharpening, and amplified compression artifacts. Denoising must not smear faces, text, sports motion, or fine textures.
+- Use genuine model-based super-resolution only after a licensed model and compatible runtime are selected. A larger output canvas or CSS filter alone is not AI upscaling and cannot recreate missing source detail.
+
+### TV profile selection
+- Add a future experimental `Large TV` profile, separate from the current production settings and OFF by default.
+- On capable devices, evaluate frame processing at the display's actual output size and measured frame rate. Track processing latency, presented/dropped frames, memory use, device temperature where available, and visual quality.
+- On weak Android TV boxes, do not force local AI inference. Keep hardware/browser decode and standard HLS playback; choose a lower stable source rendition if needed.
+- On high-performance devices, compare a real AI model against the original at the same source, network, display and playback settings. Keep the model only if a blinded side-by-side review shows improvement without additional stalls or audio/video desynchronization.
+
+### Large-screen acceptance checks
+- Test on an actual large display or a verified 4K output path; emulation alone does not establish TV picture quality.
+- Compare representative 480p, 720p and 1080p sources separately. Record source resolution, selected HLS rendition, display output resolution, observed frame rate, dropped frames and total rebuffer time.
+- Inspect fine text, faces, diagonal edges, grass/foliage, fast motion, gradients and dark scenes at normal viewing distance.
+- Require no increase in buffering or sync errors versus baseline. If processing misses the frame deadline or the device overheats/struggles, turn off enhancement and continue normal playback.
+- Never promise that every source becomes true 4K or that every 100-inch TV will support local AI processing.
+
+### Implementation gate
+This is a design target only. Do not add filters, a model, or a visible `AI ✦` active state to the production player until the real processing path is implemented, measured and explicitly approved. Keep `mainv` unchanged during the experiment.
