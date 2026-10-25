@@ -2,13 +2,12 @@
 
 These tests never invoke the GPU function or deploy anything to Modal.
 """
-import os
 import runpy
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-APP_PATH = Path(__file__).parents[1] / "experiments" / "modal-ai-video-enhancement" / "modal_app.py"
+APP_PATH = Path(__file__).parents[1] / "modal_app.py"
 APP_MODULE = runpy.run_path(str(APP_PATH))
 client = TestClient(APP_MODULE["web_app"])
 
