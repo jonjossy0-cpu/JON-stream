@@ -52,13 +52,14 @@
     }
 
     async function processFrame(frame) {
-      if (disposed || state !== 'ready' || !frame) {
+      if (disposed || !frame) {
         return { enhanced: false, frame, reason: disposed ? 'disposed' : 'not-ready' };
       }
       // Never queue or overlap frames: a busy model must not add playback latency.
       if (inFlight) {
         return { enhanced: false, frame, reason: 'busy-fallback' };
       }
+      if (state !== 'ready') return { enhanced: false, frame, reason: 'not-ready' };
       inFlight = true;
       state = 'processing';
       const started = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
