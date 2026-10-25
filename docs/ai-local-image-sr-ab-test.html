@@ -65,7 +65,7 @@
    const inputName=session.inputNames[0];if(session.inputNames.length!==1)throw new Error('This prototype supports single-input models only.');
    if(session.outputNames.length!==1)throw new Error('This prototype supports single-output models only.');
    const meta=session.inputMetadata[inputName],dims=meta?.dimensions;
-   if(!meta||meta.type!=='float32'||!dims||dims.length!==4||dims.some((d,i)=>Number.isInteger(d)&&d>0&&d!==[1,1,224,224][i])||dims.some((d,i)=>typeof d==='number'&&d<=0))throw new Error('Model input metadata is incompatible with float32 [1,1,224,224]. Fixed dimensions must match; dynamic spatial dimensions are allowed. Stopped safely.');
+   if(!meta||meta.type!=='float32'||!dims||dims.length!==4||dims.some((d,i)=>Number.isInteger(d)&&d>0&&d!==[1,1,224,224][i])||dims.some((d,i)=>typeof d==='number'&&d===0))throw new Error('Model input metadata is incompatible with float32 [1,1,224,224]. Fixed dimensions must match; dynamic spatial dimensions are allowed. Stopped safely.');
    const t0=performance.now();const outputs=await activeSession.run({[inputName]:new window.ort.Tensor('float32',y,[1,1,224,224])});r.inferenceMs=Number((performance.now()-t0).toFixed(2));
    if(thisRun!==runId)return;
    const outName=activeSession.outputNames[0],out=outputs[outName];if(!out||out.dims.length!==4||out.dims[0]!==1||out.dims[1]!==1||out.dims[2]!==672||out.dims[3]!==672)throw new Error('Output shape did not match expected [1,1,672,672].');
