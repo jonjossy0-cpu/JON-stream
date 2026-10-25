@@ -66,3 +66,45 @@ test('repeated over-budget frames disable processing', async () => {
   assert.equal(second.reason, 'frame-budget-exceeded');
   assert.equal(session.getStatus().state, 'disabled');
 });
+
+test('concurrent calls do not queue behind a busy frame', async () => {
+  let finish;
+  const session = createEnhancementSession({
+    async initialize() { return { ready: true }; },
+    async processFrame(frame) {
+      await new Promise(resolve => { finish = resolve; });
+      return { frame: { id: 'processed', original: frame.id } };
+    }
+  });
+  await session.initialize();
+  const pending = session.processFrame({ id: 'first' });
+  await new Promise(resolve => setImmediate(resolve));
+  const concurrent = await session.processFrame({ id: 'second' });
+  assert.equal(concurrent.enhanced, false);
+  assert.equal(concurrent.reason, 'busy-fallback');
+  assert.equal(concurrent.frame.id, 'second');
+  finish();
+  assert.equal((await pending).enhanced, true);
+});
+
+test('dispose during inference prevents late enhanced output', async () => {
+  let finish;
+  const session = createEnhancementSession({
+    async initialize() { return { ready: true }; },
+    async processFrame(frame) {
+      await new Promise(resolve => { finish = resolve; });
+      return { frame: { id: 'processed', original: frame.id } };
+    },
+    async dispose() {}
+  });
+  await session.initialize();
+  const pending = session.processFrame({ id: 'original' });
+  await new Promise(resolve => setImmediate(resolve));
+  await session.dispose();
+  finish();
+  const result = await pending;
+  assert.equal(result.enhanced, false);
+  assert.equal(result.reason, 'disposed-during-processing');
+  assert.equal(result.frame.id, 'original');
+  assert.equal(session.getStatus().state, 'disposed');
+});
