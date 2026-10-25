@@ -42,3 +42,11 @@ Status: planning and validation only. This document does not enable AI processin
 - Low Data Mode: ON.
 - AI Enhancement: requested ON, but `AI ACTIVE` only when an actual enhancement processor is operational. If no processor is available, report the fallback truthfully and continue playback.
 - No production code has been changed by this planning document.
+
+## Large-screen TV validation references
+For testing on displays up to 100 inches, use these experiment-only documents:
+- [Large TV quality test protocol](LARGE-TV-QUALITY-TEST-PROTOCOL.md)
+- [Large TV quality results template](LARGE-TV-QUALITY-RESULTS-TEMPLATE.md)
+- [Technology roadmap and large-screen profile](AI-VIDEO-TECHNOLOGY-ROADMAP.md)
+
+Do not accept a candidate based only on subjective sharpness. Compare repeated baseline/candidate runs on the same stream and conditions, check visual artifacts, and reject any change that worsens buffering, dropped frames, audio/video sync or remote-control behavior. The lab currently measures baseline playback only; no AI enhancement model is integrated yet.
