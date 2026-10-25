@@ -6,6 +6,7 @@ are measured.
 """
 from __future__ import annotations
 
+import hmac
 import io
 import os
 from typing import Any
@@ -83,10 +84,10 @@ def enhance_frame(image_bytes: bytes) -> bytes:
     from PIL import Image
 
     with Image.open(io.BytesIO(image_bytes)) as source:
+        if source.width * source.height > MAX_INPUT_PIXELS:
+            raise ValueError("Input frame exceeds the 1280x720 pixel limit")
         source.load()
         rgb = source.convert("RGB")
-    if rgb.width * rgb.height > MAX_INPUT_PIXELS:
-        raise ValueError("Input frame exceeds the 1280x720 pixel limit")
 
     bgr = cv2.cvtColor(np.asarray(rgb), cv2.COLOR_RGB2BGR)
     enhanced_bgr, _ = _get_upsampler().enhance(bgr, outscale=4)
@@ -115,7 +116,7 @@ def health() -> dict[str, str]:
 
 @web_app.post("/enhance-frame")
 async def enhance_endpoint(request: Request) -> Response:
-    """Accept one image body; authentication is required before GPU use."""
+    """Accept one image body; authenticate and cap bytes before GPU use."""
     expected_key = os.environ.get("JON_AI_API_KEY")
     supplied_key = request.headers.get("x-api-key")
     if not expected_key:
@@ -123,12 +124,25 @@ async def enhance_endpoint(request: Request) -> Response:
             status_code=503,
             detail="Service is not configured yet: add JON_AI_API_KEY as a Modal secret.",
         )
-    if not supplied_key or supplied_key != expected_key:
+    if not supplied_key or not hmac.compare_digest(supplied_key, expected_key):
         raise HTTPException(status_code=401, detail="Invalid API key.")
 
-    body = await request.body()
-    if len(body) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="Image must be 4 MB or smaller.")
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > MAX_UPLOAD_BYTES:
+                raise HTTPException(status_code=413, detail="Image must be 4 MB or smaller.")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid Content-Length header.")
+
+    # Stream the body with a hard cap so oversized requests are rejected before
+    # the entire payload is held in memory or any GPU work is started.
+    body_buffer = bytearray()
+    async for chunk in request.stream():
+        if len(body_buffer) + len(chunk) > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="Image must be 4 MB or smaller.")
+        body_buffer.extend(chunk)
+    body = bytes(body_buffer)
     if not body:
         raise HTTPException(status_code=400, detail="Upload an image in the request body.")
 
