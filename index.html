@@ -4734,128 +4734,124 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 
 <!-- JON AI LIVE VIDEO ENHANCEMENT — EXPERIMENT ONLY. Kept off production branch. -->
 <style id="jonAiLiveEnhancementStyles">
-#tvVideoFrame #jonAiEnhanceCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2;pointer-events:none;background:#000;display:none}
+#tvVideoFrame #jonAiEnhanceCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2;pointer-events:none;background:#000;display:none;opacity:.28}
 #tvVideoFrame.jon-ai-enhance-active #jonAiEnhanceCanvas{display:block}
-#tvVideoFrame.jon-ai-enhance-active #tvPlayer{opacity:0}
+#tvVideoFrame.jon-ai-enhance-active #tvPlayer{opacity:1}
 #tvVideoFrame .tv-fullscreen-overlay{z-index:5}
-#jonAiEnhanceControl{display:inline-flex;align-items:center;gap:6px;border:1px solid #3977ff;background:#101e35;color:#fff;border-radius:9px;padding:8px 11px;font-weight:800;cursor:pointer}
+#jonAiEnhanceControl{display:none;align-items:center;gap:6px;border:1px solid #3977ff;background:#101e35;color:#fff;border-radius:9px;padding:8px 11px;font-weight:800;cursor:pointer}
+#tvVideoFrame:fullscreen #jonAiEnhanceControl{display:inline-flex}
 #jonAiEnhanceControl[aria-pressed="true"]{background:#123c2b;border-color:#39d98a}
-#jonAiEnhanceStatus{font-size:11px;font-weight:700;color:#b8c8df;margin:6px 0}
+#jonAiEnhanceControl:disabled{opacity:.6;cursor:wait}
+#jonAiEnhanceStatus{display:none;font-size:11px;font-weight:700;color:#e6edf8;background:rgba(0,0,0,.68);padding:5px 8px;border-radius:7px;max-width:min(85vw,420px)}
+#tvVideoFrame:fullscreen #jonAiEnhanceStatus{display:block}
 </style>
 <script id="jonAiLiveEnhancementExperiment">
 (function(){
  "use strict";
  const MODEL_URL="https://huggingface.co/onnxmodelzoo/super-resolution-10/resolve/main/super-resolution-10.onnx";
  const RUNTIME_URL="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/ort.min.js";
- const frame=document.getElementById("tvVideoFrame");
- const video=document.getElementById("tvPlayer");
- const controls=document.querySelector("#tvPlayerBox .tv-controls");
- if(!frame||!video||!controls)return;
+ const frame=document.getElementById("tvVideoFrame"),video=document.getElementById("tvPlayer");
+ const overlay=frame&&frame.querySelector(".tv-fullscreen-bottom");
+ if(!frame||!video||!overlay)return;
  const button=document.createElement("button");
  button.type="button";button.id="jonAiEnhanceControl";button.textContent="✨ AI Enhance: OFF";
  button.setAttribute("aria-pressed","false");
- button.title="Experimental live AI super-resolution. Uses device processing power.";
- controls.insertBefore(button,controls.firstChild);
+ button.title="Experimental live AI enhancement. Visible only in fullscreen.";
+ overlay.insertBefore(button,overlay.firstChild);
  const status=document.createElement("div");status.id="jonAiEnhanceStatus";
- status.textContent="AI enhancement is off. Live TV playback remains unchanged.";
- controls.insertAdjacentElement("afterend",status);
- const canvas=document.createElement("canvas");canvas.id="jonAiEnhanceCanvas";canvas.width=672;canvas.height=378;
- frame.appendChild(canvas);
+ status.textContent="AI off — original Live TV playback is unchanged.";
+ const overlayTop=frame.querySelector(".tv-fullscreen-top");
+ if(overlayTop)overlayTop.insertAdjacentElement("afterend",status);else overlay.insertAdjacentElement("beforebegin",status);
+ const canvas=document.createElement("canvas");canvas.id="jonAiEnhanceCanvas";canvas.width=672;canvas.height=378;frame.appendChild(canvas);
  const out=canvas.getContext("2d",{alpha:false});
  const src=document.createElement("canvas");src.width=224;src.height=224;
  const srcCtx=src.getContext("2d",{willReadFrequently:true,alpha:false});
  const crop=document.createElement("canvas");crop.width=672;crop.height=378;
  const cropCtx=crop.getContext("2d",{willReadFrequently:true,alpha:false});
- let session=null, ortLoading=null, enabled=false, busy=false, frameToken=0, lastPaint=0, frames=0, started=0;
+ let session=null,ortLoading=null,enabled=false,busy=false,frameToken=0,lastPaint=0,frames=0,started=0,slowRuns=0;
+ const FULLSCREEN=()=>document.fullscreenElement===frame||document.webkitFullscreenElement===frame;
  function setStatus(s){status.textContent=s}
  function fitSource(){
   srcCtx.fillStyle="#000";srcCtx.fillRect(0,0,224,224);
   const vw=video.videoWidth,vh=video.videoHeight;if(!vw||!vh)return false;
   const scale=Math.min(224/vw,224/vh),w=Math.round(vw*scale),h=Math.round(vh*scale);
-  srcCtx.drawImage(video,Math.round((224-w)/2),Math.round((224-h)/2),w,h);
-  return true;
+  srcCtx.drawImage(video,Math.round((224-w)/2),Math.round((224-h)/2),w,h);return true;
  }
  async function loadOrt(){
   if(ortLoading)return ortLoading;
-  ortLoading=new Promise((resolve,reject)=>{
-   const script=document.createElement("script");script.src=RUNTIME_URL;script.onload=()=>window.ort?resolve(window.ort):reject(new Error("ONNX Runtime did not load"));script.onerror=()=>reject(new Error("Could not load ONNX Runtime"));document.head.appendChild(script);
-  });
+  ortLoading=new Promise((resolve,reject)=>{const script=document.createElement("script");script.src=RUNTIME_URL;script.onload=()=>window.ort?resolve(window.ort):reject(new Error("ONNX Runtime did not load"));script.onerror=()=>reject(new Error("Could not load ONNX Runtime"));document.head.appendChild(script)});
   return ortLoading;
  }
  async function enable(){
-  if(!window.isSecureContext){throw new Error("AI processing requires a secure HTTPS page")}
-  if(!("requestVideoFrameCallback" in HTMLVideoElement.prototype)){throw new Error("This browser does not support live video-frame processing")}
+  if(!FULLSCREEN())throw new Error("Open the player in fullscreen first");
+  if(video.paused)throw new Error("Play a Live TV channel first");
+  if(!window.isSecureContext)throw new Error("HTTPS is required");
+  if(!("requestVideoFrameCallback" in HTMLVideoElement.prototype))throw new Error("This browser lacks live frame processing support");
   if(!session){
-   setStatus("Loading AI runtime and model… first start may use extra data.");
-   const ort=await loadOrt();
-   try{ort.env.wasm.numThreads=1}catch(_){}
+   setStatus("Loading AI runtime and model…");
+   const ort=await loadOrt();try{ort.env.wasm.numThreads=1}catch(_){}
    session=await ort.InferenceSession.create(MODEL_URL,{executionProviders:["wasm"],graphOptimizationLevel:"all"});
-   setStatus("AI model loaded. Waiting for live video…");
   }
   enabled=true;frame.classList.add("jon-ai-enhance-active");
   button.setAttribute("aria-pressed","true");button.textContent="✨ AI Enhance: ON";
-  frames=0;started=performance.now();lastPaint=0;
-  schedule();
+  frames=0;slowRuns=0;started=performance.now();lastPaint=0;frameToken++;schedule();
+  setStatus("AI model active. Original video remains visible to keep playback smooth.");
  }
- function disable(){
-  enabled=false;busy=false;frameToken++;
-  frame.classList.remove("jon-ai-enhance-active");
+ function disable(message){
+  enabled=false;busy=false;frameToken++;frame.classList.remove("jon-ai-enhance-active");
   button.setAttribute("aria-pressed","false");button.textContent="✨ AI Enhance: OFF";
-  setStatus("AI enhancement off. Original live playback is restored.");
+  setStatus(message||"AI off — original Live TV playback is unchanged.");
  }
  function schedule(){
   if(!enabled||!video.requestVideoFrameCallback)return;
   const token=frameToken;
   video.requestVideoFrameCallback((now)=>{
    if(!enabled||token!==frameToken)return;
-   if(!busy&&now-lastPaint>250&&video.readyState>=2){lastPaint=now;processFrame().catch(err=>{console.warn("JON AI live enhancement:",err);disable();setStatus("AI enhancement stopped: "+(err&&err.message?err.message:"inference error")+". Original playback restored.");});}
+   if(!FULLSCREEN()){disable("Exited fullscreen — AI enhancement switched off.");return}
+   // Lower inference frequency to reduce contention with live playback on low-memory devices.
+   if(!busy&&now-lastPaint>=700&&video.readyState>=2){lastPaint=now;processFrame().catch(err=>{console.warn("JON AI live enhancement:",err);disable("AI stopped: "+(err&&err.message?err.message:"inference error")+". Original playback restored.");});}
    schedule();
   });
  }
  async function processFrame(){
   if(busy||!enabled||video.paused||video.ended)return;
   if(!fitSource())return;
-  busy=true;
+  busy=true;const t0=performance.now();
   try{
-   const image=srcCtx.getImageData(0,0,224,224),rgba=image.data,y=new Float32Array(224*224);
+   const rgba=srcCtx.getImageData(0,0,224,224).data,y=new Float32Array(224*224);
    for(let i=0,j=0;i<rgba.length;i+=4,j++)y[j]=(0.299*rgba[i]+0.587*rgba[i+1]+0.114*rgba[i+2])/255;
-   const ort=window.ort;
-   const input=new ort.Tensor("float32",y,[1,1,224,224]);
+   const input=new window.ort.Tensor("float32",y,[1,1,224,224]);
    const result=await session.run({[session.inputNames[0]]:input});
    if(!enabled)return;
    const tensor=result[session.outputNames[0]],data=tensor.data,dims=tensor.dims;
    if(!dims||dims.length!==4||dims[2]!==672||dims[3]!==672)throw new Error("Unsupported AI model output shape");
-   // The model enhances luminance. Recover color from the original frame and combine it with AI luminance.
    const pixels=new ImageData(672,378),dst=pixels.data;
    for(let yy=0;yy<378;yy++){
-    const sy=49+yy/3;
+    const sy=Math.min(223,Math.floor(49+yy/3));
     for(let xx=0;xx<672;xx++){
-     const sx=xx/3,si=(Math.min(223,Math.floor(sy))*224+Math.min(223,Math.floor(sx)))*4;
-     const ri=(Math.min(671,Math.floor(yy+147))*672+xx);
-     const Y=Math.max(0,Math.min(1,Number(data[ri])));
-     const R=rgba[si]/255,G=rgba[si+1]/255,B=rgba[si+2]/255;
-     const oldY=.299*R+.587*G+.114*B,U=(B-oldY)/1.772,V=(R-oldY)/1.402;
-     const nr=Math.max(0,Math.min(1,Y+1.402*V)),nb=Math.max(0,Math.min(1,Y+1.772*U)),ng=Math.max(0,Math.min(1,(Y-.299*nr-.114*nb)/.587));
-     const di=(yy*672+xx)*4;dst[di]=nr*255;dst[di+1]=ng*255;dst[di+2]=nb*255;dst[di+3]=255;
+     const sx=Math.min(223,Math.floor(xx/3)),si=(sy*224+sx)*4,ri=(Math.min(671,yy+147)*672+xx);
+     const Y=Math.max(0,Math.min(1,Number(data[ri]))),R=rgba[si]/255,G=rgba[si+1]/255,B=rgba[si+2]/255,oldY=.299*R+.587*G+.114*B,U=(B-oldY)/1.772,V=(R-oldY)/1.402;
+     const nr=Math.max(0,Math.min(1,Y+1.402*V)),nb=Math.max(0,Math.min(1,Y+1.772*U)),ng=Math.max(0,Math.min(1,(Y-.299*nr-.114*nb)/.587)),di=(yy*672+xx)*4;
+     dst[di]=nr*255;dst[di+1]=ng*255;dst[di+2]=nb*255;dst[di+3]=255;
     }
    }
-   cropCtx.putImageData(pixels,0,0);out.clearRect(0,0,672,378);out.drawImage(crop,0,0);
-   frames++;
-   if(frames===1)setStatus("AI inference is running on live frames. Experimental quality and speed depend on your device.");
-   else if(frames%8===0){const elapsed=(performance.now()-started)/1000;setStatus("AI active • "+(frames/Math.max(1,elapsed)).toFixed(1)+" processed frames/sec • experimental");}
+   cropCtx.putImageData(pixels,0,0);out.clearRect(0,0,672,378);out.drawImage(crop,0,0);frames++;
+   const elapsed=performance.now()-t0;
+   if(elapsed>450)slowRuns++;else slowRuns=0;
+   if(slowRuns>=3){disable("This device cannot process AI frames fast enough. AI stopped to prevent playback stutter.");return}
+   if(frames===1)setStatus("AI inference is running on live frames. If playback stutters, this device may be too slow for this model.");
+   else if(frames%4===0){const sec=(performance.now()-started)/1000;setStatus("AI active • "+(frames/Math.max(1,sec)).toFixed(1)+" enhanced frames/sec • experimental");}
   }finally{busy=false}
  }
  button.addEventListener("click",async()=>{
   if(enabled){disable();return}
-  if(video.paused){setStatus("Play a Live TV channel first, then enable AI Enhance.");return}
+  if(!FULLSCREEN()){setStatus("Enter fullscreen to use AI Enhance.");return}
   button.disabled=true;
-  try{await enable()}catch(err){console.warn("JON AI enhancement unavailable:",err);disable();setStatus("AI unavailable: "+(err&&err.message?err.message:"model load failed")+". Original playback is unchanged.");}
+  try{await enable()}catch(err){console.warn("JON AI enhancement unavailable:",err);disable("AI unavailable: "+(err&&err.message?err.message:"model load failed")+". Original playback is unchanged.");}
   finally{button.disabled=false}
  });
- video.addEventListener("pause",()=>{if(enabled)setStatus("AI is enabled; paused video is waiting for playback.")});
- video.addEventListener("playing",()=>{if(enabled)schedule()});
- video.addEventListener("emptied",()=>{if(enabled)disable()});
- document.addEventListener("fullscreenchange",()=>{if(enabled&&document.fullscreenElement===frame)status.textContent="AI enhancement active in fullscreen experimental mode."});
+ video.addEventListener("emptied",()=>{if(enabled)disable("Channel changed — AI switched off. Enable it again if needed.")});
+ document.addEventListener("fullscreenchange",()=>{if(!FULLSCREEN()&&enabled)disable("Exited fullscreen — AI enhancement switched off.");else if(FULLSCREEN())setStatus("AI Enhance is available inside fullscreen only.")});
 })();
 </script>
 
