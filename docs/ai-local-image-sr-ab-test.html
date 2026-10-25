@@ -51,6 +51,7 @@
    say('INITIALIZING','Creating local ONNX session…');
    session=await window.ort.InferenceSession.create(modelBytes,{executionProviders:[$('backend').value],graphOptimizationLevel:'all'});
    if(thisRun!==runId){try{await session.release()}catch{}session=null;return;}
+   const activeSession=session;
    const img=await loadImage(imageFile);if(thisRun!==runId)return;
    const inputCanvas=document.createElement('canvas');inputCanvas.width=224;inputCanvas.height=224;
    const ictx=inputCanvas.getContext('2d',{willReadFrequently:true});ictx.drawImage(img,0,0,224,224);
@@ -62,11 +63,12 @@
     cr[j]=Math.max(0,Math.min(255,128+0.5*R-0.418688*G-0.081312*B));
    }
    const inputName=session.inputNames[0];if(session.inputNames.length!==1)throw new Error('This prototype supports single-input models only.');
+   if(session.outputNames.length!==1)throw new Error('This prototype supports single-output models only.');
    const meta=session.inputMetadata[inputName],dims=meta?.dimensions;
    if(!meta||meta.type!=='float32'||!dims||dims.length!==4||dims.some((d,i)=>Number.isInteger(d)&&d>0&&d!==[1,1,224,224][i])||dims.some((d,i)=>typeof d==='number'&&d<=0))throw new Error('Model input metadata is incompatible with float32 [1,1,224,224]. Fixed dimensions must match; dynamic spatial dimensions are allowed. Stopped safely.');
-   const t0=performance.now();const outputs=await session.run({[inputName]:new window.ort.Tensor('float32',y,[1,1,224,224])});r.inferenceMs=Number((performance.now()-t0).toFixed(2));
+   const t0=performance.now();const outputs=await activeSession.run({[inputName]:new window.ort.Tensor('float32',y,[1,1,224,224])});r.inferenceMs=Number((performance.now()-t0).toFixed(2));
    if(thisRun!==runId)return;
-   const outName=session.outputNames[0],out=outputs[outName];if(!out||out.dims.length!==4||out.dims[0]!==1||out.dims[1]!==1||out.dims[2]!==672||out.dims[3]!==672)throw new Error('Output shape did not match expected [1,1,672,672].');
+   const outName=activeSession.outputNames[0],out=outputs[outName];if(!out||out.dims.length!==4||out.dims[0]!==1||out.dims[1]!==1||out.dims[2]!==672||out.dims[3]!==672)throw new Error('Output shape did not match expected [1,1,672,672].');
    const outputPixels=new Uint8ClampedArray(672*672*4),outY=out.data;
    for(let yy=0;yy<672;yy++)for(let xx=0;xx<672;xx++){
     const k=yy*672+xx,srcY=Math.min(223,Math.floor(yy/3)),srcX=Math.min(223,Math.floor(xx/3)),src=srcY*224+srcX;
