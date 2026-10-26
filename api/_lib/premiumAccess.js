@@ -1,5 +1,3 @@
-const DAY_MS = 86400000;
-
 function isActiveEntitlement(item, now) {
   if (!item || item.active !== true) return false;
   if (item.unlimited === true) return true;
