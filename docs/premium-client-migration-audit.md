@@ -8,6 +8,9 @@
 - The root web page still contains static station records with direct `url` values, and TV/radio channel metadata can come from the shared Firestore document `jonStream/appData`. Any Premium source URL still readable there can be copied and requested outside the app.
 - PR #234 (ticketed web playback) is merged, but its own rollout checklist explicitly calls out client migration, private catalog population, secret configuration, and end-to-end tests as prerequisites. PR #242 adds per-request entitlement rechecks but remains unmerged.
 
+
+- **Android TV flavor:** `android/app/build.gradle` defines separate `mobile` (7.4) and `tv` (8.0) flavors. The TV flavor uses the shared `android/app/src/main/assets/index.html`; the Gradle task generates a modified HTML only for the Mobile flavor. The shared asset has no `premiumChannelId`, `jonGetPremiumPlaybackUrl`, or `playback-ticket` implementation in the inspected playback paths, and it assigns TV/radio source URLs directly. Therefore the Android TV flavor is also not yet migrated to ticket playback. Keep Mobile and TV release/testing separate.
+
 ## Safe staged migration plan
 
 1. **Inventory only:** identify every TV and radio item whose `accessTier` is `premium`, record its stable ID and source format, and compare the web, Mobile APK, and Android TV playback paths. Do not modify any source URL in this stage.
