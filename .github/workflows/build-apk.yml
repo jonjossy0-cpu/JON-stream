@@ -1,4 +1,4 @@
-name: Build JON Stream APK
+name: Build JON Stream Mobile APK 7.3 Update
 
 on:
   workflow_dispatch:
@@ -53,22 +53,23 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build debug APKs
+      - name: Sync latest mainv HTML into Mobile-only assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p android/app/src/mobile/assets
+          cp index.html android/app/src/mobile/assets/index.html
+          grep -q '<title>JON STREAM</title>' android/app/src/mobile/assets/index.html
+
+      - name: Build Mobile debug APK only
         working-directory: android
-        run: gradle :app:assembleMobileDebug :app:assembleTvDebug
+        run: gradle :app:assembleMobileDebug
 
       - name: Upload Mobile debug APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: JON-Stream-Mobile-Debug-APK
+          name: JON-Stream-Mobile-7.3-Updated-Debug-APK
           path: android/app/build/outputs/apk/mobile/debug/*.apk
-          if-no-files-found: error
-
-      - name: Upload Android TV debug APK
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: JON-Stream-Android-TV-Debug-APK
-          path: android/app/build/outputs/apk/tv/debug/*.apk
           if-no-files-found: error
 
   build-release:
