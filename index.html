@@ -3863,6 +3863,9 @@ body.jon-ad-visible{padding-bottom:85px}
         group:typeof x.category==='string'&&x.category.trim()?x.category.trim():(typeof x.group==='string'&&x.group.trim()?x.group.trim():'TV Channel'),
         accessTier:String(x.accessTier||'free').toLowerCase()==='premium'?'premium':'free',
         id:x.id==null?'':String(x.id),
+        premiumChannelId:x.premiumChannelId==null?'':String(x.premiumChannelId),
+        playbackChannelId:x.playbackChannelId==null?'':String(x.playbackChannelId),
+        channelId:x.channelId==null?'':String(x.channelId),
         backupUrl:cleanStreamUrl(x.backupUrl),
         backupUrls:Array.isArray(x.backupUrls)?x.backupUrls.filter(isHttpUrl).map(u=>u.trim()):[],
         backupStreams:Array.isArray(x.backupStreams)?x.backupStreams.filter(isHttpUrl).map(u=>u.trim()):[]
