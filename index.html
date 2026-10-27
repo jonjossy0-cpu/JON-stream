@@ -1805,6 +1805,13 @@ function renderRadioStationIdentity(station){
  if(station&&station.logo){logo.src=station.logo}else{logo.removeAttribute("src");logo.hidden=true;fallback.hidden=false}
  if(player)player.classList.remove("jon-radio-playing");
 }
+async function waitForPremiumPlaybackHelper(){
+ for(let attempt=0;attempt<80;attempt++){
+  if(typeof window.jonGetPremiumPlaybackUrl==="function")return window.jonGetPremiumPlaybackUrl;
+  await new Promise(resolve=>setTimeout(resolve,100));
+ }
+ throw new Error("Premium playback authorization module did not initialize. Reload the page and retry.");
+}
 async function selectStation(index,ticketPlayback=false,playbackUrl="",playbackIsHls=false){
  const requestedStation=stations[index];
  const isPremium=!!requestedStation&&String(requestedStation.accessTier||"free").toLowerCase()==="premium";
@@ -1815,13 +1822,14 @@ async function selectStation(index,ticketPlayback=false,playbackUrl="",playbackI
  }
  if(isPremium&&!ticketPlayback){
   const channelId=requestedStation.premiumChannelId||requestedStation.playbackChannelId||requestedStation.channelId||requestedStation.id||"";
-  if(!channelId||typeof window.jonGetPremiumPlaybackUrl!=="function"){
-   radioStatus.innerHTML="🔒 Secure Premium playback is not configured for this station";
+  if(!channelId){
+   radioStatus.innerHTML="🔒 Premium station ID is missing from this station's configuration";
    return;
   }
   radioStatus.innerHTML="🔐 Authorizing Premium radio...";
   try{
-   const securePlayback=await window.jonGetPremiumPlaybackUrl(requestedStation);
+   const getPremiumPlaybackUrl=await waitForPremiumPlaybackHelper();
+   const securePlayback=await getPremiumPlaybackUrl(requestedStation);
    if(stations[index]!==requestedStation)return;
    await selectStation(index,true,securePlayback.url,securePlayback.isHls);
   }catch(error){
@@ -3151,13 +3159,14 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,ticketP
  }
  if(isPremium&&!ticketPlayback){
   const channelId=requestedChannel.premiumChannelId||requestedChannel.playbackChannelId||requestedChannel.channelId||requestedChannel.id||"";
-  if(!channelId||typeof window.jonGetPremiumPlaybackUrl!=="function"){
-   tvStatus("🔒 Secure Premium playback is not configured for this channel");
+  if(!channelId){
+   tvStatus("🔒 Premium channel ID is missing from this channel's configuration");
    return;
   }
   tvStatus("🔐 Authorizing Premium playback...");
   try{
-   const securePlayback=await window.jonGetPremiumPlaybackUrl(requestedChannel);
+   const getPremiumPlaybackUrl=await waitForPremiumPlaybackHelper();
+   const securePlayback=await getPremiumPlaybackUrl(requestedChannel);
    if((filteredTV[index]||tvChannels.find(c=>c.url===url))!==requestedChannel)return;
    await playTVStream(securePlayback.url,name,index,0,resetRetry,true);
   }catch(error){
