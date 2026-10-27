@@ -4353,34 +4353,43 @@ if(authPanel){
    return messages[code]||((action||"Request")+" failed ("+(code||"unknown error")+"). Please try again.");
  };
  const setBusy=(busy)=>["jonAccountSignup","jonAccountSignin","jonForgotPassword","jonResendVerification","jonAccountSignout"].forEach(id=>{const el=$(id);if(el)el.disabled=busy;});
+ let subscriptionStatusRequest=0;
  async function showSubscription(user){
+   const requestId=++subscriptionStatusRequest;
    window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
+   window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
 
    $("jonProfileEmail").textContent=user.email||"—";
    $("jonProfileVerified").textContent=user.emailVerified?"Verified":"Not verified";
-   $("jonProfilePlan").textContent=user.emailVerified?"Subscription status unavailable":"Verify your email first";
-   $("jonProfileRemaining").textContent="Not available yet";
-   $("jonProfilePayment").textContent="Telebirr setup pending";
+   $("jonProfilePlan").textContent=user.emailVerified?"Checking subscription…":"Verify your email first";
+   $("jonProfileRemaining").textContent="Checking…";
+   $("jonProfilePayment").textContent="—";
    $("jonAccountMessage").textContent=user.emailVerified
-    ?"Your account is ready. Trial dates and paid access will show here once secure subscription validation is connected."
+    ?"Checking your current trial or Premium entitlement."
     :"Please verify your email to activate the account. Trial time will only begin after server-side verification.";
    try{
      const token=await user.getIdToken();
-     const response=await fetch("https://jon-stream.vercel.app/api/subscription/status",{headers:{Authorization:"Bearer "+token}});
-     if(response.ok){
-       const data=await response.clone().json();
-       window.jonPremiumAccess={ready:true,allowed:data.hasPremium===true,status:String(data.status||"free")};
-       window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
-     }
-
-     if(response.ok){
-       const data=await response.json();
-       $("jonProfilePlan").textContent=data.planLabel||data.status||"No active subscription";
-       $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
-       $("jonProfilePayment").textContent=data.paymentLabel||"—";
-       $("jonAccountMessage").textContent=data.message||$("jonAccountMessage").textContent;
-     }
-   }catch(e){console.info("Subscription status endpoint is not available yet.");}
+     const response=await fetch("https://jon-stream.vercel.app/api/subscription/status",{headers:{Authorization:"Bearer "+token,"Cache-Control":"no-cache"}});
+     if(requestId!==subscriptionStatusRequest||!auth.currentUser||auth.currentUser.uid!==user.uid)return;
+     if(!response.ok)throw new Error("Subscription status check failed ("+response.status+")");
+     const data=await response.json();
+     const allowed=user.emailVerified&&data.hasPremium===true;
+     window.jonPremiumAccess={ready:true,allowed,status:String(data.status||(allowed?"premium":"free"))};
+     window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+     if(!allowed&&typeof window.jonStopPremiumPlayback==="function")window.jonStopPremiumPlayback("subscription_inactive");
+     $("jonProfilePlan").textContent=data.planLabel||data.status||"No active subscription";
+     $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
+     $("jonProfilePayment").textContent=data.paymentLabel||"—";
+     $("jonAccountMessage").textContent=data.message||$("jonAccountMessage").textContent;
+   }catch(e){
+     if(requestId!==subscriptionStatusRequest||!auth.currentUser||auth.currentUser.uid!==user.uid)return;
+     window.jonPremiumAccess={ready:true,allowed:false,status:"validation_failed"};
+     window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+     if(typeof window.jonStopPremiumPlayback==="function")window.jonStopPremiumPlayback("subscription_unverified");
+     $("jonProfilePlan").textContent="Subscription could not be verified";
+     $("jonProfileRemaining").textContent="—";
+     $("jonAccountMessage").textContent="Premium playback is paused until your subscription can be verified. Check your connection and retry.";
+   }
  }
 
  window.jonGetPremiumPlaybackUrl=async channel=>{
@@ -4407,14 +4416,28 @@ if(authPanel){
    const error=document.getElementById("jonAccountError");
    if(error)error.textContent="This is a Premium channel. Sign in with a verified email and an active 3-day trial or Premium entitlement to continue.";
  };
+ let subscriptionRecheckTimer=null;
+ const checkCurrentSubscription=()=>{const current=auth.currentUser;if(current)void showSubscription(current);};
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkCurrentSubscription();});
+ window.addEventListener("focus",checkCurrentSubscription);
  onAuthStateChanged(auth,async user=>{
-   if(!user){window.jonPremiumAccess={ready:true,allowed:false,status:"signed_out"};window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));}
+   subscriptionStatusRequest++;
+   clearInterval(subscriptionRecheckTimer);
+   subscriptionRecheckTimer=null;
+   if(!user){
+     window.jonPremiumAccess={ready:true,allowed:false,status:"signed_out"};
+     window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
+     if(typeof window.jonStopPremiumPlayback==="function")window.jonStopPremiumPlayback("signed_out");
+   }
 
    $("jonAccountState").textContent=user?(user.emailVerified?"Signed in":"Verify email"):"Not signed in";
    $("jonAccountSignedOut").hidden=!!user;
    $("jonAccountSignedIn").hidden=!user;
    message("");
-   if(user)await showSubscription(user);
+   if(user){
+     await showSubscription(user);
+     subscriptionRecheckTimer=setInterval(()=>{if(auth.currentUser)void showSubscription(auth.currentUser);},15000);
+   }
  });
  $("jonPasswordToggle").addEventListener("click",()=>{const input=$("jonAccountPassword"),button=$("jonPasswordToggle");const reveal=input.type==="password";input.type=reveal?"text":"password";button.textContent=reveal?"Hide":"Show";button.setAttribute("aria-label",reveal?"Hide password":"Show password");button.setAttribute("aria-pressed",String(reveal));input.focus();});
  $("jonForgotPassword").addEventListener("click",async()=>{const email=$("jonAccountEmail").value.trim();if(!email){message("Enter your account email first, then tap Forgot password.",true);$("jonAccountEmail").focus();return;}if(!auth){message("Firebase Authentication is unavailable. Please try again later.",true);return;}setBusy(true);message("Sending password reset email…");try{await sendPasswordResetEmail(auth,email);message("If an account exists for "+email+", a password reset link has been sent. Check your Inbox and Spam/Junk.");}catch(e){message(authErrorText(e,"Password reset"),true);}finally{setBusy(false);}});
@@ -4845,6 +4868,33 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
  window.addEventListener("jon-premium-access-changed",refresh);
  const auth=getAuth(getApp());
  onAuthStateChanged(auth,nextUser=>{user=nextUser;refresh();});
+})();
+</script>
+<script id="jonPremiumPlaybackEnforcement">
+(function(){
+ "use strict";
+ window.jonStopPremiumPlayback=function(reason){
+  const station=typeof currentStation!=="undefined"?currentStation:null;
+  const channel=typeof currentTV!=="undefined"?currentTV:null;
+  const isPremium=item=>!!item&&String(item.accessTier||"free").toLowerCase()==="premium";
+  if(isPremium(station)){
+   try{stopRadio()}catch(_){try{const p=document.getElementById("radioPlayer");if(p){p.pause();p.removeAttribute("src");p.load()}}catch(__){}}
+   try{currentStation=null}catch(_){}
+   try{clearTimeout(reconnectTimer)}catch(_){}
+   try{clearTimeout(radioAdvancedRetryTimer)}catch(_){}
+   try{clearInterval(radioAdvancedDiagnosticsTimer)}catch(_){}
+   try{clearInterval(radioAdvancedStallTimer)}catch(_){}
+   const status=document.getElementById("radioStatus");
+   if(status)status.textContent=reason==="signed_out"?"🔒 Premium radio stopped — signed out":"🔒 Premium radio stopped — subscription inactive";
+  }
+  if(isPremium(channel)){
+   try{clearTimeout(tvStartupTimer);clearTimeout(tvRetryTimer);clearTimeout(tvReconnectTimer)}catch(_){}
+   try{tvPlayAttemptId++}catch(_){}
+   try{cleanupPreviousTV()}catch(_){try{const p=document.getElementById("tvPlayer");if(p){p.pause();p.removeAttribute("src");p.load()}}catch(__){}}
+   try{currentTV=null;currentTVIndex=-1;tvSourceList=[]}catch(_){}
+   try{tvStatus(reason==="signed_out"?"🔒 Premium TV stopped — signed out":"🔒 Premium TV stopped — subscription inactive")}catch(_){}
+  }
+ };
 })();
 </script>
 </body>
