@@ -4407,7 +4407,7 @@ if(authPanel){
    const user=auth.currentUser;
    if(!user||!user.emailVerified)throw new Error("Sign in with a verified email first");
    const token=await user.getIdToken();
-   const premiumApiOrigin=/(^|\\.)github\\.io$/i.test(window.location.hostname)?"https://jon-stream.vercel.app":window.location.origin;
+   const premiumApiOrigin=/(^|\.)github\.io$/i.test(window.location.hostname)?"https://jon-stream.vercel.app":window.location.origin;
    const response=await fetch(premiumApiOrigin+"/api/subscription/playback-ticket",{
      method:"POST",
      headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
