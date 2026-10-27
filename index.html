@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="theme-color" content="#07111f">
-<title>JON FM ETHIOPIA</title>
+<title>JON STREAM</title>
 
 <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1.7.3"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/mpegts.js@1.8.2/dist/mpegts.min.js"></script>
@@ -126,27 +126,139 @@ button:active{transform:scale(.98)}
 
 .brand{
  text-align:center;
- padding:8px 0 20px;
+ padding:10px 12px 12px;
+ margin:4px 0 10px;
+ position:relative;
+ isolation:isolate;
+ overflow:hidden;
+ border:1px solid rgba(90,150,190,.24);
+ border-radius:18px;
+ background:linear-gradient(135deg,rgba(13,27,46,.97),rgba(7,17,31,.9) 62%,rgba(24,17,29,.92));
+ box-shadow:0 8px 24px rgba(0,0,0,.22);
 }
-
-.logo{
- width:135px;
- height:135px;
- object-fit:contain;
- border-radius:28px;
+.brand-inner{
+ position:relative;
+ z-index:1;
+}
+.brand-kicker{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:7px;
+ margin:0 auto 5px;
+ color:#91a9c3;
+ font-size:9px;
+ font-weight:800;
+ letter-spacing:.22em;
+ text-transform:uppercase;
+}
+.brand-kicker::before,.brand-kicker::after{
+ content:"";
  display:block;
- margin:auto;
- box-shadow:0 8px 30px rgba(0,0,0,.55);
+ width:22px;
+ height:1px;
+ background:linear-gradient(90deg,transparent,#00beff);
 }
-
+.brand-kicker::after{background:linear-gradient(90deg,#e31b23,transparent);}
 .brand h1{
- margin:14px 0 5px;
- font-size:27px;
+ display:inline-block;
+ position:relative;
+ margin:3px 0 4px;
+ font-size:clamp(21px,3.4vw,28px);
+ font-weight:900;
+ letter-spacing:.13em;
+ line-height:1.15;
+ color:#fff;
+ white-space:nowrap;
+ text-shadow:0 0 10px rgba(0,190,255,.25);
+ animation:jonTitleMotion 3.6s ease-in-out infinite !important;
+ will-change:transform,text-shadow;
 }
 
+.brand-status{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:6px;
+ margin:8px auto 0;
+ color:#9fb2c8;
+ font-size:9px;
+ font-weight:800;
+ letter-spacing:.16em;
+ text-transform:uppercase;
+}
+.brand-status-dot{
+ width:5px;
+ height:5px;
+ border-radius:50%;
+ background:#00d6a0;
+ box-shadow:0 0 8px rgba(0,214,160,.7);
+}
+.brand::before{
+ content:"";
+ position:absolute;
+ inset:0;
+ border-radius:inherit;
+ pointer-events:none;
+ z-index:-1;
+ box-shadow:inset 0 0 0 1px rgba(0,190,255,.35),0 0 22px rgba(0,190,255,.14);
+ animation:jonBrandGlow 4s ease-in-out infinite;
+}
+.brand::after{
+ content:"";
+ position:absolute;
+ width:70%;
+ height:100px;
+ left:15%;
+ top:10px;
+ border-radius:50%;
+ background:linear-gradient(90deg,rgba(0,190,255,.16),rgba(227,27,35,.16));
+ filter:blur(32px);
+ z-index:-1;
+ pointer-events:none;
+ animation:jonAuraGlow 4s ease-in-out infinite alternate;
+}
+@keyframes jonBrandGlow{
+ 0%,100%{box-shadow:inset 0 0 0 1px rgba(0,190,255,.52),0 0 20px rgba(0,190,255,.22),0 0 38px rgba(0,190,255,.08);}
+ 50%{box-shadow:inset 0 0 0 1px rgba(227,27,35,.58),0 0 24px rgba(227,27,35,.25),0 0 42px rgba(227,27,35,.1);}
+}
+@keyframes jonAuraGlow{
+ 0%,100%{opacity:.82;transform:translateX(-8px) scale(.96);background:linear-gradient(90deg,rgba(0,190,255,.34),rgba(0,190,255,.08));}
+ 50%{opacity:1;transform:translateX(8px) scale(1.04);background:linear-gradient(90deg,rgba(227,27,35,.08),rgba(227,27,35,.36));}
+}
+@keyframes jonLogoGlow{
+ 0%,100%{filter:drop-shadow(0 0 7px rgba(0,190,255,.72)) drop-shadow(0 0 16px rgba(0,190,255,.18));}
+ 50%{filter:drop-shadow(0 0 10px rgba(227,27,35,.8)) drop-shadow(0 0 20px rgba(227,27,35,.2));}
+}
+@media(prefers-reduced-motion:reduce){
+ .brand::before,.brand::after,.brand .logo,.brand h1{animation:none;}
+}
+.logo{
+ width:clamp(68px,13vw,96px);
+ height:clamp(68px,13vw,96px);
+ object-fit:contain;
+ border-radius:20px;
+ display:block;
+ margin:0 auto;
+ padding:4px;
+ background:linear-gradient(145deg,rgba(255,255,255,.07),rgba(255,255,255,.012));
+ border:1px solid rgba(255,255,255,.13);
+ box-shadow:0 7px 22px rgba(0,0,0,.4);
+ animation:jonLogoGlow 3.8s ease-in-out infinite;
+}
+/* Title styling is defined with the compact brand header above. */
+@keyframes jonTitleMotion{
+ 0%,100%{transform:translate3d(-9px,0,0) scale(1);color:#fff;text-shadow:0 0 9px rgba(0,190,255,.72),0 0 24px rgba(0,190,255,.28);}
+ 25%{transform:translate3d(0,-2px,0) scale(1.025);color:#f4fbff;text-shadow:0 0 14px rgba(0,190,255,.95),0 0 32px rgba(0,190,255,.38);}
+ 50%{transform:translate3d(9px,0,0) scale(1);color:#fff;text-shadow:0 0 12px rgba(227,27,35,.9),0 0 28px rgba(227,27,35,.32);}
+ 75%{transform:translate3d(0,-2px,0) scale(1.025);color:#fff7f7;text-shadow:0 0 15px rgba(227,27,35,.98),0 0 34px rgba(227,27,35,.4);}
+}
 .brand p{
  margin:0;
- color:var(--muted);
+ color:#b7c6d8;
+ font-size:clamp(11px,2.1vw,13px);
+ font-weight:700;
+ letter-spacing:.025em;
 }
 
 .featured{
@@ -1248,9 +1360,13 @@ img.jon-ad-media{
 </section>
 
 <div class="brand">
- <img data-logo class="logo" alt="JON FM ETHIOPIA">
- <h1>JON FM ETHIOPIA</h1>
- <p>🇪🇹 Ethiopian Digital Radio & TV</p>
+ <div class="brand-inner">
+  <div class="brand-kicker">WORLD DIGITAL BROADCAST</div>
+  <img data-logo class="logo" alt="JON STREAM">
+  <h1>JON STREAM</h1>
+  <p>World Digital IP TV &amp; Radio</p>
+  <div class="brand-status"><span class="brand-status-dot"></span> TELEVISION <span aria-hidden="true">•</span> RADIO</div>
+ </div>
 </div>
 
 <div class="featured radio-only">
