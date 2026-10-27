@@ -3171,7 +3171,7 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,ticketP
    await playTVStream(securePlayback.url,name,index,0,resetRetry,true);
   }catch(error){
    console.warn("JON Premium playback authorization failed:",error);
-   tvStatus("🔒 Premium authorization failed — please sign in again or contact support");
+   const reason=String(error&&error.message||"Unknown authorization error").replace(/[\r\n]+/g," ").slice(0,180);tvStatus("🔒 Premium authorization failed: "+reason);
   }
   return;
  }
