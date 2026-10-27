@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#07111f">
-<title>JON STREAM</title>
+<title>JON FM ETHIOPIA</title>
 
 <style>
 *{box-sizing:border-box}
@@ -46,86 +46,27 @@ body.light{
 
 .brand{
   text-align:center;
-  padding:14px 0 24px;
-  position:relative;
-  isolation:isolate;
-}
-
-.brand::before{
-  content:"";
-  position:absolute;
-  z-index:-1;
-  width:min(90%,390px);
-  height:160px;
-  left:50%;
-  top:8px;
-  transform:translateX(-50%);
-  background:radial-gradient(ellipse at center,rgba(0,190,255,.22) 0%,rgba(227,27,35,.13) 40%,transparent 74%);
-  filter:blur(14px);
-  pointer-events:none;
-  animation:jonAuraShift 4s ease-in-out infinite alternate;
+  padding:8px 0 18px;
 }
 
 .logo{
-  width:clamp(108px,24vw,138px);
-  height:clamp(108px,24vw,138px);
+  width:120px;
+  height:120px;
   object-fit:cover;
-  border-radius:28px;
+  border-radius:25px;
   display:block;
-  margin:0 auto;
-  padding:4px;
-  background:linear-gradient(145deg,rgba(255,255,255,.14),rgba(255,255,255,.025));
-  border:1px solid rgba(104,204,255,.65);
-  box-shadow:0 0 0 4px rgba(0,190,255,.07),0 0 24px rgba(0,190,255,.38),0 0 42px rgba(227,27,35,.22),0 12px 32px rgba(0,0,0,.45);
-  animation:jonLogoGlow 3.6s ease-in-out infinite alternate;
+  margin:auto;
+  box-shadow:0 8px 30px rgba(0,0,0,.5);
 }
 
 .brand h1{
-  margin:18px 0 7px;
-  font-size:clamp(27px,5vw,36px);
-  line-height:1.08;
-  font-weight:950;
-  letter-spacing:clamp(2px,.8vw,5px);
-  text-transform:uppercase;
-  color:transparent;
-  background:linear-gradient(100deg,#fff 0%,#9fe8ff 28%,#fff 50%,#ffb5ba 72%,#fff 100%);
-  background-clip:text;
-  -webkit-background-clip:text;
-  filter:drop-shadow(0 0 8px rgba(0,190,255,.28));
+  margin:14px 0 5px;
+  font-size:27px;
 }
 
 .brand p{
-  display:inline-block;
   margin:0;
-  padding:7px 14px;
-  border:1px solid rgba(104,204,255,.28);
-  border-radius:999px;
-  color:var(--text);
-  font-size:clamp(11px,2.8vw,14px);
-  font-weight:800;
-  letter-spacing:.65px;
-  background:linear-gradient(90deg,rgba(0,190,255,.09),rgba(227,27,35,.09));
-  box-shadow:inset 0 0 14px rgba(0,190,255,.055),0 0 18px rgba(0,190,255,.08);
-}
-
-@keyframes jonLogoGlow{
-  0%,100%{
-    border-color:rgba(0,190,255,.78);
-    box-shadow:0 0 0 4px rgba(0,190,255,.09),0 0 26px rgba(0,190,255,.48),0 0 44px rgba(0,190,255,.2),0 12px 32px rgba(0,0,0,.45);
-  }
-  50%{
-    border-color:rgba(227,27,35,.88);
-    box-shadow:0 0 0 4px rgba(227,27,35,.10),0 0 25px rgba(227,27,35,.45),0 0 48px rgba(227,27,35,.25),0 12px 32px rgba(0,0,0,.45);
-  }
-}
-
-@keyframes jonAuraShift{
-  0%{opacity:.72;background:radial-gradient(ellipse at center,rgba(0,190,255,.24) 0%,rgba(0,190,255,.08) 42%,transparent 74%)}
-  100%{opacity:1;background:radial-gradient(ellipse at center,rgba(227,27,35,.22) 0%,rgba(227,27,35,.08) 42%,transparent 74%)}
-}
-
-@media(prefers-reduced-motion:reduce){
-  .logo,.brand::before{animation:none}
+  color:var(--muted);
 }
 
 .clock{
@@ -450,9 +391,9 @@ src="logo.png"
 class="logo"
 alt="JON Media Service">
 
-<h1>JON STREAM</h1>
+<h1>JON FM ETHIOPIA</h1>
 
-<p>World Digital IP TV & Radio</p>
+<p>🇪🇹 Ethiopian Digital Radio & TV</p>
 
 <div
 class="clock"
@@ -769,7 +710,7 @@ onclick="setTVFilter('International')">
 <div class="about">
 
 <b>
-ℹ️ About JON STREAM
+ℹ️ About JON FM ETHIOPIA
 </b>
 
 <p>
