@@ -162,6 +162,7 @@ button:active{transform:scale(.98)}
 .brand-kicker::after{background:linear-gradient(90deg,#e31b23,transparent);}
 .brand h1{
  display:inline-block;
+ position:relative;
  margin:3px 0 4px;
  font-size:clamp(21px,3.4vw,28px);
  font-weight:900;
@@ -170,7 +171,8 @@ button:active{transform:scale(.98)}
  color:#fff;
  white-space:nowrap;
  text-shadow:0 0 10px rgba(0,190,255,.25);
- animation:jonTitleMotion 6s ease-in-out infinite;
+ animation:jonTitleMotion 3.6s ease-in-out infinite !important;
+ will-change:transform,text-shadow;
 }
 
 .brand-status{
@@ -246,10 +248,10 @@ button:active{transform:scale(.98)}
 }
 /* Title styling is defined with the compact brand header above. */
 @keyframes jonTitleMotion{
- 0%,100%{transform:translate3d(0,0,0);color:#fff;text-shadow:0 0 8px rgba(0,190,255,.45),0 0 20px rgba(0,190,255,.12);}
- 25%{transform:translate3d(3px,-1px,0);color:#f4fbff;text-shadow:0 0 12px rgba(0,190,255,.78),0 0 28px rgba(0,190,255,.24);}
- 50%{transform:translate3d(0,0,0);color:#fff;text-shadow:0 0 10px rgba(227,27,35,.72),0 0 25px rgba(227,27,35,.2);}
- 75%{transform:translate3d(-3px,-1px,0);color:#fff7f7;text-shadow:0 0 13px rgba(227,27,35,.8),0 0 28px rgba(227,27,35,.24);}
+ 0%,100%{transform:translate3d(-9px,0,0) scale(1);color:#fff;text-shadow:0 0 9px rgba(0,190,255,.72),0 0 24px rgba(0,190,255,.28);}
+ 25%{transform:translate3d(0,-2px,0) scale(1.025);color:#f4fbff;text-shadow:0 0 14px rgba(0,190,255,.95),0 0 32px rgba(0,190,255,.38);}
+ 50%{transform:translate3d(9px,0,0) scale(1);color:#fff;text-shadow:0 0 12px rgba(227,27,35,.9),0 0 28px rgba(227,27,35,.32);}
+ 75%{transform:translate3d(0,-2px,0) scale(1.025);color:#fff7f7;text-shadow:0 0 15px rgba(227,27,35,.98),0 0 34px rgba(227,27,35,.4);}
 }
 .brand p{
  margin:0;
