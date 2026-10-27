@@ -126,15 +126,15 @@ button:active{transform:scale(.98)}
 
 .brand{
  text-align:center;
- padding:24px 16px 26px;
- margin:10px 0 22px;
+ padding:12px 12px 14px;
+ margin:5px 0 12px;
  position:relative;
  isolation:isolate;
  overflow:hidden;
  border:1px solid rgba(90,150,190,.2);
- border-radius:28px;
+ border-radius:20px;
  background:linear-gradient(145deg,rgba(16,31,52,.96),rgba(7,17,31,.82));
- box-shadow:0 14px 38px rgba(0,0,0,.24);
+ box-shadow:0 8px 22px rgba(0,0,0,.2);
 }
 .brand::before{
  content:"";
@@ -173,36 +173,45 @@ button:active{transform:scale(.98)}
  50%{filter:drop-shadow(0 0 10px rgba(227,27,35,.8)) drop-shadow(0 0 20px rgba(227,27,35,.2));}
 }
 @media(prefers-reduced-motion:reduce){
- .brand::before,.brand::after,.brand .logo{animation:none;}
+ .brand::before,.brand::after,.brand .logo,.brand h1{animation:none;}
 }
 .logo{
- width:clamp(112px,20vw,150px);
- height:clamp(112px,20vw,150px);
+ width:clamp(78px,15vw,112px);
+ height:clamp(78px,15vw,112px);
  object-fit:contain;
- border-radius:30px;
+ border-radius:22px;
  display:block;
  margin:0 auto;
- padding:5px;
+ padding:4px;
  background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.015));
  border:1px solid rgba(255,255,255,.12);
- box-shadow:0 10px 32px rgba(0,0,0,.45);
+ box-shadow:0 7px 22px rgba(0,0,0,.4);
  animation:jonLogoGlow 3.8s ease-in-out infinite;
 }
 .brand h1{
- margin:17px 0 7px;
- font-size:clamp(26px,4vw,34px);
+ margin:9px 0 5px;
+ font-size:clamp(21px,3.4vw,28px);
  font-weight:900;
  letter-spacing:.12em;
  line-height:1.15;
  color:#fff;
+ white-space:nowrap;
+ overflow:hidden;
  text-shadow:0 2px 18px rgba(0,190,255,.18);
+ animation:jonTitleMotion 5s ease-in-out infinite;
+}
+@keyframes jonTitleMotion{
+ 0%,100%{transform:translateX(0);text-shadow:0 0 8px rgba(0,190,255,.35);}
+ 25%{transform:translateX(5px);text-shadow:0 0 13px rgba(0,190,255,.65);}
+ 50%{transform:translateX(0);text-shadow:0 0 12px rgba(227,27,35,.65);}
+ 75%{transform:translateX(-5px);text-shadow:0 0 13px rgba(227,27,35,.55);}
 }
 .brand p{
  margin:0;
  color:#b7c6d8;
- font-size:clamp(12px,2.4vw,15px);
+ font-size:clamp(11px,2.1vw,13px);
  font-weight:700;
- letter-spacing:.035em;
+ letter-spacing:.025em;
 }
 
 .featured{
