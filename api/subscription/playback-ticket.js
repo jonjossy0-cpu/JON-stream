@@ -117,10 +117,11 @@ module.exports = async function handler(req, res) {
       return res.status(403).json({ error: "Premium subscription or active trial required" });
     }
 
+    const canonicalChannelId = channelSnap.id;
     const expiresAt = Math.floor(now / 1000) + TICKET_TTL_SECONDS;
     const ticket = sign({
       v: 1,
-      channelId,
+      channelId: canonicalChannelId,
       uid: user.uid,
       host: source.hostname,
       rootPath: source.pathname.slice(0, source.pathname.lastIndexOf("/") + 1) || "/",
@@ -129,13 +130,13 @@ module.exports = async function handler(req, res) {
     }, secret);
 
     return res.status(200).json({
-      channelId,
+      channelId: canonicalChannelId,
       ticket,
       expiresAt,
       ttlSeconds: TICKET_TTL_SECONDS,
       isHls: channel.isHls === true || /\.m3u8$/i.test(source.pathname),
-      // Gateway enforcement must be deployed before clients use this URL.
-      playbackUrl: "/api/hls?channelId=" + encodeURIComponent(channelId) + "&ticket=" + encodeURIComponent(ticket)
+      // Use the canonical private catalog ID because /api/hls resolves that document directly.
+      playbackUrl: "/api/hls?channelId=" + encodeURIComponent(canonicalChannelId) + "&ticket=" + encodeURIComponent(ticket)
     });
   } catch (error) {
     return sendError(res, error);
