@@ -79,6 +79,29 @@ button:active{transform:scale(.98)}
 .brand{
  text-align:center;
  padding:8px 0 20px;
+ position:relative;
+ isolation:isolate;
+}
+.brand::before{
+ content:"";
+ position:absolute;
+ inset:8px 8% 14px;
+ border-radius:30px;
+ pointer-events:none;
+ z-index:-1;
+ box-shadow:0 0 0 1px rgba(0,190,255,.18),0 0 22px rgba(0,190,255,.12);
+ animation:jonBrandGlow 4s ease-in-out infinite alternate;
+}
+@keyframes jonBrandGlow{
+ 0%,100%{box-shadow:0 0 0 1px rgba(0,190,255,.38),0 0 18px rgba(0,190,255,.22),inset 0 0 18px rgba(0,190,255,.06);}
+ 50%{box-shadow:0 0 0 1px rgba(227,27,35,.48),0 0 24px rgba(227,27,35,.28),inset 0 0 18px rgba(227,27,35,.08);}
+}
+@keyframes jonLogoGlow{
+ 0%,100%{filter:drop-shadow(0 0 7px rgba(0,190,255,.65));}
+ 50%{filter:drop-shadow(0 0 10px rgba(227,27,35,.72));}
+}
+@media (prefers-reduced-motion:reduce){
+ .brand::before,.brand .logo{animation:none;}
 }
 
 .logo{
@@ -89,6 +112,7 @@ button:active{transform:scale(.98)}
  display:block;
  margin:auto;
  box-shadow:0 8px 30px rgba(0,0,0,.55);
+ animation:jonLogoGlow 3.6s ease-in-out infinite alternate;
 }
 
 .brand h1{
@@ -476,9 +500,9 @@ audio,video{
 </div>
 
 <div class="brand">
- <img data-logo class="logo" alt="JON FM ETHIOPIA">
- <h1>JON FM ETHIOPIA</h1>
- <p>🇪🇹 Ethiopian Digital Radio & TV</p>
+ <img data-logo class="logo" alt="JON STREAM">
+ <h1>JON STREAM</h1>
+ <p>World Digital IP TV &amp; Radio</p>
 </div>
 
 <div class="featured radio-only">
