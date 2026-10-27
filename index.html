@@ -4356,9 +4356,6 @@ if(authPanel){
  let subscriptionStatusRequest=0;
  async function showSubscription(user){
    const requestId=++subscriptionStatusRequest;
-   window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
-   window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
-
    $("jonProfileEmail").textContent=user.email||"—";
    $("jonProfileVerified").textContent=user.emailVerified?"Verified":"Not verified";
    $("jonProfilePlan").textContent=user.emailVerified?"Checking subscription…":"Verify your email first";
@@ -4435,6 +4432,8 @@ if(authPanel){
    $("jonAccountSignedIn").hidden=!user;
    message("");
    if(user){
+     window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
+     window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
      await showSubscription(user);
      subscriptionRecheckTimer=setInterval(()=>{if(auth.currentUser)void showSubscription(auth.currentUser);},15000);
    }
