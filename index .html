@@ -92,9 +92,10 @@ button:active{transform:scale(.98)}
  left:50%;
  top:8px;
  transform:translateX(-50%);
- background:radial-gradient(ellipse at center,rgba(0,190,255,.16) 0%,rgba(227,27,35,.10) 42%,transparent 74%);
+ background:radial-gradient(ellipse at center,rgba(0,190,255,.22) 0%,rgba(227,27,35,.13) 40%,transparent 74%);
  filter:blur(14px);
  pointer-events:none;
+ animation:jonAuraShift 4s ease-in-out infinite alternate;
 }
 
 .logo{
@@ -106,9 +107,9 @@ button:active{transform:scale(.98)}
  margin:0 auto;
  padding:5px;
  background:linear-gradient(145deg,rgba(255,255,255,.14),rgba(255,255,255,.025));
- border:1px solid rgba(104,204,255,.55);
- box-shadow:0 0 0 4px rgba(0,190,255,.055),0 0 22px rgba(0,190,255,.32),0 0 42px rgba(227,27,35,.18),0 12px 32px rgba(0,0,0,.45);
- animation:jonLogoGlow 4s ease-in-out infinite;
+ border:1px solid rgba(104,204,255,.65);
+ box-shadow:0 0 0 4px rgba(0,190,255,.07),0 0 24px rgba(0,190,255,.38),0 0 42px rgba(227,27,35,.22),0 12px 32px rgba(0,0,0,.45);
+ animation:jonLogoGlow 3.6s ease-in-out infinite alternate;
 }
 
 .brand h1{
@@ -140,12 +141,23 @@ button:active{transform:scale(.98)}
 }
 
 @keyframes jonLogoGlow{
- 0%,100%{box-shadow:0 0 0 4px rgba(0,190,255,.055),0 0 18px rgba(0,190,255,.25),0 0 34px rgba(227,27,35,.14),0 12px 32px rgba(0,0,0,.45)}
- 50%{box-shadow:0 0 0 5px rgba(0,190,255,.09),0 0 28px rgba(0,190,255,.42),0 0 48px rgba(227,27,35,.24),0 12px 32px rgba(0,0,0,.45)}
+ 0%,100%{
+  border-color:rgba(0,190,255,.78);
+  box-shadow:0 0 0 4px rgba(0,190,255,.09),0 0 26px rgba(0,190,255,.48),0 0 44px rgba(0,190,255,.2),0 12px 32px rgba(0,0,0,.45);
+ }
+ 50%{
+  border-color:rgba(227,27,35,.88);
+  box-shadow:0 0 0 4px rgba(227,27,35,.10),0 0 25px rgba(227,27,35,.45),0 0 48px rgba(227,27,35,.25),0 12px 32px rgba(0,0,0,.45);
+ }
+}
+
+@keyframes jonAuraShift{
+ 0%{opacity:.72;background:radial-gradient(ellipse at center,rgba(0,190,255,.24) 0%,rgba(0,190,255,.08) 42%,transparent 74%)}
+ 100%{opacity:1;background:radial-gradient(ellipse at center,rgba(227,27,35,.22) 0%,rgba(227,27,35,.08) 42%,transparent 74%)}
 }
 
 @media(prefers-reduced-motion:reduce){
- .logo{animation:none}
+ .logo,.brand::before{animation:none}
 }
 
 .featured{
