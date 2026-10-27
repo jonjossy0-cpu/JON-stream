@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#07111f">
-<title>JON FM ETHIOPIA</title>
+<title>JON STREAM</title>
 
 <style>
 *{box-sizing:border-box}
@@ -391,9 +391,9 @@ src="logo.png"
 class="logo"
 alt="JON Media Service">
 
-<h1>JON FM ETHIOPIA</h1>
+<h1>JON STREAM</h1>
 
-<p>🇪🇹 Ethiopian Digital Radio & TV</p>
+<p>World Digital IP TV & Radio</p>
 
 <div
 class="clock"
@@ -710,7 +710,7 @@ onclick="setTVFilter('International')">
 <div class="about">
 
 <b>
-ℹ️ About JON FM ETHIOPIA
+ℹ️ About JON STREAM
 </b>
 
 <p>
