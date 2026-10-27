@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.WebResourceRequest;
+import androidx.webkit.WebViewAssetLoader;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -24,7 +25,8 @@ public class MainActivity extends Activity {
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
     private WebChromeClient chromeClient;
-    private static final String HOME = "file:///android_asset/index.html";
+    private static final String HOME = "https://appassets.androidplatform.net/assets/index.html";
+    private WebViewAssetLoader assetLoader;
     private final StringBuilder numberBuffer = new StringBuilder();
     private final Handler handler = new Handler();
     private Runnable commitTask;
@@ -102,11 +104,19 @@ public class MainActivity extends Activity {
         };
         webView.setWebChromeClient(chromeClient);
 
+        assetLoader = new WebViewAssetLoader.Builder()
+            .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
+            .build();
+
         webView.setWebViewClient(new WebViewClient() {
+            @Override public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
+
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri=request.getUrl();
                 String url=uri.toString();
-                if(url.startsWith(HOME)) return false;
+                if(url.startsWith("https://appassets.androidplatform.net/")) return false;
                 try { startActivity(new Intent(Intent.ACTION_VIEW,uri)); return true; }
                 catch(Exception ignored) { return false; }
             }
