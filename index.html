@@ -4366,7 +4366,7 @@ if(authPanel){
     :"Please verify your email to activate the account. Trial time will only begin after server-side verification.";
    try{
      const token=await user.getIdToken();
-     const response=await fetch("https://jon-stream.vercel.app/api/subscription/status",{headers:{Authorization:"Bearer "+token,"Cache-Control":"no-cache"}});
+     const response=await fetch("https://jon-stream.vercel.app/api/subscription/status",{headers:{Authorization:"Bearer "+token}});
      if(requestId!==subscriptionStatusRequest||!auth.currentUser||auth.currentUser.uid!==user.uid)return;
      if(!response.ok)throw new Error("Subscription status check failed ("+response.status+")");
      const data=await response.json();
