@@ -46,27 +46,74 @@ body.light{
 
 .brand{
   text-align:center;
-  padding:8px 0 18px;
+  padding:14px 0 24px;
+  position:relative;
+  isolation:isolate;
+}
+
+.brand::before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  width:min(90%,390px);
+  height:160px;
+  left:50%;
+  top:8px;
+  transform:translateX(-50%);
+  background:radial-gradient(ellipse at center,rgba(0,190,255,.16) 0%,rgba(227,27,35,.10) 42%,transparent 74%);
+  filter:blur(14px);
+  pointer-events:none;
 }
 
 .logo{
-  width:120px;
-  height:120px;
+  width:clamp(108px,24vw,138px);
+  height:clamp(108px,24vw,138px);
   object-fit:cover;
-  border-radius:25px;
+  border-radius:28px;
   display:block;
-  margin:auto;
-  box-shadow:0 8px 30px rgba(0,0,0,.5);
+  margin:0 auto;
+  padding:4px;
+  background:linear-gradient(145deg,rgba(255,255,255,.14),rgba(255,255,255,.025));
+  border:1px solid rgba(104,204,255,.55);
+  box-shadow:0 0 0 4px rgba(0,190,255,.055),0 0 22px rgba(0,190,255,.32),0 0 42px rgba(227,27,35,.18),0 12px 32px rgba(0,0,0,.45);
+  animation:jonLogoGlow 4s ease-in-out infinite;
 }
 
 .brand h1{
-  margin:14px 0 5px;
-  font-size:27px;
+  margin:18px 0 7px;
+  font-size:clamp(27px,5vw,36px);
+  line-height:1.08;
+  font-weight:950;
+  letter-spacing:clamp(2px,.8vw,5px);
+  text-transform:uppercase;
+  color:transparent;
+  background:linear-gradient(100deg,#fff 0%,#9fe8ff 28%,#fff 50%,#ffb5ba 72%,#fff 100%);
+  background-clip:text;
+  -webkit-background-clip:text;
+  filter:drop-shadow(0 0 8px rgba(0,190,255,.28));
 }
 
 .brand p{
+  display:inline-block;
   margin:0;
-  color:var(--muted);
+  padding:7px 14px;
+  border:1px solid rgba(104,204,255,.28);
+  border-radius:999px;
+  color:var(--text);
+  font-size:clamp(11px,2.8vw,14px);
+  font-weight:800;
+  letter-spacing:.65px;
+  background:linear-gradient(90deg,rgba(0,190,255,.09),rgba(227,27,35,.09));
+  box-shadow:inset 0 0 14px rgba(0,190,255,.055),0 0 18px rgba(0,190,255,.08);
+}
+
+@keyframes jonLogoGlow{
+  0%,100%{box-shadow:0 0 0 4px rgba(0,190,255,.055),0 0 18px rgba(0,190,255,.25),0 0 34px rgba(227,27,35,.14),0 12px 32px rgba(0,0,0,.45)}
+  50%{box-shadow:0 0 0 5px rgba(0,190,255,.09),0 0 28px rgba(0,190,255,.42),0 0 48px rgba(227,27,35,.24),0 12px 32px rgba(0,0,0,.45)}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .logo{animation:none}
 }
 
 .clock{
