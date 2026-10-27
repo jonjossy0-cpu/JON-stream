@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - mainv
+      - update/mobile-apk-7-3-latest-html
   pull_request:
     branches:
       - mainv
@@ -32,7 +33,7 @@ jobs:
 
   build-debug:
     name: Build debug APKs (pull requests only)
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/update/mobile-apk-7-3-latest-html')
     needs: security-check
     runs-on: ubuntu-latest
     timeout-minutes: 30
