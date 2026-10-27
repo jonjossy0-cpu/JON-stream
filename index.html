@@ -4402,7 +4402,17 @@ if(authPanel){
    });
    let data={};
    try{data=await response.json()}catch(_){}
-   if(!response.ok)throw new Error(data.error||("Playback authorization failed ("+response.status+")"));
+   if(!response.ok){
+     // Keep already-entitled Premium channels playable if the optional ticket service
+     // has not been configured yet. The caller checks verified active Premium access
+     // before reaching this function; use only that channel's existing HTTPS source.
+     const source=String(channel&&channel.url||"").trim();
+     if(response.status===503&&/not configured/i.test(String(data.error||""))&&/^https:\/\//i.test(source)){
+       console.warn("Premium playback ticket service is not configured; using the channel's existing HTTPS stream.");
+       return {url:source,isHls:/\.m3u8(?:[?#]|$)/i.test(source)};
+     }
+     throw new Error(data.error||("Playback authorization failed ("+response.status+")"));
+   }
    if(!data.playbackUrl||!data.ticket)throw new Error("Server returned an invalid playback ticket");
    return {url:new URL(data.playbackUrl,"https://jon-stream.vercel.app").href,isHls:data.isHls===true};
  };
