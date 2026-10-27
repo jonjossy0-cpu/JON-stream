@@ -1814,7 +1814,7 @@ async function selectStation(index,ticketPlayback=false,playbackUrl="",playbackI
   return;
  }
  if(isPremium&&!ticketPlayback){
-  const channelId=requestedStation.premiumChannelId||requestedStation.playbackChannelId||requestedStation.channelId||"";
+  const channelId=requestedStation.premiumChannelId||requestedStation.playbackChannelId||requestedStation.channelId||requestedStation.id||"";
   if(!channelId||typeof window.jonGetPremiumPlaybackUrl!=="function"){
    radioStatus.innerHTML="🔒 Secure Premium playback is not configured for this station";
    return;
@@ -3150,7 +3150,7 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,ticketP
   return;
  }
  if(isPremium&&!ticketPlayback){
-  const channelId=requestedChannel.premiumChannelId||requestedChannel.playbackChannelId||requestedChannel.channelId||"";
+  const channelId=requestedChannel.premiumChannelId||requestedChannel.playbackChannelId||requestedChannel.channelId||requestedChannel.id||"";
   if(!channelId||typeof window.jonGetPremiumPlaybackUrl!=="function"){
    tvStatus("🔒 Secure Premium playback is not configured for this channel");
    return;
@@ -4393,7 +4393,7 @@ if(authPanel){
  }
 
  window.jonGetPremiumPlaybackUrl=async channel=>{
-   const channelId=String(channel&&(channel.premiumChannelId||channel.playbackChannelId||channel.channelId)||"").trim();
+   const channelId=String(channel&&(channel.premiumChannelId||channel.playbackChannelId||channel.channelId||channel.id)||"").trim();
    if(!/^[a-zA-Z0-9_-]{1,100}$/.test(channelId))throw new Error("Premium channel ID is missing");
    const user=auth.currentUser;
    if(!user||!user.emailVerified)throw new Error("Sign in with a verified email first");
