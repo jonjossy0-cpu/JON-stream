@@ -126,15 +126,71 @@ button:active{transform:scale(.98)}
 
 .brand{
  text-align:center;
- padding:12px 12px 14px;
- margin:5px 0 12px;
+ padding:10px 12px 12px;
+ margin:4px 0 10px;
  position:relative;
  isolation:isolate;
  overflow:hidden;
- border:1px solid rgba(90,150,190,.2);
- border-radius:20px;
- background:linear-gradient(145deg,rgba(16,31,52,.96),rgba(7,17,31,.82));
- box-shadow:0 8px 22px rgba(0,0,0,.2);
+ border:1px solid rgba(90,150,190,.24);
+ border-radius:18px;
+ background:linear-gradient(135deg,rgba(13,27,46,.97),rgba(7,17,31,.9) 62%,rgba(24,17,29,.92));
+ box-shadow:0 8px 24px rgba(0,0,0,.22);
+}
+.brand-inner{
+ position:relative;
+ z-index:1;
+}
+.brand-kicker{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:7px;
+ margin:0 auto 5px;
+ color:#91a9c3;
+ font-size:9px;
+ font-weight:800;
+ letter-spacing:.22em;
+ text-transform:uppercase;
+}
+.brand-kicker::before,.brand-kicker::after{
+ content:"";
+ display:block;
+ width:22px;
+ height:1px;
+ background:linear-gradient(90deg,transparent,#00beff);
+}
+.brand-kicker::after{background:linear-gradient(90deg,#e31b23,transparent);}
+.brand h1{
+ display:inline-block;
+ margin:3px 0 4px;
+ font-size:clamp(21px,3.4vw,28px);
+ font-weight:900;
+ letter-spacing:.13em;
+ line-height:1.15;
+ color:#fff;
+ white-space:nowrap;
+ text-shadow:0 0 10px rgba(0,190,255,.25);
+ animation:jonTitleMotion 6s ease-in-out infinite;
+}
+
+.brand-status{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:6px;
+ margin:8px auto 0;
+ color:#9fb2c8;
+ font-size:9px;
+ font-weight:800;
+ letter-spacing:.16em;
+ text-transform:uppercase;
+}
+.brand-status-dot{
+ width:5px;
+ height:5px;
+ border-radius:50%;
+ background:#00d6a0;
+ box-shadow:0 0 8px rgba(0,214,160,.7);
 }
 .brand::before{
  content:"";
@@ -176,30 +232,19 @@ button:active{transform:scale(.98)}
  .brand::before,.brand::after,.brand .logo,.brand h1{animation:none;}
 }
 .logo{
- width:clamp(78px,15vw,112px);
- height:clamp(78px,15vw,112px);
+ width:clamp(68px,13vw,96px);
+ height:clamp(68px,13vw,96px);
  object-fit:contain;
- border-radius:22px;
+ border-radius:20px;
  display:block;
  margin:0 auto;
  padding:4px;
- background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.015));
- border:1px solid rgba(255,255,255,.12);
+ background:linear-gradient(145deg,rgba(255,255,255,.07),rgba(255,255,255,.012));
+ border:1px solid rgba(255,255,255,.13);
  box-shadow:0 7px 22px rgba(0,0,0,.4);
  animation:jonLogoGlow 3.8s ease-in-out infinite;
 }
-.brand h1{
- margin:9px 0 5px;
- font-size:clamp(21px,3.4vw,28px);
- font-weight:900;
- letter-spacing:.12em;
- line-height:1.15;
- color:#fff;
- white-space:nowrap;
- overflow:hidden;
- text-shadow:0 2px 18px rgba(0,190,255,.18);
- animation:jonTitleMotion 5s ease-in-out infinite;
-}
+/* Title styling is defined with the compact brand header above. */
 @keyframes jonTitleMotion{
  0%,100%{transform:translateX(0);text-shadow:0 0 8px rgba(0,190,255,.35);}
  25%{transform:translateX(5px);text-shadow:0 0 13px rgba(0,190,255,.65);}
@@ -1313,9 +1358,13 @@ img.jon-ad-media{
 </section>
 
 <div class="brand">
- <img data-logo class="logo" alt="JON STREAM">
- <h1>JON STREAM</h1>
- <p>World Digital IP TV &amp; Radio</p>
+ <div class="brand-inner">
+  <div class="brand-kicker">WORLD DIGITAL BROADCAST</div>
+  <img data-logo class="logo" alt="JON STREAM">
+  <h1>JON STREAM</h1>
+  <p>World Digital IP TV &amp; Radio</p>
+  <div class="brand-status"><span class="brand-status-dot"></span> TELEVISION <span aria-hidden="true">•</span> RADIO</div>
+ </div>
 </div>
 
 <div class="featured radio-only">
