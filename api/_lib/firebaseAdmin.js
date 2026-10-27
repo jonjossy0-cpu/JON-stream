@@ -50,7 +50,8 @@ function setCors(req, res) {
   const origin = String(req.headers.origin || "");
   const allowedOrigins = new Set([
     "https://jonjossy0-cpu.github.io",
-    "https://jon-stream.vercel.app"
+    "https://jon-stream.vercel.app",
+    "https://appassets.androidplatform.net"
   ]);
   // Permit only this project's Vercel preview hostnames, never arbitrary origins.
   const isProjectPreview = /^https:\/\/jon-stream-[a-z0-9-]+-jonjossy0-5772\.vercel\.app$/.test(origin);
