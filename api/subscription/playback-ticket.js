@@ -62,7 +62,21 @@ module.exports = async function handler(req, res) {
     const { db, Timestamp, FieldValue } = getServices();
     // The source is read only from a server-side collection. Never accept a URL or
     // accessTier from the browser as proof of entitlement or as a playback source.
-    const channelSnap = await db.collection("premiumPlaybackChannels").doc(channelId).get();
+    const channelCollection = db.collection("premiumPlaybackChannels");
+    let channelSnap = await channelCollection.doc(channelId).get();
+
+    // Public channel IDs can differ from the canonical private catalog document ID.
+    // Resolve only against explicit ID fields in the server-side catalog; never trust
+    // a source URL or access tier supplied by the browser.
+    if (!channelSnap.exists) {
+      const catalogSnap = await channelCollection.get();
+      const aliases = new Set(["channelId", "id", "premiumChannelId", "playbackChannelId", "publicChannelId"]);
+      const match = catalogSnap.docs.find(doc => {
+        const data = doc.data() || {};
+        return Array.from(aliases).some(key => String(data[key] || "").trim() === channelId);
+      });
+      if (match) channelSnap = match;
+    }
     if (!channelSnap.exists) return res.status(404).json({ error: "Premium channel not found" });
     const channel = channelSnap.data() || {};
     if (channel.active !== true || String(channel.accessTier || "").toLowerCase() !== "premium") {
