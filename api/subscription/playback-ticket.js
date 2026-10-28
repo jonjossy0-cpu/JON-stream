@@ -45,18 +45,18 @@ module.exports = async function handler(req, res) {
 
   const secret = process.env.PREMIUM_PLAYBACK_TICKET_SECRET;
   if (!secret || secret.length < 32) {
-    return res.status(503).json({ error: "Premium playback authorization is not configured" });
+    return res.status(503).json({ error: "Premium playback authorization is not configured", errorCode: "PREMIUM_TICKET_SECRET_MISSING", stage: "configuration" });
   }
 
   try {
     const user = await requireUser(req);
     if (!user.email_verified || !user.email) {
-      return res.status(403).json({ error: "Verify your email before using Premium playback" });
+      return res.status(403).json({ error: "Verify your email before using Premium playback", errorCode: "EMAIL_NOT_VERIFIED", stage: "identity" });
     }
 
     const channelId = String(req.body && req.body.channelId || "").trim();
     if (!/^[a-zA-Z0-9_-]{1,100}$/.test(channelId)) {
-      return res.status(400).json({ error: "A valid channelId is required" });
+      return res.status(400).json({ error: "A valid channelId is required", errorCode: "INVALID_CHANNEL_ID", stage: "request" });
     }
 
     const { db, Timestamp, FieldValue } = getServices();
@@ -77,13 +77,13 @@ module.exports = async function handler(req, res) {
       });
       if (match) channelSnap = match;
     }
-    if (!channelSnap.exists) return res.status(404).json({ error: "Premium channel not found" });
+    if (!channelSnap.exists) return res.status(404).json({ error: "Premium channel not found", errorCode: "PREMIUM_CHANNEL_NOT_FOUND", stage: "catalog", requestedChannelId: channelId });
     const channel = channelSnap.data() || {};
     if (channel.active !== true || String(channel.accessTier || "").toLowerCase() !== "premium") {
-      return res.status(403).json({ error: "Premium channel is not enabled" });
+      return res.status(403).json({ error: "Premium channel is not enabled", errorCode: channel.active !== true ? "PREMIUM_CHANNEL_INACTIVE" : "PREMIUM_CHANNEL_TIER_MISMATCH", stage: "catalog", catalogChannelId: channelSnap.id });
     }
     const source = validateSource(channel.sourceUrl);
-    if (!source) return res.status(503).json({ error: "Premium channel source is not configured safely" });
+    if (!source) return res.status(503).json({ error: "Premium channel source is not configured safely", errorCode: "PREMIUM_SOURCE_INVALID_OR_HOST_BLOCKED", stage: "source", catalogChannelId: channelSnap.id });
 
     const now = Date.now();
     const [uidSnap, emailSnap, profileSnap] = await Promise.all([
@@ -114,7 +114,7 @@ module.exports = async function handler(req, res) {
       : 0;
     const trialActive = trialEndsAt > now;
     if (!activeEntitlement && !trialActive) {
-      return res.status(403).json({ error: "Premium subscription or active trial required" });
+      return res.status(403).json({ error: "Premium subscription or active trial required", errorCode: "PREMIUM_ENTITLEMENT_REQUIRED", stage: "entitlement" });
     }
 
     // Always bind the ticket and gateway URL to the actual private catalog document ID.
