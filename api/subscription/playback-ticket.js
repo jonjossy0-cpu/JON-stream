@@ -77,6 +77,50 @@ module.exports = async function handler(req, res) {
       });
       if (match) channelSnap = match;
     }
+
+    // Self-heal an empty private catalog from the server-side public app data.
+    // Only accept explicitly Premium entries with an allowlisted source; never use
+    // any source URL or access tier sent by the playback client.
+    if (!channelSnap.exists) {
+      const publicSnap = await db.collection("jonStream").doc("appData").get();
+      const publicData = publicSnap.exists ? publicSnap.data() || {} : {};
+      const idFields = ["premiumChannelId", "playbackChannelId", "channelId", "id"];
+      const sourceFields = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link"];
+      let publicMatch = null;
+      for (const group of ["tv", "radio"]) {
+        const items = Array.isArray(publicData[group]) ? publicData[group] : [];
+        publicMatch = items.find(item => {
+          if (!item || String(item.accessTier || "").toLowerCase() !== "premium") return false;
+          return idFields.some(key => String(item[key] || "").trim() === channelId);
+        }) || null;
+        if (publicMatch) break;
+      }
+      if (publicMatch) {
+        const rawSource = sourceFields.map(key => publicMatch[key]).find(value => typeof value === "string" && value.trim());
+        const safeSource = validateSource(rawSource);
+        if (safeSource) {
+          const ids = [...new Set(idFields.map(key => String(publicMatch[key] || "").trim()).filter(id => /^[a-zA-Z0-9_-]{1,100}$/.test(id)))];
+          const canonicalId = ids.includes(channelId) ? channelId : ids[0];
+          if (canonicalId) {
+            const targetRef = channelCollection.doc(canonicalId);
+            await targetRef.set({
+              channelId: ids[0],
+              publicChannelId: ids[0],
+              publicChannelIds: ids,
+              name: String(publicMatch.name || publicMatch.title || "Premium channel").slice(0, 120),
+              category: String(publicMatch.category || "tv").slice(0, 80),
+              active: publicMatch.active === false ? false : true,
+              accessTier: "premium",
+              sourceUrl: safeSource.toString(),
+              isHls: safeSource.pathname.toLowerCase().endsWith(".m3u8"),
+              syncedFrom: "jonStream/appData",
+              updatedAt: FieldValue.serverTimestamp()
+            }, { merge: true });
+            channelSnap = await targetRef.get();
+          }
+        }
+      }
+    }
     if (!channelSnap.exists) return res.status(404).json({ error: "Premium channel not found", errorCode: "PREMIUM_CHANNEL_NOT_FOUND", stage: "catalog", requestedChannelId: channelId });
     const channel = channelSnap.data() || {};
     if (channel.active !== true || String(channel.accessTier || "").toLowerCase() !== "premium") {
