@@ -1,5 +1,6 @@
 const { getServices } = require("./_lib/firebaseAdmin");
 const { decodeTicket, isWithinChannelRoot } = require("./_lib/playbackTicket");
+const { hasCurrentPremiumAccess } = require("./_lib/premiumAccess");
 
 const ALLOWED_HOSTS = new Set(["88.212.15.19","154.58.202.18","5.9.121.178","23.237.104.106","amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv"]);
 const MAX_PLAYLIST_BYTES = 1_000_000;
@@ -115,6 +116,14 @@ module.exports = async function handler(req, res) {
     try { channel = await getChannel(payload.channelId); }
     catch (_) { return res.status(503).send("Premium channel catalog unavailable"); }
     if (!channel || typeof channel.sourceUrl !== "string") return res.status(403).send("Premium channel unavailable");
+    // Re-check current Premium access for every ticketed playlist and segment request.
+    try {
+      const { db } = getServices();
+      const hasAccess = await hasCurrentPremiumAccess(db, payload.uid, payload.emailKey);
+      if (!hasAccess) return res.status(403).send("Premium subscription or active trial required");
+    } catch (_) {
+      return res.status(503).send("Premium entitlement check unavailable");
+    }
     try { target = raw ? new URL(raw) : new URL(channel.sourceUrl); }
     catch (_) { return res.status(400).send("Invalid URL"); }
     if (!isAllowed(target) || target.hostname !== payload.host || !isWithinChannelRoot(target, channel.sourceUrl)) {
