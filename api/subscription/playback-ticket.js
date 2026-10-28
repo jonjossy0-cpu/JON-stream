@@ -45,23 +45,49 @@ module.exports = async function handler(req, res) {
 
   const secret = process.env.PREMIUM_PLAYBACK_TICKET_SECRET;
   if (!secret || secret.length < 32) {
-    return res.status(503).json({ error: "Premium playback authorization is not configured" });
+    return res.status(503).json({ error: "Premium playback authorization is not configured", errorCode: "PREMIUM_TICKET_SECRET_MISSING", stage: "configuration" });
   }
 
   try {
     const user = await requireUser(req);
     if (!user.email_verified || !user.email) {
-      return res.status(403).json({ error: "Verify your email before using Premium playback" });
+      return res.status(403).json({ error: "Verify your email before using Premium playback", errorCode: "EMAIL_NOT_VERIFIED", stage: "identity" });
     }
 
     const channelId = String(req.body && req.body.channelId || "").trim();
     if (!/^[a-zA-Z0-9_-]{1,100}$/.test(channelId)) {
-      return res.status(400).json({ error: "A valid channelId is required" });
+      return res.status(400).json({ error: "A valid channelId is required", errorCode: "INVALID_CHANNEL_ID", stage: "request" });
     }
 
     const { db, Timestamp, FieldValue } = getServices();
-    // The source is read only from a server-side collection. Never accept a URL or
-    // accessTier from the browser as proof of entitlement or as a playback source.
+
+    // The TV/Radio Channel List is the sole authority for whether a channel exists
+    // and is Premium. Never authorize a channel that is absent from that list.
+    const publicSnap = await db.collection("jonStream").doc("appData").get();
+    const publicData = publicSnap.exists ? publicSnap.data() || {} : {};
+    const idFields = ["premiumChannelId", "playbackChannelId", "channelId", "id"];
+    const sourceFields = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link"];
+    let publicMatch = null;
+    let publicGroup = "";
+    for (const group of ["tv", "radio"]) {
+      const items = Array.isArray(publicData[group]) ? publicData[group] : [];
+      publicMatch = items.find(item => item &&
+        String(item.accessTier || "").toLowerCase() === "premium" &&
+        idFields.some(key => String(item[key] || "").trim() === channelId)
+      ) || null;
+      if (publicMatch) { publicGroup = group; break; }
+    }
+    if (!publicMatch) {
+      return res.status(404).json({
+        error: "Premium channel not found",
+        errorCode: "PREMIUM_CHANNEL_NOT_IN_LIST",
+        stage: "channel-list",
+        requestedChannelId: channelId
+      });
+    }
+
+    // Private catalog holds the server-trusted playback source, but it cannot add
+    // channels that are not present in the public TV/Radio Channel List.
     const channelCollection = db.collection("premiumPlaybackChannels");
     let channelSnap = await channelCollection.doc(channelId).get();
 
@@ -77,13 +103,41 @@ module.exports = async function handler(req, res) {
       });
       if (match) channelSnap = match;
     }
-    if (!channelSnap.exists) return res.status(404).json({ error: "Premium channel not found" });
+
+    // If the Channel List contains this Premium channel but the private source
+    // record is missing, rebuild only that record from the matching list entry.
+    if (!channelSnap.exists) {
+      const rawSource = sourceFields.map(key => publicMatch[key]).find(value => typeof value === "string" && value.trim());
+      const safeSource = validateSource(rawSource);
+      if (safeSource) {
+        const ids = [...new Set(idFields.map(key => String(publicMatch[key] || "").trim()).filter(id => /^[a-zA-Z0-9_-]{1,100}$/.test(id)))];
+        const canonicalId = ids.includes(channelId) ? channelId : ids[0];
+        if (canonicalId) {
+          const targetRef = channelCollection.doc(canonicalId);
+          await targetRef.set({
+            channelId: ids[0],
+            publicChannelId: ids[0],
+            publicChannelIds: ids,
+            name: String(publicMatch.name || publicMatch.title || "Premium channel").slice(0, 120),
+            category: String(publicMatch.category || publicGroup).slice(0, 80),
+            active: publicMatch.active === false ? false : true,
+            accessTier: "premium",
+            sourceUrl: safeSource.toString(),
+            isHls: safeSource.pathname.toLowerCase().endsWith(".m3u8"),
+            syncedFrom: "jonStream/appData",
+            updatedAt: FieldValue.serverTimestamp()
+          }, { merge: true });
+          channelSnap = await targetRef.get();
+        }
+      }
+    }
+    if (!channelSnap.exists) return res.status(404).json({ error: "Premium channel not found", errorCode: "PREMIUM_CHANNEL_NOT_FOUND", stage: "catalog", requestedChannelId: channelId });
     const channel = channelSnap.data() || {};
     if (channel.active !== true || String(channel.accessTier || "").toLowerCase() !== "premium") {
-      return res.status(403).json({ error: "Premium channel is not enabled" });
+      return res.status(403).json({ error: "Premium channel is not enabled", errorCode: channel.active !== true ? "PREMIUM_CHANNEL_INACTIVE" : "PREMIUM_CHANNEL_TIER_MISMATCH", stage: "catalog", catalogChannelId: channelSnap.id });
     }
     const source = validateSource(channel.sourceUrl);
-    if (!source) return res.status(503).json({ error: "Premium channel source is not configured safely" });
+    if (!source) return res.status(503).json({ error: "Premium channel source is not configured safely", errorCode: "PREMIUM_SOURCE_INVALID_OR_HOST_BLOCKED", stage: "source", catalogChannelId: channelSnap.id });
 
     const now = Date.now();
     const [uidSnap, emailSnap, profileSnap] = await Promise.all([
@@ -114,13 +168,16 @@ module.exports = async function handler(req, res) {
       : 0;
     const trialActive = trialEndsAt > now;
     if (!activeEntitlement && !trialActive) {
-      return res.status(403).json({ error: "Premium subscription or active trial required" });
+      return res.status(403).json({ error: "Premium subscription or active trial required", errorCode: "PREMIUM_ENTITLEMENT_REQUIRED", stage: "entitlement" });
     }
 
+    // Always bind the ticket and gateway URL to the actual private catalog document ID.
+    // The request may use a public alias, but api/hls.js resolves by document ID only.
+    const canonicalChannelId = channelSnap.id;
     const expiresAt = Math.floor(now / 1000) + TICKET_TTL_SECONDS;
     const ticket = sign({
       v: 1,
-      channelId,
+      channelId: canonicalChannelId,
       uid: user.uid,
       host: source.hostname,
       rootPath: source.pathname.slice(0, source.pathname.lastIndexOf("/") + 1) || "/",
@@ -129,15 +186,23 @@ module.exports = async function handler(req, res) {
     }, secret);
 
     return res.status(200).json({
-      channelId,
+      channelId: canonicalChannelId,
       ticket,
       expiresAt,
       ttlSeconds: TICKET_TTL_SECONDS,
       isHls: channel.isHls === true || /\.m3u8$/i.test(source.pathname),
       // Gateway enforcement must be deployed before clients use this URL.
-      playbackUrl: "/api/hls?channelId=" + encodeURIComponent(channelId) + "&ticket=" + encodeURIComponent(ticket)
+      playbackUrl: "/api/hls?channelId=" + encodeURIComponent(canonicalChannelId) + "&ticket=" + encodeURIComponent(ticket)
     });
   } catch (error) {
+    // Keep server diagnostics precise without returning internal details to clients.
+    console.error("Premium playback authorization failure", {
+      errorCode: error && error.errorCode || "PREMIUM_AUTH_INTERNAL_ERROR",
+      stage: error && error.stage || "server",
+      status: Number(error && error.status) || 500,
+      message: String(error && error.message || "Unknown error").slice(0, 300)
+    });
+    if (!error.errorCode) error.errorCode = "PREMIUM_AUTH_INTERNAL_ERROR";
     return sendError(res, error);
   }
 };
