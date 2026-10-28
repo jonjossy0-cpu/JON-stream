@@ -33,15 +33,21 @@ function sourceIsAllowed(value) {
 }
 
 function publicChannelSummary(item, catalog) {
-  const publicId = ID_FIELDS.map(key => String(item && item[key] || "").trim()).find(Boolean) || "";
-  const match = publicId
-    ? catalog.find(doc => doc.id === publicId || CATALOG_ALIAS_FIELDS.some(key =>
-        String(doc.data[key] || "").trim() === publicId))
-    : null;
+  const publicIds = [...new Set(ID_FIELDS
+    .map(key => String(item && item[key] || "").trim())
+    .filter(id => /^[a-zA-Z0-9_-]{1,100}$/.test(id)))];
+  const match = catalog.find(doc =>
+    publicIds.some(publicId => doc.id === publicId ||
+      CATALOG_ALIAS_FIELDS.some(key => String(doc.data[key] || "").trim() === publicId))
+  ) || null;
   const data = match ? match.data : null;
   return {
     name: String(item && (item.name || item.title) || "Unnamed channel"),
-    publicId: publicId || null,
+    publicId: publicIds[0] || null,
+    publicIds,
+    matchedPublicId: match ? publicIds.find(publicId =>
+      docIdMatchesCatalog(match, publicId)
+    ) || null : null,
     accessTier: String(item && item.accessTier || "free").toLowerCase(),
     catalogMatch: !!match,
     catalogDocumentId: match ? match.id : null,
@@ -49,6 +55,12 @@ function publicChannelSummary(item, catalog) {
     catalogAccessTier: data ? String(data.accessTier || "").toLowerCase() : null,
     sourceConfiguredAndAllowed: data ? sourceIsAllowed(data.sourceUrl) : null
   };
+}
+
+function docIdMatchesCatalog(doc, publicId) {
+  return doc.id === publicId || CATALOG_ALIAS_FIELDS.some(key =>
+    String(doc.data[key] || "").trim() === publicId
+  );
 }
 
 module.exports = async function handler(req, res) {
