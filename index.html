@@ -4366,25 +4366,6 @@ if(authPanel){
    return messages[code]||((action||"Request")+" failed ("+(code||"unknown error")+"). Please try again.");
  };
  const setBusy=(busy)=>["jonAccountSignup","jonAccountSignin","jonForgotPassword","jonResendVerification","jonAccountSignout"].forEach(id=>{const el=$(id);if(el)el.disabled=busy;});
- const diagnosticsButton=$("jonRunPremiumDiagnostics");
- if(diagnosticsButton){
-   diagnosticsButton.addEventListener("click",async()=>{
-     const output=$("jonPremiumDiagnosticsResult");
-     const user=auth.currentUser;
-     if(!user){output.textContent="Sign in with the administrator account first.";return;}
-     diagnosticsButton.disabled=true;
-     output.textContent="Checking Premium channel IDs and private catalog…";
-     try{
-       const token=await user.getIdToken();
-       const response=await fetch(window.location.origin+"/api/subscription/playback-diagnostics",{headers:{Authorization:"Bearer "+token},cache:"no-store"});
-       const data=await response.json().catch(()=>({error:"Invalid JSON response"}));
-       if(!response.ok)throw new Error(data.error||("Request failed ("+response.status+")"));
-       output.textContent=JSON.stringify(data,null,2);
-     }catch(error){
-       output.textContent="Diagnostics failed: "+String(error&&error.message||error)+"\\nMake sure this is the Preview deployment and you are signed in with the Firebase administrator account.";
-     }finally{diagnosticsButton.disabled=false;}
-   });
- }
  let subscriptionStatusRequest=0;
  async function showSubscription(user){
    const requestId=++subscriptionStatusRequest;
