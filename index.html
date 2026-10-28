@@ -4431,7 +4431,7 @@ if(authPanel){
    const user=auth.currentUser;
    if(!user||!user.emailVerified)throw new Error("Sign in with a verified email first");
    const token=await user.getIdToken();
-   const premiumApiOrigin=/(^|\\.)github\\.io$/i.test(window.location.hostname)?"https://jon-stream.vercel.app":window.location.origin;
+   const premiumApiOrigin=/(^|\.)github\.io$/i.test(window.location.hostname)?"https://jon-stream.vercel.app":window.location.origin;
    let lastError=null;
    for(const channelId of channelIds){
      const response=await fetch(premiumApiOrigin+"/api/subscription/playback-ticket",{
@@ -4451,9 +4451,9 @@ if(authPanel){
    }
    if(lastError){
      const source=String(channel&&channel.url||"").trim();
-     if(lastError.message==="Premium playback authorization is not configured"&&/^https:\\/\\//i.test(source)){
+     if(lastError.message==="Premium playback authorization is not configured"&&/^https:\/\//i.test(source)){
        console.warn("Premium playback ticket service is not configured; using the channel's existing HTTPS stream.");
-       return {url:source,isHls:/\\.m3u8(?:[?#]|$)/i.test(source)};
+       return {url:source,isHls:/\.m3u8(?:[?#]|$)/i.test(source)};
      }
      throw lastError;
    }
