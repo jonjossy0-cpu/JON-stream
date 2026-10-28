@@ -79,7 +79,7 @@ module.exports = async function handler(req, res) {
     }
     if (!publicMatch) {
       return res.status(404).json({
-        error: "Premium channel not found in TV/Radio Channel List",
+        error: "Premium channel not found",
         errorCode: "PREMIUM_CHANNEL_NOT_IN_LIST",
         stage: "channel-list",
         requestedChannelId: channelId
