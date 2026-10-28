@@ -179,6 +179,7 @@ module.exports = async function handler(req, res) {
       v: 1,
       channelId: canonicalChannelId,
       uid: user.uid,
+      emailKey: emailKey(user.email),
       host: source.hostname,
       rootPath: source.pathname.slice(0, source.pathname.lastIndexOf("/") + 1) || "/",
       exp: expiresAt,
