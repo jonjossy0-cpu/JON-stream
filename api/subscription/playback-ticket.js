@@ -141,6 +141,14 @@ module.exports = async function handler(req, res) {
       playbackUrl: "/api/hls?channelId=" + encodeURIComponent(canonicalChannelId) + "&ticket=" + encodeURIComponent(ticket)
     });
   } catch (error) {
+    // Keep server diagnostics precise without returning internal details to clients.
+    console.error("Premium playback authorization failure", {
+      errorCode: error && error.errorCode || "PREMIUM_AUTH_INTERNAL_ERROR",
+      stage: error && error.stage || "server",
+      status: Number(error && error.status) || 500,
+      message: String(error && error.message || "Unknown error").slice(0, 300)
+    });
+    if (!error.errorCode) error.errorCode = "PREMIUM_AUTH_INTERNAL_ERROR";
     return sendError(res, error);
   }
 };
