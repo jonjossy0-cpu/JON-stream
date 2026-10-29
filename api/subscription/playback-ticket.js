@@ -76,7 +76,8 @@ module.exports = async function handler(req, res) {
       const items = Array.isArray(publicData[group]) ? publicData[group] : [];
       publicMatch = items.find(item => item &&
         String(item.accessTier || "").toLowerCase() === "premium" &&
-        idFields.some(key => String(item[key] || "").trim() === channelId)
+        (idFields.some(key => String(item[key] || "").trim() === channelId) ||
+          (Array.isArray(item.publicChannelIds) && item.publicChannelIds.some(id => String(id || "").trim() === channelId)))
       ) || null;
       if (publicMatch) { publicGroup = group; break; }
     }
