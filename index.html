@@ -11,7 +11,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/dashjs@5.2.1/dist/dash.all.min.js"></script>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
   import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app-check.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
   import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
@@ -28,12 +28,18 @@
   };
 
   try {
-    const app = initializeApp(firebaseConfig);
-    const appCheck = initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider("6Le3cbYtAAAAAOdcVa3NOG1Md2ZADXvlnvf-ZlU1"),
-      isTokenAutoRefreshEnabled: true
-    });
-    window.__JON_APP_CHECK = appCheck;
+    // Reuse the existing Firebase app if another module initialized it first.
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    // App Check must not prevent Firestore data from loading or signing in.
+    try {
+      const appCheck = initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider("6Le3cbYtAAAAAOdcVa3NOG1Md2ZADXvlnvf-ZlU1"),
+        isTokenAutoRefreshEnabled: true
+      });
+      window.__JON_APP_CHECK = appCheck;
+    } catch (appCheckError) {
+      console.warn("JON Stream App Check initialization failed; continuing Firebase data setup:", appCheckError);
+    }
     try { getAnalytics(app); } catch (_) {}
 
     const db = getFirestore(app);
@@ -4339,13 +4345,25 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 
 
 <script type="module">
-import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, signOut, reload } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 const authPanel=document.getElementById("jonAccountPanel");
 window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
+// Independent fallback: account sign-in must still initialize if the data module
+// was blocked by a separate Firebase service import or App Check initialization.
+const authFirebaseConfig = {
+ apiKey:"AIzaSyC5uNWNp9KbcepO36VQCx8gfbyPmZW4fxM",
+ authDomain:"jon-stream.firebaseapp.com",
+ projectId:"jon-stream",
+ storageBucket:"jon-stream.firebasestorage.app",
+ messagingSenderId:"189801194527",
+ appId:"1:189801194527:web:c7d99f83a2c4c604fa212a",
+ measurementId:"G-CEEKQDJXFS"
+};
 
 if(authPanel){
- const auth=getAuth(getApp());
+ const authApp=getApps().length?getApp():initializeApp(authFirebaseConfig);
+ const auth=getAuth(authApp);
  const $=id=>document.getElementById(id);
  const message=(text,isError=false)=>{ $("jonAccountError").textContent=text||""; $("jonAccountError").style.color=isError?"#fca5a5":"#86efac"; };
  const authErrorText=(error,action)=>{
