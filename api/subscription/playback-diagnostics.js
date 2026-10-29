@@ -5,7 +5,10 @@ const ALLOWED_HOSTS = new Set([
   "154.58.202.18",
   "5.9.121.178",
   "23.237.104.106",
-  "amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv"
+  "amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv",
+  "rbmn-live.akamaized.net",
+  "mediatailor.us-west-2.amazonaws.com",
+  "streams2.sofast.tv"
 ]);
 const ID_FIELDS = ["premiumChannelId", "playbackChannelId", "channelId", "id"];
 const CATALOG_ALIAS_FIELDS = ["channelId", "id", "premiumChannelId", "playbackChannelId", "publicChannelId"];
@@ -33,12 +36,14 @@ function sourceIsAllowed(value) {
 }
 
 function publicChannelSummary(item, catalog) {
-  const publicIds = [...new Set(ID_FIELDS
-    .map(key => String(item && item[key] || "").trim())
-    .filter(id => /^[a-zA-Z0-9_-]{1,100}$/.test(id)))];
+  const publicIds = [...new Set([
+    ...ID_FIELDS.map(key => String(item && item[key] || "").trim()),
+    ...(Array.isArray(item && item.publicChannelIds) ? item.publicChannelIds.map(id => String(id || "").trim()) : [])
+  ].filter(id => /^[a-zA-Z0-9_-]{1,100}$/.test(id)))];
   const match = catalog.find(doc =>
     publicIds.some(publicId => doc.id === publicId ||
-      CATALOG_ALIAS_FIELDS.some(key => String(doc.data[key] || "").trim() === publicId))
+      CATALOG_ALIAS_FIELDS.some(key => String(doc.data[key] || "").trim() === publicId) ||
+      (Array.isArray(doc.data.publicChannelIds) && doc.data.publicChannelIds.some(id => String(id || "").trim() === publicId)))
   ) || null;
   const data = match ? match.data : null;
   return {
@@ -60,7 +65,8 @@ function publicChannelSummary(item, catalog) {
 function docIdMatchesCatalog(doc, publicId) {
   return doc.id === publicId || CATALOG_ALIAS_FIELDS.some(key =>
     String(doc.data[key] || "").trim() === publicId
-  );
+  ) || (Array.isArray(doc.data.publicChannelIds) &&
+    doc.data.publicChannelIds.some(id => String(id || "").trim() === publicId));
 }
 
 module.exports = async function handler(req, res) {
@@ -90,9 +96,10 @@ module.exports = async function handler(req, res) {
 
     const catalogSummary = catalog.map(({ id, data }) => ({
       documentId: id,
-      aliases: CATALOG_ALIAS_FIELDS
-        .map(key => String(data[key] || "").trim())
-        .filter(Boolean),
+      aliases: [...new Set([
+        ...CATALOG_ALIAS_FIELDS.map(key => String(data[key] || "").trim()),
+        ...(Array.isArray(data.publicChannelIds) ? data.publicChannelIds.map(id => String(id || "").trim()) : [])
+      ].filter(Boolean))],
       active: data.active === true,
       accessTier: String(data.accessTier || "").toLowerCase(),
       sourceConfiguredAndAllowed: sourceIsAllowed(data.sourceUrl)
