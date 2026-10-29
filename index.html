@@ -4787,7 +4787,14 @@ if(authPanel){
  function update(data){
   const next=data&&data.settings&&data.settings.sponsorLogoCarousel||{};
   const raw=Array.isArray(next.photos)?next.photos:(typeof next.photos==="string"?next.photos.split(/\r?\n/):[]);
-  const fresh={enabled:next.enabled===true,photos:cleanPhotos(raw)};
+  // Admin stores per-logo states alongside the legacy photos array. Keep old
+  // configurations working, but never display a logo explicitly disabled in Admin.
+  const states=Array.isArray(next.photoStates)?next.photoStates:[];
+  const disabled=new Set(states.filter(item=>item&&item.enabled===false).map(item=>{
+   try{return new URL(String(item.url||"").trim()).href}catch(_){return String(item.url||"").trim()}
+  }));
+  const photos=cleanPhotos(raw).filter(url=>!disabled.has(url));
+  const fresh={enabled:next.enabled===true,photos};
   const changed=fresh.enabled!==settings.enabled||fresh.photos.join("\n")!==settings.photos.join("\n");
   settings=fresh;
   if(!settings.enabled||!settings.photos.length){stop();return}
