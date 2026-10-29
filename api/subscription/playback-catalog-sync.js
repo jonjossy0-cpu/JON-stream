@@ -53,7 +53,9 @@ module.exports = async function handler(req, res) {
         const ids = [...new Set(ID_FIELDS.map(k => validId(item[k])).filter(Boolean))];
         const name = String(item.name || item.title || "Unnamed channel").slice(0, 120);
         if (!ids.length) { skipped.push({ name, reason: "PUBLIC_CHANNEL_ID_MISSING" }); continue; }
-        const current = existing.find(doc => ids.some(id => doc.id === id || ALIASES.some(k => String(doc.data[k] || "").trim() === id)));
+        const current = existing.find(doc => ids.some(id => doc.id === id ||
+          ALIASES.some(k => String(doc.data[k] || "").trim() === id) ||
+          (Array.isArray(doc.data.publicChannelIds) && doc.data.publicChannelIds.some(alias => String(alias || "").trim() === id))));
         const rawSource = SOURCE_FIELDS.map(k => item[k]).find(v => typeof v === "string" && v.trim());
         const source = allowedSource(rawSource);
         if (!source) { skipped.push({ name, ids, reason: rawSource ? "SOURCE_HOST_NOT_ALLOWED_OR_INVALID" : "PUBLIC_SOURCE_URL_MISSING" }); continue; }
