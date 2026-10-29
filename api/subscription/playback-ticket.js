@@ -102,7 +102,8 @@ module.exports = async function handler(req, res) {
       const aliases = new Set(["channelId", "id", "premiumChannelId", "playbackChannelId", "publicChannelId"]);
       const match = catalogSnap.docs.find(doc => {
         const data = doc.data() || {};
-        return Array.from(aliases).some(key => String(data[key] || "").trim() === channelId);
+        return Array.from(aliases).some(key => String(data[key] || "").trim() === channelId) ||
+          (Array.isArray(data.publicChannelIds) && data.publicChannelIds.some(id => String(id || "").trim() === channelId));
       });
       if (match) channelSnap = match;
     }
