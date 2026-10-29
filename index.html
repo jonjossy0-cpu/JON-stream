@@ -3259,7 +3259,7 @@ function nextTV(){if(!filteredTV.length)return;let n=currentTVIndex<0?0:currentT
 function previousTV(){if(!filteredTV.length)return;let n=currentTVIndex<=0?filteredTV.length-1:currentTVIndex-1;const c=filteredTV[n];playTVStream(c.url,c.name,n)}
 function toggleTVMute(){tvPlayer.muted=!tvPlayer.muted}
 function stopTV(){clearTimeout(tvReconnectTimer);clearTimeout(tvStartupTimer);tvPlayAttemptId++;currentTV=null;tvSourceList=[];destroyTVEngine();tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load();resetTVPerformance("");document.getElementById("tvPlayerTitle").innerHTML="📺 TV stopped";tvStatus("⚪ Stopped");tvDiag("diagSource","None");tvDiag("diagBuffer","0s")}
-async function fullscreenTV(){const v=document.getElementById("tvPlayer");const fs=document.fullscreenElement||document.webkitFullscreenElement;if(!v)return;if(fs){try{if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)await document.webkitExitFullscreen()}catch(_){}}else{try{if(v.requestFullscreen)await v.requestFullscreen();else if(v.webkitRequestFullscreen)await v.webkitRequestFullscreen()}catch(_){}}}
+async function fullscreenTV(){const target=document.getElementById("tvVideoFrame")||document.getElementById("tvPlayer");const fs=document.fullscreenElement||document.webkitFullscreenElement;if(!target)return;if(fs){try{if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)await document.webkitExitFullscreen()}catch(_){}}else{try{if(target.requestFullscreen)await target.requestFullscreen();else if(target.webkitRequestFullscreen)await target.webkitRequestFullscreen()}catch(_){}}}
 
 /* TV QUALITY */
 function updateQuality(){
@@ -3979,7 +3979,7 @@ q('#jonSubtitles')?.addEventListener('click',()=>{const v=video();const tracks=v
 q('#jonLanguage')?.addEventListener('click',()=>{const cur=localStorage.getItem(langKey)||'en';const next=cur==='en'?'am':'en';localStorage.setItem(langKey,next);alert(next==='am'?'Amharic mode selected.':'English mode selected. Reload/refresh the page to apply it where translations are available.')});
 q('#jonDataSaver')?.addEventListener('click',()=>{const on=localStorage.getItem('jonDataSaver')!=='1';localStorage.setItem('jonDataSaver',on?'1':'0');alert(on?'Network Saver enabled.':'Network Saver disabled.')});
 q('#jonTvRemote')?.addEventListener('click',()=>alert('TV remote/keyboard shortcuts: Arrow Up/Down = navigate, Enter = select, Space = play/pause, M = mute, F = fullscreen, ←/→ = seek 10 seconds.'));
-window.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;const v=video();if(e.key==='ArrowLeft')seek(-10);else if(e.key==='ArrowRight')seek(10);else if(e.code==='Space'&&v){e.preventDefault();v.paused?v.play():v.pause()}else if(e.key.toLowerCase()==='m'&&v)v.muted=!v.muted;else if(e.key.toLowerCase()==='f'&&v&&!document.fullscreenElement)v.requestFullscreen?.()});
+window.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;const v=video();if(e.key==='ArrowLeft')seek(-10);else if(e.key==='ArrowRight')seek(10);else if(e.code==='Space'&&v){e.preventDefault();v.paused?v.play():v.pause()}else if(e.key.toLowerCase()==='m'&&v)v.muted=!v.muted;else if(e.key.toLowerCase()==='f'&&v&&!document.fullscreenElement)(document.getElementById('tvVideoFrame')||v).requestFullscreen?.()});
 const parentalModal=q('#jonParentalModal'),parentalForm=q('#jonParentalForm'),parentalStatus=q('#jonParentalStatus');
 const parentalLockKey='jonStreamParentalLocked',parentalLocked=()=>localStorage.getItem(parentalLockKey)==='1',parentalPin=()=>localStorage.getItem(pinKey)||'';
 function closeParentalModal(){if(parentalModal)parentalModal.hidden=true}
@@ -4787,7 +4787,14 @@ if(authPanel){
  function update(data){
   const next=data&&data.settings&&data.settings.sponsorLogoCarousel||{};
   const raw=Array.isArray(next.photos)?next.photos:(typeof next.photos==="string"?next.photos.split(/\r?\n/):[]);
-  const fresh={enabled:next.enabled===true,photos:cleanPhotos(raw)};
+  // Admin stores per-logo states alongside the legacy photos array. Keep old
+  // configurations working, but never display a logo explicitly disabled in Admin.
+  const states=Array.isArray(next.photoStates)?next.photoStates:[];
+  const disabled=new Set(states.filter(item=>item&&item.enabled===false).map(item=>{
+   try{return new URL(String(item.url||"").trim()).href}catch(_){return String(item.url||"").trim()}
+  }));
+  const photos=cleanPhotos(raw).filter(url=>!disabled.has(url));
+  const fresh={enabled:next.enabled===true,photos};
   const changed=fresh.enabled!==settings.enabled||fresh.photos.join("\n")!==settings.photos.join("\n");
   settings=fresh;
   if(!settings.enabled||!settings.photos.length){stop();return}
