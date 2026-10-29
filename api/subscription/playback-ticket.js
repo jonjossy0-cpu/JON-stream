@@ -9,7 +9,10 @@ const ALLOWED_HOSTS = new Set([
   "154.58.202.18",
   "5.9.121.178",
   "23.237.104.106",
-  "amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv"
+  "amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv",
+  "rbmn-live.akamaized.net",
+  "mediatailor.us-west-2.amazonaws.com",
+  "streams2.sofast.tv"
 ]);
 
 function b64url(value) {
@@ -73,7 +76,8 @@ module.exports = async function handler(req, res) {
       const items = Array.isArray(publicData[group]) ? publicData[group] : [];
       publicMatch = items.find(item => item &&
         String(item.accessTier || "").toLowerCase() === "premium" &&
-        idFields.some(key => String(item[key] || "").trim() === channelId)
+        (idFields.some(key => String(item[key] || "").trim() === channelId) ||
+          (Array.isArray(item.publicChannelIds) && item.publicChannelIds.some(id => String(id || "").trim() === channelId)))
       ) || null;
       if (publicMatch) { publicGroup = group; break; }
     }
@@ -99,7 +103,8 @@ module.exports = async function handler(req, res) {
       const aliases = new Set(["channelId", "id", "premiumChannelId", "playbackChannelId", "publicChannelId"]);
       const match = catalogSnap.docs.find(doc => {
         const data = doc.data() || {};
-        return Array.from(aliases).some(key => String(data[key] || "").trim() === channelId);
+        return Array.from(aliases).some(key => String(data[key] || "").trim() === channelId) ||
+          (Array.isArray(data.publicChannelIds) && data.publicChannelIds.some(id => String(id || "").trim() === channelId));
       });
       if (match) channelSnap = match;
     }

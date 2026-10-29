@@ -1835,7 +1835,9 @@ async function selectStation(index,ticketPlayback=false,playbackUrl="",playbackI
    await selectStation(index,true,securePlayback.url,securePlayback.isHls);
   }catch(error){
    console.warn("JON Premium radio authorization failed:",error);
-   radioStatus.innerHTML="🔒 Premium authorization failed — please sign in again or contact support";
+   const reason=String(error&&error.message||"Unknown authorization error").replace(/[\r\n]+/g," ").slice(0,180);
+   const detail=error&&(error.code||error.stage)?(" ("+[error.code,error.stage].filter(Boolean).join(" / ")+")"):"";
+   radioStatus.innerHTML="🔒 Premium authorization failed: "+escapeHTML(reason+detail);
   }
   return;
  }
@@ -3172,7 +3174,8 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,ticketP
    await playTVStream(securePlayback.url,name,index,0,resetRetry,true);
   }catch(error){
    console.warn("JON Premium playback authorization failed:",error);
-   const reason=String(error&&error.message||"Unknown authorization error").replace(/[\r\n]+/g," ").slice(0,180);tvStatus("🔒 Premium authorization failed: "+reason);
+   const reason=String(error&&error.message||"Unknown authorization error").replace(/[\r\n]+/g," ").slice(0,180);const detail=error&&(error.code||error.stage)?(" ("+[error.code,error.stage].filter(Boolean).join(" / ")+")"):"";
+   tvStatus("🔒 Premium authorization failed: "+reason+detail);
   }
   return;
  }
@@ -3902,7 +3905,11 @@ body.jon-ad-visible{padding-bottom:85px}
         name:x.name.trim(),
         url:x.url.trim(),
         logo:typeof x.logo==='string'?x.logo:'',
-        accessTier:String(x.accessTier||'free').toLowerCase()==='premium'?'premium':'free'
+        accessTier:String(x.accessTier||'free').toLowerCase()==='premium'?'premium':'free',
+        id:x.id==null?'':String(x.id),
+        premiumChannelId:x.premiumChannelId==null?'':String(x.premiumChannelId),
+        playbackChannelId:x.playbackChannelId==null?'':String(x.playbackChannelId),
+        channelId:x.channelId==null?'':String(x.channelId)
       }));
       const merged=[...stations,...incoming];
       const seen=new Set();
@@ -4446,6 +4453,8 @@ if(authPanel){
        return {url:new URL(data.playbackUrl,premiumApiOrigin).href,isHls:data.isHls===true};
      }
      lastError=new Error(data.error||("Playback authorization failed ("+response.status+")"));
+     lastError.code=String(data.errorCode||"");
+     lastError.stage=String(data.stage||"");
      // Retry only when this identifier is absent from the private catalog.
      if(response.status!==404||String(data.error||"")!=="Premium channel not found")break;
    }

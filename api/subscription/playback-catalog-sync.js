@@ -8,7 +8,10 @@ const ALLOWED_HOSTS = new Set([
   "154.58.202.18",
   "5.9.121.178",
   "23.237.104.106",
-  "amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv"
+  "amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv",
+  "rbmn-live.akamaized.net",
+  "mediatailor.us-west-2.amazonaws.com",
+  "streams2.sofast.tv"
 ]);
 
 function validId(value) {
@@ -50,7 +53,9 @@ module.exports = async function handler(req, res) {
         const ids = [...new Set(ID_FIELDS.map(k => validId(item[k])).filter(Boolean))];
         const name = String(item.name || item.title || "Unnamed channel").slice(0, 120);
         if (!ids.length) { skipped.push({ name, reason: "PUBLIC_CHANNEL_ID_MISSING" }); continue; }
-        const current = existing.find(doc => ids.some(id => doc.id === id || ALIASES.some(k => String(doc.data[k] || "").trim() === id)));
+        const current = existing.find(doc => ids.some(id => doc.id === id ||
+          ALIASES.some(k => String(doc.data[k] || "").trim() === id) ||
+          (Array.isArray(doc.data.publicChannelIds) && doc.data.publicChannelIds.some(alias => String(alias || "").trim() === id))));
         const rawSource = SOURCE_FIELDS.map(k => item[k]).find(v => typeof v === "string" && v.trim());
         const source = allowedSource(rawSource);
         if (!source) { skipped.push({ name, ids, reason: rawSource ? "SOURCE_HOST_NOT_ALLOWED_OR_INVALID" : "PUBLIC_SOURCE_URL_MISSING" }); continue; }
