@@ -4505,7 +4505,9 @@ if(authPanel){
    }catch(e){message(authErrorText(e,"Sign up"),true);}
    finally{setBusy(false);}
  });
- $("jonAccountSignin").addEventListener("click",async()=>{
+ $("jonAccountSignin").addEventListener("click",async(event)=>{
+   event.preventDefault();
+   event.stopPropagation();
    const email=$("jonAccountEmail").value.trim(),password=$("jonAccountPassword").value;
    if(!email||!password){message("Enter your email and password.",true);return;}
    setBusy(true);message("Signing in…");
@@ -4652,78 +4654,7 @@ if(authPanel){
 <!-- JON Stream best-effort DevTools response.
      Detection is heuristic; browsers do not expose a reliable DevTools-open API.
      This guard covers common desktop shortcuts and likely docked DevTools sizing. -->
-<script>
-(function jonInspectGuard(){
-  'use strict';
-  if (window.__JON_INSPECT_GUARD__) return;
-  window.__JON_INSPECT_GUARD__ = true;
-
-  var triggered = false;
-
-  function stopMedia(){
-    document.querySelectorAll('video,audio').forEach(function(media){
-      try { media.pause(); } catch (_) {}
-    });
-  }
-
-  function exitPage(){
-    // First try to close the tab. Browsers often refuse to close tabs opened
-    // directly by the user, so retain the existing security overlay as fallback.
-    try { window.close(); } catch (_) {}
-    window.setTimeout(function(){
-      if (window.closed) return;
-      showSecurityOverlay();
-    }, 80);
-  }
-
-  function showSecurityOverlay(){
-    var overlay = document.createElement('div');
-    overlay.setAttribute('role', 'alert');
-    overlay.setAttribute('aria-live', 'assertive');
-    overlay.style.cssText = [
-      'position:fixed','inset:0','z-index:2147483647',
-      'display:flex','align-items:center','justify-content:center',
-      'padding:24px','background:#07111f','color:#fff',
-      'font:700 18px Arial,Helvetica,sans-serif','text-align:center'
-    ].join(';');
-    overlay.textContent = 'JON Stream security protection activated. Close Developer Tools and reload the page to continue.';
-    (document.body || document.documentElement).appendChild(overlay);
-  }
-
-  function activateGuard(){
-    if (triggered) return;
-    triggered = true;
-    stopMedia();
-    exitPage();
-  }
-
-  // Do not infer Inspect from outer/inner window dimensions.
-  // Those dimensions vary during normal browser resizing and embedded WebViews,
-  // which caused false exits even when Developer Tools was never opened.
-
-  // Catch common keyboard ways of opening DevTools; opening it from a browser menu may not emit these keys.
-  window.addEventListener('keydown', function(event){
-    var key = (event.key || '').toLowerCase();
-    var modifier = event.ctrlKey || event.metaKey;
-    var inspectShortcut =
-      key === 'f12' ||
-      (modifier && event.shiftKey && (key === 'i' || key === 'j' || key === 'c' || key === 'k' || key === 'e' || key === 'm')) ||
-      (event.metaKey && event.altKey && (key === 'i' || key === 'j' || key === 'c'));
-    if (inspectShortcut) {
-      event.preventDefault();
-      event.stopPropagation();
-      activateGuard();
-    }
-  }, true);
-
-  // Discourage the browser context menu, which commonly exposes an Inspect shortcut.
-  // This is a deterrent only; it is not a security boundary.
-  window.addEventListener('contextmenu', function(event){
-    event.preventDefault();
-  }, true);
-
-})();
-</script>
+<!-- Removed the DevTools shortcut page-exit guard: it could close the JON Stream page and interrupt normal interaction. -->
 
 
 <style id="jonFullscreenNewsTickerStyle">
