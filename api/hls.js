@@ -96,7 +96,8 @@ async function getChannel(channelId) {
   if (!snap.exists) return null;
   const data = snap.data() || {};
   if (data.active !== true || String(data.accessTier || "").toLowerCase() !== "premium") return null;
-  return data;
+  const sourceUrl = catalogSource(data);
+  return sourceUrl ? { ...data, sourceUrl } : null;
 }
 
 async function isCataloguedPremiumUrl(target) {
