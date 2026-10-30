@@ -1806,13 +1806,6 @@ function renderRadioStationIdentity(station){
  if(station&&station.logo){logo.src=station.logo}else{logo.removeAttribute("src");logo.hidden=true;fallback.hidden=false}
  if(player)player.classList.remove("jon-radio-playing");
 }
-async function waitForPremiumPlaybackHelper(){
- for(let attempt=0;attempt<80;attempt++){
-  if(typeof window.jonGetPremiumPlaybackUrl==="function")return window.jonGetPremiumPlaybackUrl;
-  await new Promise(resolve=>setTimeout(resolve,100));
- }
- throw new Error("Premium playback authorization module did not initialize. Reload the page and retry.");
-}
 async function selectStation(index){
  const requestedStation=stations[index];
  clearTimeout(radioAdvancedRetryTimer);
@@ -4724,7 +4717,7 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
   buttons().forEach(b=>{const k=b.dataset.pref;b.textContent=(k==="sponsorAds"?"Sponsored: ":"News: ")+(prefs[k]===false?"OFF":"ON");b.setAttribute("aria-pressed",String(prefs[k]!==false));});
  }
  async function refresh(){
-  allowed=!!(window.jonPremiumAccess&&window.jonPremiumAccess.allowed&&user);
+  allowed=!!user;
   if(allowed){
    try{const token=await user.getIdToken();const res=await fetch("https://jon-stream.vercel.app/api/subscription/fullscreen-preferences",{headers:{Authorization:"Bearer "+token}});const data=await res.json();if(res.ok&&data.preferences)prefs=data.preferences;}catch(e){console.warn("Could not load Premium fullscreen preferences");}
   } else {prefs={sponsorAds:true,newsTicker:true};}
@@ -4743,7 +4736,6 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
    prefs=data.preferences||prefs;apply();
   }catch(error){prefs={...prefs,[key]:previous};apply();window.alert(error.message||"Could not save Premium preference");}
  });
- window.addEventListener("jon-premium-access-changed",refresh);
  const auth=getAuth(getApp());
  onAuthStateChanged(auth,nextUser=>{user=nextUser;refresh();});
 })();
