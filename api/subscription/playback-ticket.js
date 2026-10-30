@@ -68,7 +68,7 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: "A valid channel ID is required", code: "INVALID_CHANNEL_ID" });
     }
 
-    const { db, Timestamp, FieldValue } = getServices();
+    const { db } = getServices();
     const publicSnap = await db.collection("jonStream").doc("appData").get();
     if (!publicSnap.exists) return res.status(503).json({ error: "Channel list is unavailable", code: "CHANNEL_LIST_UNAVAILABLE" });
     const publicData = publicSnap.data() || {};
@@ -94,15 +94,7 @@ module.exports = async function handler(req, res) {
     ]);
     const entitlements = [uidSnap, emailSnap].filter(s => s.exists).map(s => s.data() || {});
     const paid = activeEntitlement(entitlements, now);
-    let profile = profileSnap.exists ? profileSnap.data() || {} : {};
-    if (!paid && !profile.trialStartedAt) {
-      const trialStartedAt = Timestamp.fromMillis(now);
-      const trialEndsAt = Timestamp.fromMillis(now + 3 * DAY_MS);
-      await db.collection("subscriptionProfiles").doc(user.uid).set({
-        trialStartedAt, trialEndsAt, updatedAt: FieldValue.serverTimestamp()
-      }, { merge: true });
-      profile = { ...profile, trialStartedAt, trialEndsAt };
-    }
+    const profile = profileSnap.exists ? profileSnap.data() || {} : {};
     const trialEnd = profile.trialEndsAt && typeof profile.trialEndsAt.toMillis === "function" ? profile.trialEndsAt.toMillis() : 0;
     if (!paid && trialEnd <= now) return res.status(403).json({ error: "An active Premium subscription or trial is required", code: "PREMIUM_ENTITLEMENT_REQUIRED" });
 
