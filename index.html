@@ -4422,16 +4422,15 @@ if(authPanel){
  }
 
  window.jonGetPremiumPlaybackUrl=async channel=>{
-   // Try existing configured identifiers in order; do not rewrite IDs or relax
-   // server-side entitlement/source validation.
-   const channelIds=[...new Set(["premiumChannelId","playbackChannelId","channelId","id"]
-     .map(key=>String(channel&&channel[key]||"").trim())
+   const channelIds=[...new Set(["premiumChannelId","playbackChannelId","channelId","id","publicChannelId"]
+     .flatMap(key=>Array.isArray(channel&&channel[key])?channel[key]:[channel&&channel[key]])
+     .map(value=>String(value||"").trim())
      .filter(id=>/^[a-zA-Z0-9_-]{1,100}$/.test(id)))];
    if(!channelIds.length)throw new Error("Premium channel ID is missing");
    const user=auth.currentUser;
    if(!user||!user.emailVerified)throw new Error("Sign in with a verified email first");
    const token=await user.getIdToken();
-   const premiumApiOrigin=/(^|\.)github\.io$/i.test(window.location.hostname)?"https://jon-stream.vercel.app":window.location.origin;
+   const premiumApiOrigin=/(^|\\.)github\\.io$/i.test(window.location.hostname)?"https://jon-stream.vercel.app":window.location.origin;
    let lastError=null;
    for(const channelId of channelIds){
      const response=await fetch(premiumApiOrigin+"/api/subscription/playback-ticket",{
@@ -4442,22 +4441,13 @@ if(authPanel){
      let data={};
      try{data=await response.json()}catch(_){}
      if(response.ok){
-       if(!data.playbackUrl||!data.ticket)throw new Error("Server returned an invalid playback ticket");
+       if(!data.playbackUrl||!data.ticket)throw new Error("Premium service returned an invalid playback session");
        return {url:new URL(data.playbackUrl,premiumApiOrigin).href,isHls:data.isHls===true};
      }
-     lastError=new Error(data.error||("Playback authorization failed ("+response.status+")"));
-     // Retry only when this identifier is absent from the private catalog.
-     if(response.status!==404||String(data.error||"")!=="Premium channel not found")break;
+     lastError=new Error(data.error||("Premium access check failed ("+response.status+")"));
+     if(response.status!==404)break;
    }
-   if(lastError){
-     const source=String(channel&&channel.url||"").trim();
-     if(lastError.message==="Premium playback authorization is not configured"&&/^https:\/\//i.test(source)){
-       console.warn("Premium playback ticket service is not configured; using the channel's existing HTTPS stream.");
-       return {url:source,isHls:/\.m3u8(?:[?#]|$)/i.test(source)};
-     }
-     throw lastError;
-   }
-   throw new Error("Premium channel ID is missing");
+   throw lastError||new Error("Premium channel is not registered in the TV/Radio list");
  };
  window.jonShowPremiumUpgrade=()=>{
    if(authPanel)authPanel.hidden=false;
