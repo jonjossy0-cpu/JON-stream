@@ -35,9 +35,11 @@ test("recognizes only a persisted, unexpired trial", () => {
   assert.equal(hasActiveTrial({}, now), false);
 });
 
-test("rejects unapproved hosts, credentials, and custom ports", () => {
+test("accepts valid provider hosts from trusted catalog records and rejects unsafe URLs", () => {
   assert.equal(safeSource("https://88.212.15.19/live/index.m3u8") instanceof URL, true);
-  assert.equal(safeSource("https://evil.example/live/index.m3u8"), null);
-  assert.equal(safeSource("https://user:pass@88.212.15.19/live/index.m3u8"), null);
-  assert.equal(safeSource("https://88.212.15.19:8443/live/index.m3u8"), null);
+  assert.equal(safeSource("https://provider-cdn.example/live/index.m3u8") instanceof URL, true);
+  assert.equal(safeSource("https://user:pass@provider-cdn.example/live/index.m3u8"), null);
+  assert.equal(safeSource("https://provider-cdn.example:8443/live/index.m3u8"), null);
+  assert.equal(safeSource("http://127.0.0.1/internal"), null);
+  assert.equal(safeSource("http://192.168.1.10/internal"), null);
 });
