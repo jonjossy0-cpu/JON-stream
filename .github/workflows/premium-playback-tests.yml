@@ -9,6 +9,7 @@ on:
       - "api/subscription/status-v2.js"
       - "api/subscription/playback-ticket-v2.js"
       - "tests/premium-access-v2.test.js"
+      - "premium-access-v2-preview.html"
       - "index.html"
       - "tests/playback-ticket.test.js"
       - "package.json"
