@@ -53,7 +53,7 @@ jobs:
           const fs = require("fs");
           const { spawnSync } = require("child_process");
           const htmlFiles = ["index.html", "premium-access-v2-preview.html"];
-          const scripts = htmlFiles.flatMap(name => [...fs.readFileSync(name, "utf8").matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)]);
+          const scripts = htmlFiles.flatMap(name => [...fs.readFileSync(name, "utf8").matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]);
           let checked = 0;
           for (const [, attrs, source] of scripts) {
             if (/\bsrc\s*=/.test(attrs)) continue;
