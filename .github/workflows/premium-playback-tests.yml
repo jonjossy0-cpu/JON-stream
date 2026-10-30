@@ -5,6 +5,10 @@ on:
     paths:
       - "api/_lib/playbackTicket.js"
       - "api/subscription/playback-ticket.js"
+      - "api/_lib/premiumAccessV2.js"
+      - "api/subscription/status-v2.js"
+      - "api/subscription/playback-ticket-v2.js"
+      - "tests/premium-access-v2.test.js"
       - "index.html"
       - "tests/playback-ticket.test.js"
       - "package.json"
@@ -13,6 +17,7 @@ on:
     branches:
       - mainv
       - feature/premium-playback-ticket-v1
+      - feature/premium-access-v2-readonly-preview
     paths:
       - "api/_lib/playbackTicket.js"
       - "api/subscription/playback-ticket.js"
