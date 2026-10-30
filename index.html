@@ -4446,7 +4446,7 @@ if(authPanel){
      try{data=await response.json()}catch(_){}
      if(response.ok){
        if(!data.playbackUrl||!data.ticket)throw new Error("Server returned an invalid playback ticket");
-       return {url:new URL(data.playbackUrl,premiumApiOrigin).href,isHls:data.isHls===true||/\\/api\\/hls(?:\\?|$)/.test(data.playbackUrl)};
+       return {url:new URL(data.playbackUrl,premiumApiOrigin).href,isHls:data.isHls===true||/\/api\/hls(?:\?|$)/.test(data.playbackUrl)};
      }
      lastError=new Error(data.error||("Playback authorization failed ("+response.status+")"));
      // Retry only when this identifier is absent from the private catalog.
