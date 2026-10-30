@@ -3,6 +3,15 @@ const { decodeTicket, isWithinChannelRoot } = require("./_lib/playbackTicket");
 
 const ALLOWED_HOSTS = new Set(["88.212.15.19","154.58.202.18","5.9.121.178","23.237.104.106","amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv"]);
 const MAX_PLAYLIST_BYTES = 1_000_000;
+const SOURCE_FIELDS = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link"];
+
+function catalogSource(data) {
+  for (const field of SOURCE_FIELDS) {
+    const value = data && data[field];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
 
 function corsHeaders() {
   return {
@@ -19,6 +28,16 @@ function isAllowed(url) {
     !url.username && !url.password && !url.port && ALLOWED_HOSTS.has(url.hostname);
 }
 
+function isPremiumAllowed(url, payload, sourceUrl) {
+  try {
+    const source = new URL(sourceUrl);
+    return ["http:", "https:"].includes(url.protocol) &&
+      !url.username && !url.password && !url.port &&
+      url.hostname.toLowerCase() === source.hostname.toLowerCase() &&
+      isWithinChannelRoot(url, sourceUrl);
+  } catch (_) { return false; }
+}
+
 function absolutize(value, base) {
   try { return new URL(value, base).toString(); } catch (_) { return value; }
 }
@@ -27,12 +46,12 @@ function gatewayUrl(target, gatewayOrigin, ticket) {
   return gatewayOrigin + "/api/hls?url=" + encodeURIComponent(target) + (ticket ? "&ticket=" + encodeURIComponent(ticket) : "");
 }
 
-function rewriteUriAttributes(line, baseUrl, gatewayOrigin, ticket) {
+function rewriteUriAttributes(line, baseUrl, gatewayOrigin, ticket, allowUrl = isAllowed) {
   return line.replace(/URI="([^"]+)"/gi, (_, value) => {
     const absolute = absolutize(value, baseUrl);
     try {
       const u = new URL(absolute);
-      return isAllowed(u) ? 'URI="' + gatewayUrl(absolute, gatewayOrigin, ticket) + '"' : 'URI="' + absolute + '"';
+      return allowUrl(u) ? 'URI="' + gatewayUrl(absolute, gatewayOrigin, ticket) + '"' : 'URI="' + absolute + '"';
     } catch (_) {
       return 'URI="' + value + '"';
     }
@@ -50,21 +69,21 @@ function premiumPlaylistReferencesAllowed(body, baseUrl, payload, sourceUrl) {
   for (const reference of references) {
     let target;
     try { target = new URL(reference, baseUrl); } catch (_) { return false; }
-    if (!isAllowed(target) || target.hostname !== payload.host || !isWithinChannelRoot(target, sourceUrl)) return false;
+    if (!isPremiumAllowed(target, payload, sourceUrl) || target.hostname !== payload.host) return false;
   }
   return true;
 }
 
-function rewritePlaylist(body, baseUrl, gatewayOrigin, ticket) {
+function rewritePlaylist(body, baseUrl, gatewayOrigin, ticket, allowUrl = isAllowed) {
   return body.split(/\r?\n/).map(line => {
     const trimmed = line.trim();
     if (!trimmed) return line;
-    let rewritten = rewriteUriAttributes(line, baseUrl, gatewayOrigin, ticket);
+    let rewritten = rewriteUriAttributes(line, baseUrl, gatewayOrigin, ticket, allowUrl);
     if (!trimmed.startsWith("#")) {
       const absolute = absolutize(trimmed, baseUrl);
       try {
         const u = new URL(absolute);
-        if (isAllowed(u)) rewritten = gatewayUrl(absolute, gatewayOrigin, ticket);
+        if (allowUrl(u)) rewritten = gatewayUrl(absolute, gatewayOrigin, ticket);
       } catch (_) {}
     }
     return rewritten;
@@ -77,7 +96,8 @@ async function getChannel(channelId) {
   if (!snap.exists) return null;
   const data = snap.data() || {};
   if (data.active !== true || String(data.accessTier || "").toLowerCase() !== "premium") return null;
-  return data;
+  const sourceUrl = catalogSource(data);
+  return sourceUrl ? { ...data, sourceUrl } : null;
 }
 
 async function isCataloguedPremiumUrl(target) {
@@ -117,7 +137,7 @@ module.exports = async function handler(req, res) {
     if (!channel || typeof channel.sourceUrl !== "string") return res.status(403).send("Premium channel unavailable");
     try { target = raw ? new URL(raw) : new URL(channel.sourceUrl); }
     catch (_) { return res.status(400).send("Invalid URL"); }
-    if (!isAllowed(target) || target.hostname !== payload.host || !isWithinChannelRoot(target, channel.sourceUrl)) {
+    if (!isPremiumAllowed(target, payload, channel.sourceUrl) || target.hostname !== payload.host) {
       return res.status(403).send("URL is outside the authorized channel source");
     }
   } else {
@@ -161,7 +181,7 @@ module.exports = async function handler(req, res) {
       }
       let redirectAllowed = isAllowed(nextUrl);
       if (payload) {
-        redirectAllowed = redirectAllowed && nextUrl.hostname === payload.host && isWithinChannelRoot(nextUrl, channel.sourceUrl);
+        redirectAllowed = isPremiumAllowed(nextUrl, payload, channel.sourceUrl) && nextUrl.hostname === payload.host;
       } else if (redirectAllowed) {
         try { if (await isCataloguedPremiumUrl(nextUrl)) redirectAllowed = false; }
         catch (_) { redirectAllowed = false; }
@@ -193,7 +213,10 @@ module.exports = async function handler(req, res) {
       const gatewayOrigin = /^jon-stream(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(requestHost)
         ? "https://" + requestHost
         : "https://jon-stream.vercel.app";
-      return res.end(rewritePlaylist(body, finalTarget.toString(), gatewayOrigin, payload ? ticket : ""));
+      const allowPlaylistUrl = payload
+        ? (url) => isPremiumAllowed(url, payload, channel.sourceUrl) && url.hostname === payload.host
+        : isAllowed;
+      return res.end(rewritePlaylist(body, finalTarget.toString(), gatewayOrigin, payload ? ticket : "", allowPlaylistUrl));
     }
 
     for (const name of ["content-length", "content-range", "accept-ranges", "etag", "last-modified"]) {

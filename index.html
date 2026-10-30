@@ -4432,9 +4432,13 @@ if(authPanel){
    if(!user||!user.emailVerified)throw new Error("Sign in with a verified email first");
    const token=await user.getIdToken();
    const premiumApiOrigin=/(^|\.)github\.io$/i.test(window.location.hostname)?"https://jon-stream.vercel.app":window.location.origin;
+   // V2 is enabled only on this isolated Preview alias; production keeps the legacy route.
+   const previewHost=window.location.hostname.toLowerCase();
+   const isPremiumV2Preview=previewHost.endsWith(".vercel.app")&&previewHost!=="jon-stream.vercel.app";
+   const playbackTicketPath=isPremiumV2Preview?"/api/subscription/v2-playback-ticket":"/api/subscription/playback-ticket";
    let lastError=null;
    for(const channelId of channelIds){
-     const response=await fetch(premiumApiOrigin+"/api/subscription/playback-ticket",{
+     const response=await fetch(premiumApiOrigin+playbackTicketPath,{
        method:"POST",
        headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
        body:JSON.stringify({channelId})
@@ -4443,7 +4447,7 @@ if(authPanel){
      try{data=await response.json()}catch(_){}
      if(response.ok){
        if(!data.playbackUrl||!data.ticket)throw new Error("Server returned an invalid playback ticket");
-       return {url:new URL(data.playbackUrl,premiumApiOrigin).href,isHls:data.isHls===true};
+       return {url:new URL(data.playbackUrl,premiumApiOrigin).href,isHls:data.isHls===true||/\/api\/hls(?:\?|$)/.test(data.playbackUrl)};
      }
      lastError=new Error(data.error||("Playback authorization failed ("+response.status+")"));
      // Retry only when this identifier is absent from the private catalog.
