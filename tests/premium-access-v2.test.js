@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const v2 = require("../api/subscription/v2-playback-ticket");
 
-const { idsFrom, catalogMatches, hasActiveEntitlement, hasActiveTrial, safeSource } = v2._test;
+const { idsFrom, catalogMatches, hasActiveEntitlement, hasActiveTrial, sourceValue, safeSource } = v2._test;
 
 test("collects scalar and array public channel aliases without duplicates", () => {
   assert.deepEqual(idsFrom({
@@ -42,4 +42,10 @@ test("accepts valid provider hosts from trusted catalog records and rejects unsa
   assert.equal(safeSource("https://provider-cdn.example:8443/live/index.m3u8"), null);
   assert.equal(safeSource("http://127.0.0.1/internal"), null);
   assert.equal(safeSource("http://192.168.1.10/internal"), null);
+});
+
+test("resolves Premium source from supported catalog URL fields", () => {
+  assert.equal(sourceValue({ playbackUrl: "https://cdn.example/live.m3u8" }), "https://cdn.example/live.m3u8");
+  assert.equal(sourceValue({ streamUrl: "https://cdn.example/stream.m3u8" }), "https://cdn.example/stream.m3u8");
+  assert.equal(sourceValue({}), "");
 });
