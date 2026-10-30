@@ -26,8 +26,14 @@ function emailKey(email) {
 function safeSource(value) {
   try {
     const url = new URL(value);
+    // The active Premium catalog record is the trusted source of the host.
+    const host = url.hostname.toLowerCase();
+    const privateOrLocal = host === "localhost" || host.endsWith(".localhost") ||
+      host.endsWith(".local") || host === "0.0.0.0" || host === "127.0.0.1" ||
+      /^10\./.test(host) || /^192\.168\./.test(host) ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host);
     return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password &&
-      !url.port && ALLOWED_HOSTS.has(url.hostname) ? url : null;
+      !url.port && host && !privateOrLocal ? url : null;
   } catch (_) { return null; }
 }
 function validId(value) { return /^[a-zA-Z0-9_-]{1,100}$/.test(String(value || "").trim()); }
