@@ -4433,7 +4433,8 @@ if(authPanel){
    const token=await user.getIdToken();
    const premiumApiOrigin=/(^|\.)github\.io$/i.test(window.location.hostname)?"https://jon-stream.vercel.app":window.location.origin;
    // V2 is enabled only on this isolated Preview alias; production keeps the legacy route.
-   const isPremiumV2Preview=/feature-premium-access-v2-preview/i.test(window.location.hostname);
+   const previewHost=window.location.hostname.toLowerCase();
+   const isPremiumV2Preview=previewHost.endsWith(".vercel.app")&&previewHost!=="jon-stream.vercel.app";
    const playbackTicketPath=isPremiumV2Preview?"/api/subscription/v2-playback-ticket":"/api/subscription/playback-ticket";
    let lastError=null;
    for(const channelId of channelIds){
