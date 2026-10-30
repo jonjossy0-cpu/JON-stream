@@ -3,8 +3,8 @@ const { getServices, requireUser, sendError, setCors } = require("../_lib/fireba
 
 const TICKET_TTL_SECONDS = 5 *  60;
 const DAY_MS = 86400000;
-const ID_FIELDS = ["premiumChannelId", "playbackChannelId", "channelId", "id", "publicChannelId"];
-const CATALOG_ID_FIELDS = ["channelId", "id", "premiumChannelId", "playbackChannelId", "publicChannelId"];
+const ID_FIELDS = ["premiumChannelId", "playbackChannelId", "channelId", "id", "publicChannelId", "publicChannelIds"];
+const CATALOG_ID_FIELDS = ["channelId", "id", "premiumChannelId", "playbackChannelId", "publicChannelId", "publicChannelIds"];
 const SOURCE_FIELDS = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link"];
 const ALLOWED_HOSTS = new Set([
   "88.212.15.19",
