@@ -1806,14 +1806,7 @@ function renderRadioStationIdentity(station){
  if(station&&station.logo){logo.src=station.logo}else{logo.removeAttribute("src");logo.hidden=true;fallback.hidden=false}
  if(player)player.classList.remove("jon-radio-playing");
 }
-async function waitForPremiumPlaybackHelper(){
- for(let attempt=0;attempt<80;attempt++){
-  if(typeof window.jonGetPremiumPlaybackUrl==="function")return window.jonGetPremiumPlaybackUrl;
-  await new Promise(resolve=>setTimeout(resolve,100));
- }
- throw new Error("Premium playback authorization module did not initialize. Reload the page and retry.");
-}
-async function selectStation(index,ticketPlayback=false,playbackUrl="",playbackIsHls=false){
+async function selectStation(index){
  const requestedStation=stations[index];
  const isPremium=!!requestedStation&&String(requestedStation.accessTier||"free").toLowerCase()==="premium";
  if(isPremium&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
@@ -1821,29 +1814,10 @@ async function selectStation(index,ticketPlayback=false,playbackUrl="",playbackI
   radioStatus.innerHTML="🔒 Premium access required";
   return;
  }
- if(isPremium&&!ticketPlayback){
-  const channelId=requestedStation.premiumChannelId||requestedStation.playbackChannelId||requestedStation.channelId||requestedStation.id||"";
-  if(!channelId){
-   radioStatus.innerHTML="🔒 Premium station ID is missing from this station's configuration";
-   return;
-  }
-  radioStatus.innerHTML="🔐 Authorizing Premium radio...";
-  try{
-   const getPremiumPlaybackUrl=await waitForPremiumPlaybackHelper();
-   const securePlayback=await getPremiumPlaybackUrl(requestedStation);
-   if(stations[index]!==requestedStation)return;
-   await selectStation(index,true,securePlayback.url,securePlayback.isHls);
-  }catch(error){
-   console.warn("JON Premium radio authorization failed:",error);
-   radioStatus.innerHTML="🔒 Premium authorization failed — please sign in again or contact support";
-  }
-  return;
- }
-
  clearTimeout(radioAdvancedRetryTimer);
  radioAdvancedRetryTimer=null;
  radioAdvancedRetryAttempts=0;
- currentStation=ticketPlayback?{...requestedStation,url:playbackUrl,premiumHls:playbackIsHls,backupUrls:[],backupStreams:[],backupUrl:"",gatewayUrl:"",gatewayURL:"",proxyUrl:"",proxyURL:"",hlsGateway:"",hlsUrl:""}:requestedStation;
+ currentStation=requestedStation;
  renderRadioStationIdentity(currentStation);
  const perfKey=String(currentStation.name||"Radio")+"|"+String(currentStation.url||"");
  resetRadioPerformance(perfKey);
@@ -3150,7 +3124,7 @@ function jonGatewayForChannel(channel,kind){
  }
  return "";
 }
-async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,ticketPlayback=false){
+async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  const requestedChannel=filteredTV[index]||tvChannels.find(c=>c.url===url);
  const isPremium=!!requestedChannel&&String(requestedChannel.accessTier||"free").toLowerCase()==="premium";
  if(isPremium&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
@@ -3158,35 +3132,16 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,ticketP
   tvStatus("🔒 Premium access required");
   return;
  }
- if(isPremium&&!ticketPlayback){
-  const channelId=requestedChannel.premiumChannelId||requestedChannel.playbackChannelId||requestedChannel.channelId||requestedChannel.id||"";
-  if(!channelId){
-   tvStatus("🔒 Premium channel ID is missing from this channel's configuration");
-   return;
-  }
-  tvStatus("🔐 Authorizing Premium playback...");
-  try{
-   const getPremiumPlaybackUrl=await waitForPremiumPlaybackHelper();
-   const securePlayback=await getPremiumPlaybackUrl(requestedChannel);
-   if((filteredTV[index]||tvChannels.find(c=>c.url===url))!==requestedChannel)return;
-   await playTVStream(securePlayback.url,name,index,0,resetRetry,true);
-  }catch(error){
-   console.warn("JON Premium playback authorization failed:",error);
-   const reason=String(error&&error.message||"Unknown authorization error").replace(/[\r\n]+/g," ").slice(0,180);tvStatus("🔒 Premium authorization failed: "+reason);
-  }
-  return;
- }
-
  clearTimeout(tvStartupTimer);
  // A new playback attempt must not inherit a delayed retry from the previous channel/source.
  clearTimeout(tvRetryTimer);
  tvRetryTimer=null;
  const startupAttemptId=++tvPlayAttemptId;
  const baseChannel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
- const channel=ticketPlayback?{...baseChannel,backupUrls:[],backupStreams:[],backupUrl:"",gatewayUrl:"",gatewayURL:"",proxyUrl:"",proxyURL:"",hlsGateway:"",hlsUrl:""}:baseChannel;
+ const channel=baseChannel;
  const perfKey=String(channel.name||name||"TV")+"|"+String(baseChannel.url||url||"");
  if(perfKey!==tvPerfChannelKey||(resetRetry&&sourceIndex===0))resetTVPerformance(perfKey);
- currentTV={...channel,url:jonNormalizeStreamUrl(url)};currentTVIndex=index;tvSourceList=(ticketPlayback?[jonNormalizeStreamUrl(url)]:buildTVSources(currentTV).map(jonNormalizeStreamUrl)).filter(Boolean);
+ currentTV={...channel,url:jonNormalizeStreamUrl(url)};currentTVIndex=index;tvSourceList=buildTVSources(currentTV).map(jonNormalizeStreamUrl).filter(Boolean);
  tvSourceIndex=Math.max(0,Math.min(sourceIndex,tvSourceList.length-1));
  document.getElementById("tvPlayerBox").style.display="block";
  document.getElementById("tvPlayerBox").classList.add("tv-display-persistent");
@@ -3197,8 +3152,8 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,ticketP
  tvDiag("diagSource",tvSourceIndex===0?"Primary":"Backup "+tvSourceIndex);if(resetRetry)tvRetryAttempt=0;clearTimeout(tvReconnectTimer);cleanupPreviousTV();
  let source=tvSourceList[tvSourceIndex]||currentTV.url;
  if(!source){tvStatus("⚠️ No stream source");return}
- let kind=ticketPlayback?"hls":jonStreamKind(source);
- const gateway=ticketPlayback?"":jonGatewayForChannel({...currentTV,url:source},kind);
+ let kind=jonStreamKind(source);
+ const gateway=jonGatewayForChannel({...currentTV,url:source},kind);
  if(gateway&&gateway!==source){
    const originalKind=kind;
    source=gateway;
@@ -4421,44 +4376,6 @@ if(authPanel){
    }
  }
 
- window.jonGetPremiumPlaybackUrl=async channel=>{
-   // Try existing configured identifiers in order; do not rewrite IDs or relax
-   // server-side entitlement/source validation.
-   const channelIds=[...new Set(["premiumChannelId","playbackChannelId","channelId","id"]
-     .map(key=>String(channel&&channel[key]||"").trim())
-     .filter(id=>/^[a-zA-Z0-9_-]{1,100}$/.test(id)))];
-   if(!channelIds.length)throw new Error("Premium channel ID is missing");
-   const user=auth.currentUser;
-   if(!user||!user.emailVerified)throw new Error("Sign in with a verified email first");
-   const token=await user.getIdToken();
-   const premiumApiOrigin=/(^|\.)github\.io$/i.test(window.location.hostname)?"https://jon-stream.vercel.app":window.location.origin;
-   let lastError=null;
-   for(const channelId of channelIds){
-     const response=await fetch(premiumApiOrigin+"/api/subscription/playback-ticket",{
-       method:"POST",
-       headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
-       body:JSON.stringify({channelId})
-     });
-     let data={};
-     try{data=await response.json()}catch(_){}
-     if(response.ok){
-       if(!data.playbackUrl||!data.ticket)throw new Error("Server returned an invalid playback ticket");
-       return {url:new URL(data.playbackUrl,premiumApiOrigin).href,isHls:data.isHls===true};
-     }
-     lastError=new Error(data.error||("Playback authorization failed ("+response.status+")"));
-     // Retry only when this identifier is absent from the private catalog.
-     if(response.status!==404||String(data.error||"")!=="Premium channel not found")break;
-   }
-   if(lastError){
-     const source=String(channel&&channel.url||"").trim();
-     if(lastError.message==="Premium playback authorization is not configured"&&/^https:\/\//i.test(source)){
-       console.warn("Premium playback ticket service is not configured; using the channel's existing HTTPS stream.");
-       return {url:source,isHls:/\.m3u8(?:[?#]|$)/i.test(source)};
-     }
-     throw lastError;
-   }
-   throw new Error("Premium channel ID is missing");
- };
  window.jonShowPremiumUpgrade=()=>{
    if(authPanel)authPanel.hidden=false;
    const panel=document.getElementById("jonAccountPanel");
