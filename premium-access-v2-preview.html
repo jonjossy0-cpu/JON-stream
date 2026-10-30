@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
+<title>JON Stream Premium Access V2 Preview</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#07111f;color:#f8fafc}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top,#102b50,#07111f 62%);padding:20px}
+main{width:min(100%,760px);margin:0 auto}.panel{padding:20px;margin:14px 0;border:1px solid #24415e;border-radius:16px;background:#0d1b2b;box-shadow:0 16px 45px #0004}
+h1{font-size:clamp(1.4rem,4vw,2rem);margin:0 0 6px;color:#fff}h2{font-size:1.05rem;margin:0 0 12px}
+p{color:#b9c9dc;line-height:1.5}.muted{font-size:.88rem;color:#91a8c0}
+label{display:block;font-weight:650;margin:12px 0 6px}
+input,select,button{width:100%;min-height:48px;padding:11px 13px;border-radius:10px;border:1px solid #365674;background:#071525;color:#fff;font:inherit;font-size:16px}
+button{background:#1456a0;border:0;font-weight:750;cursor:pointer;margin-top:12px}button.secondary{background:#26384b}button:disabled{opacity:.55}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:520px){.row{grid-template-columns:1fr}}
+#status{white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;border-radius:10px;background:#10243a;color:#dbeafe}
+#status.error{color:#fecaca;background:#351b25}#status.success{color:#bbf7d0;background:#123327}
+video{width:100%;max-height:52vh;background:#000;border-radius:12px;margin-top:12px}
+.hidden{display:none!important}.pill{display:inline-block;border:1px solid #28734d;color:#86efac;border-radius:99px;padding:3px 9px;font-size:.78rem}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>JON Stream Premium Access V2</h1>
+<p>Isolated Preview test. This page uses read-only Firestore access and does not change subscriptions, trials, or channel records.</p>
+<span class="pill">READ-ONLY PREVIEW</span>
+</header>
+<section class="panel" id="loginPanel">
+<h2>Sign in to your JON Stream account</h2>
+<label for="email">Email</label><input id="email" type="email" autocomplete="username" required>
+<label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required>
+<button id="signIn">Sign in</button>
+<p class="muted">Your password is sent only to Firebase Authentication. Do not share it in chat.</p>
+</section>
+<section class="panel hidden" id="accountPanel">
+<div class="row"><div><h2>Account status</h2><p id="accountEmail" class="muted"></p></div><button id="signOut" class="secondary">Sign out</button></div>
+<div id="accessStatus" class="muted">Checking Premium status…</div>
+<label for="channel">Premium TV / Radio channel</label>
+<select id="channel"><option value="">Loading channel list…</option></select>
+<button id="play">Authorize & play</button>
+<video id="video" controls playsinline></video>
+</section>
+<section class="panel"><h2>Test result</h2><div id="status" role="status" aria-live="polite">Waiting for sign-in.</div></section>
+</main>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import Hls from "https://cdn.jsdelivr.net/npm/hls.js@1.6.13/+esm";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC5uNWNp9KbcepO36VQCx8gfbyPmZW4fxM",
+  authDomain: "jon-stream.firebaseapp.com",
+  projectId: "jon-stream",
+  storageBucket: "jon-stream.firebasestorage.app",
+  messagingSenderId: "189801194527",
+  appId: "1:189801194527:web:c7d99f83a2c4c604fa212a",
+  measurementId: "G-CEEKQDJXFS"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const $ = id => document.getElementById(id);
+let hls = null;
+let channels = [];
+
+function report(message, kind="") {
+  $("status").textContent = message;
+  $("status").className = kind;
+}
+function ids(item) {
+  const values = [item.premiumChannelId,item.playbackChannelId,item.channelId,item.id,item.publicChannelId];
+  for (const key of ["publicChannelIds","channelIds","aliases"]) if (Array.isArray(item[key])) values.push(...item[key]);
+  return [...new Set(values.map(value=>String(value||"").trim()).filter(value=>/^[a-zA-Z0-9_-]{1,100}$/.test(value)))];
+}
+function nameOf(item) { return String(item.name || item.title || "Premium channel"); }
+
+async function loadChannels() {
+  $("channel").innerHTML = '<option value="">Loading…</option>';
+  const snap = await getDoc(doc(db,"jonStream","appData"));
+  if (!snap.exists()) throw new Error("Public channel list is unavailable.");
+  const data = snap.data() || {};
+  channels = [];
+  for (const group of ["tv","radio"]) {
+    for (const item of (Array.isArray(data[group]) ? data[group] : [])) {
+      if (!item || String(item.accessTier||"").toLowerCase()!=="premium") continue;
+      const channelIds = ids(item);
+      if (!channelIds.length) continue;
+      channels.push({group,item,id:channelIds[0],label:nameOf(item)+" — "+group.toUpperCase()});
+    }
+  }
+  $("channel").innerHTML = "";
+  if (!channels.length) {
+    $("channel").innerHTML = '<option value="">No Premium channel IDs found</option>';
+    return;
+  }
+  for (let i=0;i<channels.length;i++) {
+    const option=document.createElement("option");
+    option.value=String(i); option.textContent=channels[i].label;
+    $("channel").append(option);
+  }
+}
+
+async function refreshStatus(user) {
+  const token = await user.getIdToken(true);
+  const response = await fetch("/api/subscription/status-v2",{headers:{Authorization:"Bearer "+token},cache:"no-store"});
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Premium status request failed");
+  $("accessStatus").textContent = "V2 status: "+data.status+" | Premium access: "+(data.hasPremium?"ACTIVE":"NOT ACTIVE")+(data.daysRemaining===null?" | Unlimited":typeof data.daysRemaining==="number"?" | Days remaining: "+data.daysRemaining:"");
+}
+
+async function openStream(user) {
+  const selected = channels[Number($("channel").value)];
+  if (!selected) throw new Error("Select a Premium channel first.");
+  const token = await user.getIdToken(true);
+  const response = await fetch("/api/subscription/playback-ticket-v2",{
+    method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
+    body:JSON.stringify({channelId:selected.id}),cache:"no-store"
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error((data.errorCode||"V2_PLAYBACK_FAILED")+": "+(data.error||"Playback authorization failed"));
+  const playbackUrl = new URL(data.playbackUrl,location.origin).toString();
+  if (hls) { hls.destroy(); hls=null; }
+  const video=$("video");
+  if (Hls.isSupported()) {
+    hls=new Hls({enableWorker:true,lowLatencyMode:false});
+    hls.loadSource(playbackUrl); hls.attachMedia(video);
+    hls.on(Hls.Events.ERROR,(_,info)=>{if(info.fatal) report("Stream player error: "+info.details,"error");});
+  } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    video.src=playbackUrl;
+  } else throw new Error("This browser does not support HLS playback.");
+  report("V2 ticket issued. Channel: "+selected.label+"\nTicket lifetime: "+data.ttlSeconds+" seconds\nFirestore access: read-only.","success");
+  try { await video.play(); } catch (_) { report("Ticket issued. Press Play on the video to start playback.","success"); }
+}
+
+$("signIn").addEventListener("click",async()=>{
+  $("signIn").disabled=true;
+  try { await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value); report("Signed in successfully. Loading V2 status…","success"); }
+  catch(error){ report((error.code||"SIGN_IN_FAILED")+": "+error.message,"error"); }
+  finally{$("signIn").disabled=false;}
+});
+$("signOut").addEventListener("click",async()=>{if(hls){hls.destroy();hls=null;}await signOut(auth);report("Signed out.");});
+$("play").addEventListener("click",async()=>{
+  $("play").disabled=true;
+  try { await openStream(auth.currentUser); }
+  catch(error){report(error.message,"error");}
+  finally{$("play").disabled=false;}
+});
+onAuthStateChanged(auth,async user=>{
+  $("loginPanel").classList.toggle("hidden",!!user);
+  $("accountPanel").classList.toggle("hidden",!user);
+  if(!user){$("video").removeAttribute("src");$("accessStatus").textContent="";return;}
+  $("accountEmail").textContent=user.email||"";
+  try { await Promise.all([refreshStatus(user),loadChannels()]); report("Signed in. V2 status and channel list loaded.","success"); }
+  catch(error){report(error.message,"error");}
+});
+</script>
+</body>
+</html>
