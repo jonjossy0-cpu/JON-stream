@@ -23,6 +23,13 @@ function sign(payload, secret) {
 function emailKey(email) {
   return crypto.createHash("sha256").update(String(email || "").trim().toLowerCase()).digest("hex");
 }
+function sourceValue(record) {
+  for (const field of SOURCE_FIELDS) {
+    const value = record && record[field];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
 function safeSource(value) {
   try {
     const url = new URL(value);
@@ -117,7 +124,7 @@ module.exports = async function handler(req, res) {
     if (channel.active !== true || String(channel.accessTier || "").toLowerCase() !== "premium") {
       return res.status(403).json({ error: "Premium catalog record is inactive or has the wrong tier", code: "V2_CHANNEL_DISABLED" });
     }
-    const source = safeSource(channel.sourceUrl);
+    const source = safeSource(sourceValue(channel));
     if (!source) {
       return res.status(503).json({ error: "Premium source is not on the approved host list", code: "V2_SOURCE_NOT_ALLOWED" });
     }
@@ -163,5 +170,5 @@ module.exports = async function handler(req, res) {
 };
 
 module.exports._test = {
-  idsFrom, catalogMatches, hasActiveEntitlement, hasActiveTrial, safeSource
+  idsFrom, catalogMatches, hasActiveEntitlement, hasActiveTrial, sourceValue, safeSource
 };
