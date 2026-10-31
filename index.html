@@ -703,6 +703,31 @@ audio,video{
 
 \n/* Compact fullscreen channel navigation: icons only, minimal space. */\n#tvVideoFrame .tv-fullscreen-bottom #tvFullscreenPrevious,\n#tvVideoFrame .tv-fullscreen-bottom #tvFullscreenNext{min-width:34px;width:34px;min-height:32px;padding:4px;font-size:15px;line-height:1;flex:0 0 34px}\n</style>
 
+<style id="jonPremiumProfileGraphics">
+/* JON Stream premium profile + Google sign-in visual layer */
+.jon-profile-trigger{position:relative;overflow:visible!important;border:1px solid rgba(75,150,255,.5)!important;background:linear-gradient(145deg,#102a4b,#101a32)!important;box-shadow:0 0 12px rgba(0,153,255,.24);transition:box-shadow .25s,border-color .25s}
+.jon-profile-glyph{display:inline-flex;align-items:center;justify-content:center;font-size:22px;filter:drop-shadow(0 0 5px rgba(0,190,255,.7))}
+.jon-profile-trigger.jon-profile-premium{border-color:#ffd45b!important;box-shadow:0 0 10px rgba(255,196,45,.7),0 0 24px rgba(0,153,255,.4),inset 0 0 12px rgba(255,195,55,.12);animation:jonPremiumProfileGlow 2.8s ease-in-out infinite}
+.jon-profile-trigger.jon-profile-premium .jon-profile-glyph{filter:drop-shadow(0 0 7px #ffd45b)}
+.jon-profile-verified{position:absolute;right:-5px;bottom:-5px;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#22c9ff,#0874ef);border:2px solid #07111f;color:white;font-size:12px;font-weight:900;box-shadow:0 0 10px #00bfff}
+.jon-profile-verified[hidden],.jon-profile-avatar-check[hidden]{display:none!important}
+@keyframes jonPremiumProfileGlow{0%,100%{box-shadow:0 0 8px rgba(255,196,45,.55),0 0 18px rgba(0,153,255,.3)}50%{box-shadow:0 0 14px rgba(255,196,45,.9),0 0 30px rgba(0,153,255,.52)}}
+.jon-account-panel{position:relative;overflow:hidden;background:radial-gradient(ellipse at 8% 0%,rgba(0,153,255,.16),transparent 42%),radial-gradient(ellipse at 100% 100%,rgba(227,27,35,.12),transparent 38%),linear-gradient(145deg,#0b1930,#08111f)!important;border:1px solid rgba(0,174,255,.45)!important;box-shadow:0 0 22px rgba(0,153,255,.16),inset 0 0 22px rgba(0,153,255,.045)}
+.jon-account-head strong{color:#fff;text-shadow:0 0 10px rgba(0,190,255,.4)}
+.jon-profile-banner{display:flex;align-items:center;gap:13px;padding:13px;margin:12px 0 16px;border:1px solid rgba(0,180,255,.4);border-radius:15px;background:linear-gradient(110deg,rgba(0,112,220,.18),rgba(10,22,43,.82) 60%,rgba(227,27,35,.12));box-shadow:0 0 16px rgba(0,153,255,.12)}
+.jon-profile-avatar-wrap{position:relative;flex:0 0 58px;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#08baff,#1743a5 60%,#e31b23);padding:3px;box-shadow:0 0 15px rgba(0,174,255,.48)}
+.jon-profile-avatar-wrap img,.jon-profile-avatar-wrap span:first-of-type{width:100%;height:100%;border-radius:50%;object-fit:cover;background:#0b1b32;display:grid;place-items:center;font-size:29px}
+.jon-profile-avatar-check{position:absolute;right:-3px;bottom:-2px;width:21px;height:21px;border:2px solid #07111f;border-radius:50%;background:#079cf4;color:#fff;display:grid;place-items:center;font-weight:900;box-shadow:0 0 10px #00bfff}
+.jon-profile-banner-copy{display:flex;flex-direction:column;gap:5px;min-width:0}
+.jon-profile-banner-copy strong{font-size:16px;color:#ffd65b;text-shadow:0 0 10px rgba(255,193,40,.25)}
+.jon-profile-banner-copy span{font-size:12px;color:#55d9ff;font-weight:700}
+.jon-google-signin{width:100%;min-height:52px;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:12px;border:1px solid rgba(0,170,255,.8);border-radius:13px;background:linear-gradient(100deg,#071a35,#132746 55%,#30131c);color:#fff;font-size:15px;box-shadow:0 0 12px rgba(0,153,255,.35),0 0 16px rgba(227,27,35,.12);transition:transform .2s,box-shadow .2s}
+.jon-google-signin:active{transform:scale(.985);box-shadow:0 0 20px rgba(0,153,255,.55)}
+.jon-google-g{font-family:Arial,sans-serif;font-size:25px;font-weight:900;background:conic-gradient(from -45deg,#4285f4 0 25%,#34a853 25% 48%,#fbbc05 48% 72%,#ea4335 72%);background-clip:text;-webkit-background-clip:text;color:transparent;text-shadow:0 0 8px rgba(255,255,255,.12)}
+.jon-google-arrow{margin-left:auto;font-size:27px;line-height:1;color:#5bd9ff}
+.jon-account-panel .jon-account-row{border-color:rgba(85,150,210,.2)}
+@media(prefers-reduced-motion:reduce){.jon-profile-trigger.jon-profile-premium{animation:none}}
+</style>
 <style id="jonGithubMediaFix">.jonMediaHeroImage{visibility:visible!important}.jonMediaHeroImage.show{visibility:visible!important;opacity:1!important}.jon-ad-media{visibility:visible!important}</style>
 <style id="jonLandscapeReadMoreFix">
 /* JON additive fix: keep Read More / Read Less usable in landscape. */
@@ -1324,7 +1349,7 @@ img.jon-ad-media{
 <div class="topbar">
  <div class="clock" id="clock">🕐 --:--:--</div>
  <div class="topbar-actions">
-  <button class="theme-btn" id="profileToggleBtn" type="button" onclick="toggleProfilePanel()" aria-label="Open profile" aria-controls="jonAccountPanel" aria-expanded="false" title="Profile">👤</button>
+  <button class="theme-btn jon-profile-trigger" id="profileToggleBtn" type="button" onclick="toggleProfilePanel()" aria-label="Open profile" aria-controls="jonAccountPanel" aria-expanded="false" title="Profile"><span class="jon-profile-glyph" aria-hidden="true">👤</span><span class="jon-profile-verified" id="jonProfileVerifiedBadge" aria-label="Verified Premium member" hidden>✓</span></button>
   <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme" title="Theme">🌙</button>
  </div>
 </div>
@@ -1341,11 +1366,13 @@ img.jon-ad-media{
 
 <section id="jonAccountPanel" class="jon-account-panel" hidden>
  <div class="jon-account-head"><strong>👤 My Profile / Premium</strong><span id="jonAccountState">Not signed in</span></div>
+ <div class="jon-profile-banner" id="jonProfileBanner"><div class="jon-profile-avatar-wrap"><img id="jonProfileAvatar" alt="" hidden><span id="jonProfileAvatarFallback">👤</span><span class="jon-profile-avatar-check" id="jonProfileAvatarCheck" hidden>✓</span></div><div class="jon-profile-banner-copy"><strong id="jonProfileMemberType">JON Stream Member</strong><span id="jonProfileMemberStatus">Sign in to view your account</span></div></div>
  <div id="jonAccountSignedOut">
   <p class="jon-account-note">Sign up or sign in with your email to manage your Premium subscription.</p>
   <label for="jonAccountEmail">Email address</label><input id="jonAccountEmail" type="email" autocomplete="email" placeholder="name@example.com">
   <label for="jonAccountPassword">Password</label><div class="jon-password-entry"><input id="jonAccountPassword" type="password" autocomplete="current-password" placeholder="Enter your password" autocapitalize="off" spellcheck="false"><button id="jonPasswordToggle" class="jon-password-toggle" type="button" aria-label="Show password" aria-pressed="false">Show</button></div><button id="jonForgotPassword" class="jon-forgot-password" type="button">Forgot password?</button>
   <div class="jon-account-actions"><button id="jonAccountSignup" type="button">Create account</button><button id="jonAccountSignin" type="button" class="jon-account-secondary">Sign in</button></div>
+  <button id="jonGoogleSignin" class="jon-google-signin" type="button"><span class="jon-google-g" aria-hidden="true">G</span><span>Continue with Google</span><span class="jon-google-arrow" aria-hidden="true">›</span></button>
  </div>
  <div id="jonAccountSignedIn" hidden>
   <div class="jon-account-row"><span>Email</span><strong id="jonProfileEmail">—</strong></div>
@@ -4295,7 +4322,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 
 <script type="module">
 import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, signOut, reload } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, signOut, reload } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 const authPanel=document.getElementById("jonAccountPanel");
 window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
 
@@ -4320,7 +4347,7 @@ if(authPanel){
    };
    return messages[code]||((action||"Request")+" failed ("+(code||"unknown error")+"). Please try again.");
  };
- const setBusy=(busy)=>["jonAccountSignup","jonAccountSignin","jonForgotPassword","jonResendVerification","jonAccountSignout"].forEach(id=>{const el=$(id);if(el)el.disabled=busy;});
+ const setBusy=(busy)=>["jonAccountSignup","jonAccountSignin","jonGoogleSignin","jonForgotPassword","jonResendVerification","jonAccountSignout"].forEach(id=>{const el=$(id);if(el)el.disabled=busy;});
  const diagnosticsButton=$("jonRunPremiumDiagnostics");
  if(diagnosticsButton){
    diagnosticsButton.addEventListener("click",async()=>{
@@ -4362,6 +4389,14 @@ if(authPanel){
      window.dispatchEvent(new CustomEvent("jon-premium-access-changed",{detail:window.jonPremiumAccess}));
      if(!allowed&&typeof window.jonStopPremiumPlayback==="function")window.jonStopPremiumPlayback("subscription_inactive");
      $("jonProfilePlan").textContent=data.planLabel||data.status||"No active subscription";
+     const profileButton=$("profileToggleBtn"),verifiedBadge=$("jonProfileVerifiedBadge"),avatarCheck=$("jonProfileAvatarCheck");
+     if(profileButton)profileButton.classList.toggle("jon-profile-premium",allowed);
+     if(verifiedBadge)verifiedBadge.hidden=!allowed;
+     if(avatarCheck)avatarCheck.hidden=!allowed;
+     $("jonProfileMemberType").textContent=allowed?"Premium Member":"JON Stream Member";
+     $("jonProfileMemberStatus").textContent=allowed?"Verified Premium Account":"Account active";
+     const avatar=$("jonProfileAvatar"),fallback=$("jonProfileAvatarFallback");
+     if(user.photoURL){avatar.src=user.photoURL;avatar.hidden=false;fallback.hidden=true;}else{avatar.removeAttribute("src");avatar.hidden=true;fallback.hidden=false;}
      $("jonProfileRemaining").textContent=Number.isFinite(data.daysRemaining)?data.daysRemaining+" day(s)":(data.remainingLabel||"—");
      $("jonProfilePayment").textContent=data.paymentLabel||"—";
      $("jonAccountMessage").textContent=data.message||$("jonAccountMessage").textContent;
@@ -4398,6 +4433,7 @@ if(authPanel){
    }
 
    $("jonAccountState").textContent=user?(user.emailVerified?"Signed in":"Verify email"):"Not signed in";
+   if(!user){const profileButton=$("profileToggleBtn");if(profileButton)profileButton.classList.remove("jon-profile-premium");$("jonProfileVerifiedBadge").hidden=true;$("jonProfileAvatarCheck").hidden=true;$("jonProfileMemberType").textContent="JON Stream Member";$("jonProfileMemberStatus").textContent="Sign in to view your account";}
    $("jonAccountSignedOut").hidden=!!user;
    $("jonAccountSignedIn").hidden=!user;
    message("");
@@ -4421,6 +4457,20 @@ if(authPanel){
      message("");
    }catch(e){message(authErrorText(e,"Sign up"),true);}
    finally{setBusy(false);}
+ });
+ $("jonGoogleSignin").addEventListener("click",async()=>{
+   setBusy(true);message("Connecting to Google…");
+   try{
+     const provider=new GoogleAuthProvider();
+     provider.setCustomParameters({prompt:"select_account"});
+     await signInWithPopup(auth,provider);
+     message("Google sign-in successful.");
+   }catch(e){
+     const code=String(e&&e.code||"");
+     if(code==="auth/popup-blocked"||code==="auth/cancelled-popup-request"){
+       message("Google sign-in popup was blocked. Please allow popups and try again.",true);
+     }else{message(authErrorText(e,"Google sign in"),true);}
+   }finally{setBusy(false);}
  });
  $("jonAccountSignin").addEventListener("click",async(event)=>{
    event.preventDefault();
