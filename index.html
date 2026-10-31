@@ -726,6 +726,13 @@ audio,video{
 .jon-google-g{font-family:Arial,sans-serif;font-size:25px;font-weight:900;background:conic-gradient(from -45deg,#4285f4 0 25%,#34a853 25% 48%,#fbbc05 48% 72%,#ea4335 72%);background-clip:text;-webkit-background-clip:text;color:transparent;text-shadow:0 0 8px rgba(255,255,255,.12)}
 .jon-google-arrow{margin-left:auto;font-size:27px;line-height:1;color:#5bd9ff}
 .jon-account-panel .jon-account-row{border-color:rgba(85,150,210,.2)}
+.jon-account-panel .jon-account-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.jon-account-label{display:inline-flex;align-items:center;gap:9px;min-width:0}
+.jon-account-icon{width:27px;height:27px;flex:0 0 27px;display:inline-grid;place-items:center;border-radius:9px;font-style:normal;font-size:15px;font-weight:900;color:#72dcff;background:linear-gradient(145deg,rgba(0,174,255,.2),rgba(10,35,65,.9));border:1px solid rgba(0,190,255,.38);box-shadow:0 0 10px rgba(0,153,255,.15);text-shadow:0 0 8px rgba(0,190,255,.65)}
+.jon-account-row-verified .jon-account-icon{color:#75f0b0;border-color:rgba(55,220,145,.42);background:linear-gradient(145deg,rgba(20,170,105,.2),rgba(8,45,39,.9));text-shadow:0 0 8px rgba(55,220,145,.7)}
+.jon-account-row-time .jon-account-icon{color:#ffd76a;border-color:rgba(255,195,55,.42);background:linear-gradient(145deg,rgba(190,130,15,.2),rgba(55,39,10,.9));text-shadow:0 0 8px rgba(255,195,55,.7)}
+.jon-account-row-payment .jon-account-icon{color:#ff8790;border-color:rgba(227,27,35,.42);background:linear-gradient(145deg,rgba(190,25,35,.2),rgba(55,12,20,.9));text-shadow:0 0 8px rgba(227,27,35,.65)}
+@media(max-width:420px){.jon-account-label{gap:7px}.jon-account-icon{width:25px;height:25px;flex-basis:25px;font-size:14px}.jon-account-panel .jon-account-row{gap:7px}}
 @media(prefers-reduced-motion:reduce){.jon-profile-trigger.jon-profile-premium{animation:none}}
 </style>
 <style id="jonGithubMediaFix">.jonMediaHeroImage{visibility:visible!important}.jonMediaHeroImage.show{visibility:visible!important;opacity:1!important}.jon-ad-media{visibility:visible!important}</style>
@@ -1375,11 +1382,11 @@ img.jon-ad-media{
   <button id="jonGoogleSignin" class="jon-google-signin" type="button"><span class="jon-google-g" aria-hidden="true">G</span><span>Continue with Google</span><span class="jon-google-arrow" aria-hidden="true">›</span></button>
  </div>
  <div id="jonAccountSignedIn" hidden>
-  <div class="jon-account-row"><span>Email</span><strong id="jonProfileEmail">—</strong></div>
-  <div class="jon-account-row"><span>Email verification</span><strong id="jonProfileVerified">—</strong></div>
+  <div class="jon-account-row jon-account-row-email"><span class="jon-account-label"><i class="jon-account-icon" aria-hidden="true">✉</i>Email</span><strong id="jonProfileEmail">—</strong></div>
+  <div class="jon-account-row jon-account-row-verified"><span class="jon-account-label"><i class="jon-account-icon" aria-hidden="true">✓</i>Email verification</span><strong id="jonProfileVerified">—</strong></div>
   <div class="jon-account-row"><span>Subscription</span><strong id="jonProfilePlan">Checking…</strong></div>
-  <div class="jon-account-row"><span>Time remaining</span><strong id="jonProfileRemaining">Checking…</strong></div>
-  <div class="jon-account-row"><span>Payment</span><strong id="jonProfilePayment">—</strong></div>
+  <div class="jon-account-row jon-account-row-time"><span class="jon-account-label"><i class="jon-account-icon" aria-hidden="true">◷</i>Time remaining</span><strong id="jonProfileRemaining">Checking…</strong></div>
+  <div class="jon-account-row jon-account-row-payment"><span class="jon-account-label"><i class="jon-account-icon" aria-hidden="true">▣</i>Payment</span><strong id="jonProfilePayment">—</strong></div>
   <p id="jonAccountMessage" class="jon-account-note" aria-live="polite"></p>
 
   <div class="jon-account-actions"><button id="jonResendVerification" type="button" class="jon-account-secondary">Resend verification</button><button id="jonAccountSignout" type="button" class="jon-account-secondary">Sign out</button></div>
