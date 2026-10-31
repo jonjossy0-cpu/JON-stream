@@ -706,6 +706,19 @@ audio,video{
 <style id="jonPremiumProfileGraphics">
 /* JON Stream premium profile + Google sign-in visual layer */
 .jon-profile-trigger{position:relative;overflow:visible!important;border:1px solid rgba(75,150,255,.5)!important;background:linear-gradient(145deg,#102a4b,#101a32)!important;box-shadow:0 0 12px rgba(0,153,255,.24);transition:box-shadow .25s,border-color .25s}
+/* Home profile photo and account-tier glow */
+.jon-profile-trigger{width:45px;height:42px;display:inline-flex;align-items:center;justify-content:center;padding:0!important}
+.jon-home-profile-photo{width:31px;height:31px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.8);box-shadow:0 0 8px rgba(0,190,255,.45)}
+.jon-home-profile-photo[hidden],.jon-profile-tier-label[hidden]{display:none!important}
+.jon-profile-tier-label{position:absolute;top:43px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:900;letter-spacing:.7px;line-height:1;padding:4px 6px;border-radius:999px;white-space:nowrap;z-index:5}
+.jon-profile-trigger.jon-profile-free{border-color:#22c55e!important;box-shadow:0 0 8px rgba(34,197,94,.65),0 0 18px rgba(34,197,94,.42),inset 0 0 9px rgba(34,197,94,.12)!important;animation:jonFreeProfileGlow 2.6s ease-in-out infinite}
+.jon-profile-trigger.jon-profile-free .jon-home-profile-photo{border-color:#4ade80;box-shadow:0 0 9px #22c55e,0 0 17px rgba(34,197,94,.65)}
+.jon-profile-trigger.jon-profile-free .jon-profile-tier-label{color:#bbf7d0;background:#14532d;border:1px solid #22c55e;box-shadow:0 0 9px rgba(34,197,94,.5)}
+.jon-profile-trigger.jon-profile-premium{border-color:#fbbf24!important;box-shadow:0 0 10px rgba(251,191,36,.75),0 0 24px rgba(251,191,36,.5),inset 0 0 12px rgba(251,191,36,.15)!important}
+.jon-profile-trigger.jon-profile-premium .jon-home-profile-photo{border-color:#fcd34d;box-shadow:0 0 10px #fbbf24,0 0 19px rgba(251,191,36,.75)}
+.jon-profile-trigger.jon-profile-premium .jon-profile-tier-label{color:#fef3c7;background:#78350f;border:1px solid #fbbf24;box-shadow:0 0 10px rgba(251,191,36,.55)}
+@keyframes jonFreeProfileGlow{0%,100%{box-shadow:0 0 7px rgba(34,197,94,.55),0 0 15px rgba(34,197,94,.32)}50%{box-shadow:0 0 13px rgba(34,197,94,.9),0 0 25px rgba(34,197,94,.55)}}
+@media(prefers-reduced-motion:reduce){.jon-profile-trigger.jon-profile-free{animation:none!important}}
 .jon-profile-glyph{display:inline-flex;align-items:center;justify-content:center;font-size:22px;filter:drop-shadow(0 0 5px rgba(0,190,255,.7))}
 .jon-profile-trigger.jon-profile-premium{border-color:#ffd45b!important;box-shadow:0 0 10px rgba(255,196,45,.7),0 0 24px rgba(0,153,255,.4),inset 0 0 12px rgba(255,195,55,.12);animation:jonPremiumProfileGlow 2.8s ease-in-out infinite}
 .jon-profile-trigger.jon-profile-premium .jon-profile-glyph{filter:drop-shadow(0 0 7px #ffd45b)}
@@ -1362,7 +1375,7 @@ img.jon-ad-media{
 <div class="topbar">
  <div class="clock" id="clock">🕐 --:--:--</div>
  <div class="topbar-actions">
-  <button class="theme-btn jon-profile-trigger" id="profileToggleBtn" type="button" onclick="toggleProfilePanel()" aria-label="Open profile" aria-controls="jonAccountPanel" aria-expanded="false" title="Profile"><span class="jon-profile-glyph" aria-hidden="true">👤</span><span class="jon-profile-verified" id="jonProfileVerifiedBadge" aria-label="Verified Premium member" hidden>✓</span></button>
+  <button class="theme-btn jon-profile-trigger jon-profile-state-unknown" id="profileToggleBtn" type="button" onclick="toggleProfilePanel()" aria-label="Open profile" aria-controls="jonAccountPanel" aria-expanded="false" title="Profile"><span class="jon-profile-glyph" id="jonHomeProfileFallback" aria-hidden="true">👤</span><img class="jon-home-profile-photo" id="jonHomeProfilePhoto" alt="" hidden><span class="jon-profile-tier-label" id="jonHomeProfileTier" hidden></span><span class="jon-profile-verified" id="jonProfileVerifiedBadge" aria-label="Verified Premium member" hidden>✓</span></button>
   <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme" title="Theme">🌙</button>
  </div>
 </div>
@@ -4381,6 +4394,17 @@ if(authPanel){
    });
  }
  let subscriptionStatusRequest=0;
+ function syncJonHomeProfile(user,tier){
+   const button=$("profileToggleBtn"),photo=$("jonHomeProfilePhoto"),fallback=$("jonHomeProfileFallback"),label=$("jonHomeProfileTier");
+   if(!button||!photo||!fallback||!label)return;
+   const photoURL=user&&typeof user.photoURL==="string"?user.photoURL.trim():"";
+   if(photoURL){if(photo.src!==photoURL)photo.src=photoURL;photo.hidden=false;fallback.hidden=true;}
+   else{photo.removeAttribute("src");photo.hidden=true;fallback.hidden=false;}
+   button.classList.remove("jon-profile-free","jon-profile-premium","jon-profile-state-unknown");
+   if(tier==="premium"){button.classList.add("jon-profile-premium");label.textContent="PREMIUM";label.hidden=false;}
+   else if(tier==="free"){button.classList.add("jon-profile-free");label.textContent="FREE";label.hidden=false;}
+   else{button.classList.add("jon-profile-state-unknown");label.hidden=true;}
+ }
  const jonProfileCharacters=["🧑‍🚀","🦸‍♂️","🧑‍💻","🎧","🧑‍🎤"];
  let jonProfileCharacterIndex=0;
  let jonProfileCharacterTimer=null;
@@ -4421,6 +4445,7 @@ if(authPanel){
      $("jonProfilePlan").textContent=data.planLabel||data.status||"No active subscription";
      const profileButton=$("profileToggleBtn"),verifiedBadge=$("jonProfileVerifiedBadge"),avatarCheck=$("jonProfileAvatarCheck");
      if(profileButton)profileButton.classList.toggle("jon-profile-premium",allowed);
+     syncJonHomeProfile(user,allowed?"premium":"free");
      if(verifiedBadge)verifiedBadge.hidden=!allowed;
      if(avatarCheck)avatarCheck.hidden=!allowed;
      $("jonProfileMemberType").textContent=allowed?"Premium Member":"JON Stream Member";
@@ -4462,8 +4487,9 @@ if(authPanel){
      if(typeof window.jonStopPremiumPlayback==="function")window.jonStopPremiumPlayback("signed_out");
    }
 
+   syncJonHomeProfile(user,null);
    $("jonAccountState").textContent=user?(user.emailVerified?"Signed in":"Verify email"):"Not signed in";
-   if(!user){const profileButton=$("profileToggleBtn");if(profileButton)profileButton.classList.remove("jon-profile-premium");$("jonProfileVerifiedBadge").hidden=true;$("jonProfileAvatarCheck").hidden=true;$("jonProfileMemberType").textContent="JON Stream Member";$("jonProfileMemberStatus").textContent="Sign in to view your account";}
+   if(!user){syncJonHomeProfile(null,null);const profileButton=$("profileToggleBtn");if(profileButton)profileButton.classList.remove("jon-profile-premium","jon-profile-free");$("jonProfileVerifiedBadge").hidden=true;$("jonProfileAvatarCheck").hidden=true;$("jonProfileMemberType").textContent="JON Stream Member";$("jonProfileMemberStatus").textContent="Sign in to view your account";}
    $("jonAccountSignedOut").hidden=!!user;
    $("jonAccountSignedIn").hidden=!user;
    message("");
