@@ -705,6 +705,18 @@ audio,video{
 
 <style id="jonPremiumProfileGraphics">
 
+
+/* Refine profile photo ring: remove the stark white circle and use a subtle brand glow. */
+#profileToggleBtn .jon-home-profile-photo{
+  background:transparent!important;
+  border:2px solid rgba(0,190,255,.72)!important;
+  box-shadow:0 0 8px rgba(0,190,255,.28)!important;
+}
+#profileToggleBtn.jon-profile-premium .jon-home-profile-photo{
+  border-color:#fcd34d!important;
+  box-shadow:0 0 9px rgba(251,191,36,.58)!important;
+}
+
 /* JON Stream home profile overlap fix: respect hidden fallback and separate badges. */
 #jonHomeProfileFallback[hidden]{display:none!important}
 #profileToggleBtn{position:relative;width:54px;height:54px;min-width:54px;min-height:54px;border-radius:18px;gap:0}
