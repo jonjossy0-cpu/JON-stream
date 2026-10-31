@@ -4568,10 +4568,92 @@ if(authPanel){
 })();
 </script>
 
-<!-- JON Stream best-effort DevTools response.
-     Detection is heuristic; browsers do not expose a reliable DevTools-open API.
-     This guard covers common desktop shortcuts and likely docked DevTools sizing. -->
-<!-- Removed the DevTools shortcut page-exit guard: it could close the JON Stream page and interrupt normal interaction. -->
+<!-- JON Stream Inspect deterrence: best-effort only; browser DevTools cannot be fully disabled by page JavaScript. -->
+<script id="jonInspectProtection">
+(function jonInspectProtection(){
+  'use strict';
+  if (window.__JON_INSPECT_PROTECTION__) return;
+  window.__JON_INSPECT_PROTECTION__ = true;
+
+  var activated = false;
+
+  function stopMedia(){
+    document.querySelectorAll('video,audio').forEach(function(media){
+      try { media.pause(); } catch (_) {}
+    });
+  }
+
+  function leaveSite(){
+    if (activated) return;
+    activated = true;
+    stopMedia();
+
+    var overlay = document.createElement('div');
+    overlay.setAttribute('role', 'alert');
+    overlay.setAttribute('aria-live', 'assertive');
+    overlay.style.cssText = [
+      'position:fixed','inset:0','z-index:2147483647',
+      'display:flex','align-items:center','justify-content:center',
+      'padding:28px','box-sizing:border-box',
+      'background:#07111f','color:#fff',
+      'font:800 20px/1.5 Arial,Helvetica,sans-serif',
+      'text-align:center'
+    ].join(';');
+    overlay.textContent = 'SECURITY WARNING — Inspect / Developer Tools is not allowed. JON Stream is closing.';
+    (document.body || document.documentElement).appendChild(overlay);
+
+    // A browser may refuse window.close() for a tab opened directly by the user.
+    // Navigate away as a fallback so the site itself is no longer displayed.
+    window.setTimeout(function(){
+      try { window.close(); } catch (_) {}
+      window.setTimeout(function(){
+        try { window.location.replace('about:blank'); } catch (_) {
+          try { document.documentElement.textContent = 'JON Stream security protection activated.'; } catch (_) {}
+        }
+      }, 250);
+    }, 1100);
+  }
+
+  // Disable the page's right-click / long-press context menu.
+  window.addEventListener('contextmenu', function(event){
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+
+  // Catch common DevTools shortcuts before the browser/page handlers.
+  window.addEventListener('keydown', function(event){
+    var key = String(event.key || '').toLowerCase();
+    var modifier = event.ctrlKey || event.metaKey;
+    var inspectShortcut =
+      key === 'f12' ||
+      (modifier && event.shiftKey && ['i','j','c','k','e','m'].indexOf(key) !== -1) ||
+      (event.metaKey && event.altKey && ['i','j','c'].indexOf(key) !== -1);
+
+    if (inspectShortcut) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      leaveSite();
+    }
+  }, true);
+
+  // Best-effort signal for docked desktop DevTools opened from browser menus.
+  // Deliberately no polling: normal window resizing must not cause false exits.
+  function checkDockedTools(){
+    if (activated) return;
+    var outerW = Number(window.outerWidth || 0);
+    var innerW = Number(window.innerWidth || 0);
+    var outerH = Number(window.outerHeight || 0);
+    var innerH = Number(window.innerHeight || 0);
+    var widthGap = Math.abs(outerW - innerW);
+    var heightGap = Math.abs(outerH - innerH);
+    if (outerW >= 900 && (widthGap > 260 || heightGap > 240)) {
+      leaveSite();
+    }
+  }
+  window.addEventListener('resize', checkDockedTools, {passive:true});
+  window.addEventListener('orientationchange', checkDockedTools, {passive:true});
+})();
+</script>
 
 
 <style id="jonFullscreenNewsTickerStyle">
