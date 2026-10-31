@@ -733,6 +733,12 @@ audio,video{
 .jon-account-row-time .jon-account-icon{color:#ffd76a;border-color:rgba(255,195,55,.42);background:linear-gradient(145deg,rgba(190,130,15,.2),rgba(55,39,10,.9));text-shadow:0 0 8px rgba(255,195,55,.7)}
 .jon-account-row-payment .jon-account-icon{color:#ff8790;border-color:rgba(227,27,35,.42);background:linear-gradient(145deg,rgba(190,25,35,.2),rgba(55,12,20,.9));text-shadow:0 0 8px rgba(227,27,35,.65)}
 @media(max-width:420px){.jon-account-label{gap:7px}.jon-account-icon{width:25px;height:25px;flex-basis:25px;font-size:14px}.jon-account-panel .jon-account-row{gap:7px}}
+.jon-account-row-subscription .jon-account-icon{color:#ffe27a;border-color:rgba(255,205,65,.58);background:linear-gradient(145deg,rgba(185,135,15,.28),rgba(58,42,9,.94));text-shadow:0 0 9px rgba(255,205,65,.85);box-shadow:0 0 12px rgba(255,195,55,.24)}
+.jon-profile-avatar-character{font-size:31px!important;line-height:1;filter:drop-shadow(0 0 8px rgba(0,190,255,.65));animation:jonCharacterFloat 2.4s ease-in-out infinite}
+.jon-profile-avatar-wrap.jon-character-change .jon-profile-avatar-character{animation:jonCharacterSwap .55s ease}
+@keyframes jonCharacterFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.06)}}
+@keyframes jonCharacterSwap{0%{opacity:.35;transform:rotate(-18deg) scale(.7)}65%{opacity:1;transform:rotate(8deg) scale(1.16)}100%{transform:rotate(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.jon-profile-avatar-character,.jon-profile-avatar-wrap.jon-character-change .jon-profile-avatar-character{animation:none!important}}
 @media(prefers-reduced-motion:reduce){.jon-profile-trigger.jon-profile-premium{animation:none}}
 </style>
 <style id="jonGithubMediaFix">.jonMediaHeroImage{visibility:visible!important}.jonMediaHeroImage.show{visibility:visible!important;opacity:1!important}.jon-ad-media{visibility:visible!important}</style>
@@ -1373,7 +1379,7 @@ img.jon-ad-media{
 
 <section id="jonAccountPanel" class="jon-account-panel" hidden>
  <div class="jon-account-head"><strong>👤 My Profile / Premium</strong><span id="jonAccountState">Not signed in</span></div>
- <div class="jon-profile-banner" id="jonProfileBanner"><div class="jon-profile-avatar-wrap"><img id="jonProfileAvatar" alt="" hidden><span id="jonProfileAvatarFallback">👤</span><span class="jon-profile-avatar-check" id="jonProfileAvatarCheck" hidden>✓</span></div><div class="jon-profile-banner-copy"><strong id="jonProfileMemberType">JON Stream Member</strong><span id="jonProfileMemberStatus">Sign in to view your account</span></div></div>
+ <div class="jon-profile-banner" id="jonProfileBanner"><div class="jon-profile-avatar-wrap"><img id="jonProfileAvatar" alt="" hidden><span id="jonProfileAvatarFallback" class="jon-profile-avatar-character" aria-label="Animated JON Stream character">🧑‍🚀</span><span class="jon-profile-avatar-check" id="jonProfileAvatarCheck" hidden>✓</span></div><div class="jon-profile-banner-copy"><strong id="jonProfileMemberType">JON Stream Member</strong><span id="jonProfileMemberStatus">Sign in to view your account</span></div></div>
  <div id="jonAccountSignedOut">
   <p class="jon-account-note">Sign up or sign in with your email to manage your Premium subscription.</p>
   <label for="jonAccountEmail">Email address</label><input id="jonAccountEmail" type="email" autocomplete="email" placeholder="name@example.com">
@@ -1384,7 +1390,7 @@ img.jon-ad-media{
  <div id="jonAccountSignedIn" hidden>
   <div class="jon-account-row jon-account-row-email"><span class="jon-account-label"><i class="jon-account-icon" aria-hidden="true">✉</i>Email</span><strong id="jonProfileEmail">—</strong></div>
   <div class="jon-account-row jon-account-row-verified"><span class="jon-account-label"><i class="jon-account-icon" aria-hidden="true">✓</i>Email verification</span><strong id="jonProfileVerified">—</strong></div>
-  <div class="jon-account-row"><span>Subscription</span><strong id="jonProfilePlan">Checking…</strong></div>
+  <div class="jon-account-row jon-account-row-subscription"><span class="jon-account-label"><i class="jon-account-icon" aria-hidden="true">♛</i>Subscription</span><strong id="jonProfilePlan">Checking…</strong></div>
   <div class="jon-account-row jon-account-row-time"><span class="jon-account-label"><i class="jon-account-icon" aria-hidden="true">◷</i>Time remaining</span><strong id="jonProfileRemaining">Checking…</strong></div>
   <div class="jon-account-row jon-account-row-payment"><span class="jon-account-label"><i class="jon-account-icon" aria-hidden="true">▣</i>Payment</span><strong id="jonProfilePayment">—</strong></div>
   <p id="jonAccountMessage" class="jon-account-note" aria-live="polite"></p>
@@ -4375,6 +4381,23 @@ if(authPanel){
    });
  }
  let subscriptionStatusRequest=0;
+ const jonProfileCharacters=["🧑‍🚀","🦸‍♂️","🧑‍💻","🎧","🧑‍🎤"];
+ let jonProfileCharacterIndex=0;
+ let jonProfileCharacterTimer=null;
+ function startJonProfileCharacterAnimation(){
+   const fallback=$("jonProfileAvatarFallback");
+   if(!fallback||window.matchMedia("(prefers-reduced-motion: reduce)").matches||jonProfileCharacterTimer!==null)return;
+   jonProfileCharacterTimer=window.setInterval(()=>{
+     const avatar=$("jonProfileAvatar");
+     if(!fallback.hidden||!avatar||avatar.hidden){
+       jonProfileCharacterIndex=(jonProfileCharacterIndex+1)%jonProfileCharacters.length;
+       fallback.textContent=jonProfileCharacters[jonProfileCharacterIndex];
+       const wrap=fallback.closest(".jon-profile-avatar-wrap");
+       if(wrap){wrap.classList.remove("jon-character-change");void wrap.offsetWidth;wrap.classList.add("jon-character-change");}
+     }
+   },2800);
+ }
+ startJonProfileCharacterAnimation();
  async function showSubscription(user){
    const requestId=++subscriptionStatusRequest;
    $("jonProfileEmail").textContent=user.email||"—";
