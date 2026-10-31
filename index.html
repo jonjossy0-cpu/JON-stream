@@ -704,6 +704,21 @@ audio,video{
 \n/* Compact fullscreen channel navigation: icons only, minimal space. */\n#tvVideoFrame .tv-fullscreen-bottom #tvFullscreenPrevious,\n#tvVideoFrame .tv-fullscreen-bottom #tvFullscreenNext{min-width:34px;width:34px;min-height:32px;padding:4px;font-size:15px;line-height:1;flex:0 0 34px}\n</style>
 
 <style id="jonPremiumProfileGraphics">
+
+/* JON Stream home profile overlap fix: respect hidden fallback and separate badges. */
+#jonHomeProfileFallback[hidden]{display:none!important}
+#profileToggleBtn{position:relative;width:54px;height:54px;min-width:54px;min-height:54px;border-radius:18px;gap:0}
+#profileToggleBtn .jon-home-profile-photo{width:44px;height:44px;display:block;flex:0 0 44px}
+#profileToggleBtn .jon-home-profile-photo[hidden]{display:none!important}
+#profileToggleBtn .jon-profile-glyph{width:44px;height:44px;line-height:1}
+#profileToggleBtn .jon-profile-tier-label{top:auto;bottom:-15px;left:50%;z-index:7;padding:4px 9px;font-size:9px;letter-spacing:.65px;box-shadow:0 3px 10px rgba(0,0,0,.35)}
+#profileToggleBtn .jon-profile-verified{right:-5px;bottom:5px;width:20px;height:20px;z-index:8;border:2px solid #07111f}
+@media(max-width:520px){
+ #profileToggleBtn{width:52px;height:52px;min-width:52px;min-height:52px;border-radius:17px}
+ #profileToggleBtn .jon-home-profile-photo,#profileToggleBtn .jon-profile-glyph{width:42px;height:42px;flex-basis:42px}
+ #profileToggleBtn .jon-profile-tier-label{bottom:-14px;font-size:8px;padding:4px 8px}
+}
+
 /* JON Stream premium profile + Google sign-in visual layer */
 .jon-profile-trigger{position:relative;overflow:visible!important;border:1px solid rgba(75,150,255,.5)!important;background:linear-gradient(145deg,#102a4b,#101a32)!important;box-shadow:0 0 12px rgba(0,153,255,.24);transition:box-shadow .25s,border-color .25s}
 /* Home profile photo and account-tier glow */
