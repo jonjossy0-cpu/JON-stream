@@ -4394,18 +4394,26 @@ if(authPanel){
    });
  }
  let subscriptionStatusRequest=0;
- function syncJonHomeProfile(user,tier){
-   const button=$("profileToggleBtn"),photo=$("jonHomeProfilePhoto"),fallback=$("jonHomeProfileFallback"),label=$("jonHomeProfileTier");
-   if(!button||!photo||!fallback||!label)return;
-   const photoURL=user&&typeof user.photoURL==="string"?user.photoURL.trim():"";
-   if(photoURL){if(photo.src!==photoURL)photo.src=photoURL;photo.hidden=false;fallback.hidden=true;}
-   else{photo.removeAttribute("src");photo.hidden=true;fallback.hidden=false;}
-   button.classList.remove("jon-profile-free","jon-profile-premium","jon-profile-state-unknown");
-   if(tier==="premium"){button.classList.add("jon-profile-premium");label.textContent="PREMIUM";label.hidden=false;}
-   else if(tier==="free"){button.classList.add("jon-profile-free");label.textContent="FREE";label.hidden=false;}
-   else{button.classList.add("jon-profile-state-unknown");label.hidden=true;}
- }
- const jonProfileCharacters=["🧑‍🚀","🦸‍♂️","🧑‍💻","🎧","🧑‍🎤"];
+  function getJonProfilePhotoURL(user){
+    if(!user)return "";
+    const candidates=[user.photoURL,...(Array.isArray(user.providerData)?user.providerData.map(p=>p&&p.photoURL):[])];
+    return candidates.find(value=>typeof value==="string"&&/^https:\/\//i.test(value.trim()))?.trim()||"";
+  }
+  function syncJonHomeProfile(user,tier){
+    const button=$("profileToggleBtn"),photo=$("jonHomeProfilePhoto"),fallback=$("jonHomeProfileFallback"),label=$("jonHomeProfileTier");
+    if(!button||!photo||!fallback||!label)return;
+    const photoURL=getJonProfilePhotoURL(user);
+    photo.onerror=()=>{photo.hidden=true;photo.removeAttribute("src");fallback.hidden=false;};
+    if(photoURL){
+      if(photo.getAttribute("src")!==photoURL)photo.src=photoURL;
+      photo.hidden=false;fallback.hidden=true;
+    }else{photo.removeAttribute("src");photo.hidden=true;fallback.hidden=false;}
+    button.classList.remove("jon-profile-free","jon-profile-premium","jon-profile-state-unknown");
+    if(tier==="premium"){button.classList.add("jon-profile-premium");label.textContent="PREMIUM";label.hidden=false;}
+    else if(tier==="free"){button.classList.add("jon-profile-free");label.textContent="FREE";label.hidden=false;}
+    else{button.classList.add("jon-profile-state-unknown");label.hidden=true;}
+  }
+  const jonProfileCharacters=["🧑‍🚀","🦸‍♂️","🧑‍💻","🎧","🧑‍🎤"];
  let jonProfileCharacterIndex=0;
  let jonProfileCharacterTimer=null;
  function startJonProfileCharacterAnimation(){
