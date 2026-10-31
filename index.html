@@ -710,7 +710,7 @@ audio,video{
 .jon-profile-trigger.jon-profile-premium{border-color:#ffd45b!important;box-shadow:0 0 10px rgba(255,196,45,.7),0 0 24px rgba(0,153,255,.4),inset 0 0 12px rgba(255,195,55,.12);animation:jonPremiumProfileGlow 2.8s ease-in-out infinite}
 .jon-profile-trigger.jon-profile-premium .jon-profile-glyph{filter:drop-shadow(0 0 7px #ffd45b)}
 .jon-profile-verified{position:absolute;right:-5px;bottom:-5px;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#22c9ff,#0874ef);border:2px solid #07111f;color:white;font-size:12px;font-weight:900;box-shadow:0 0 10px #00bfff}
-.jon-profile-verified[hidden],.jon-profile-avatar-check[hidden]{display:none!important}
+.jon-profile-verified[hidden],.jon-profile-avatar-check[hidden],#jonProfileAvatar[hidden],#jonProfileAvatarFallback[hidden]{display:none!important}
 @keyframes jonPremiumProfileGlow{0%,100%{box-shadow:0 0 8px rgba(255,196,45,.55),0 0 18px rgba(0,153,255,.3)}50%{box-shadow:0 0 14px rgba(255,196,45,.9),0 0 30px rgba(0,153,255,.52)}}
 .jon-account-panel{position:relative;overflow:hidden;background:radial-gradient(ellipse at 8% 0%,rgba(0,153,255,.16),transparent 42%),radial-gradient(ellipse at 100% 100%,rgba(227,27,35,.12),transparent 38%),linear-gradient(145deg,#0b1930,#08111f)!important;border:1px solid rgba(0,174,255,.45)!important;box-shadow:0 0 22px rgba(0,153,255,.16),inset 0 0 22px rgba(0,153,255,.045)}
 .jon-account-head strong{color:#fff;text-shadow:0 0 10px rgba(0,190,255,.4)}
@@ -4322,7 +4322,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 
 <script type="module">
 import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, signOut, reload } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, signOut, reload } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 const authPanel=document.getElementById("jonAccountPanel");
 window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
 
@@ -4467,8 +4467,11 @@ if(authPanel){
      message("Google sign-in successful.");
    }catch(e){
      const code=String(e&&e.code||"");
-     if(code==="auth/popup-blocked"||code==="auth/cancelled-popup-request"){
-       message("Google sign-in popup was blocked. Please allow popups and try again.",true);
+     if(code==="auth/popup-blocked"){
+       message("Opening secure Google sign-in…");
+       await signInWithRedirect(auth,new GoogleAuthProvider());
+     }else if(code==="auth/cancelled-popup-request"){
+       message("Google sign-in was cancelled. Please try again.",true);
      }else{message(authErrorText(e,"Google sign in"),true);}
    }finally{setBusy(false);}
  });
