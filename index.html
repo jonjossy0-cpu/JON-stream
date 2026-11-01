@@ -1715,6 +1715,7 @@ img.jon-ad-media{
     <div class="tv-diagnostic"><b>Startup</b><span id="diagStartup">—</span></div>
     <div class="tv-diagnostic"><b>Buffer Events</b><span id="diagBufferEvents">0</span></div>
     <div class="tv-diagnostic"><b>Buffer Time</b><span id="diagBufferTime">0s</span></div>
+     <div class="tv-diagnostic"><b>Dropped Frames</b><span id="diagDroppedFrames">—</span></div>
    </div>
   </div>
  </div>
@@ -3080,6 +3081,7 @@ async function checkTVStreamHealth(url,name){
 
 /* TV PLAYER - ADVANCED STABILITY SYSTEM */
 let tvRetryAttempt=0,tvRetryTimer=null,tvStallTimer=null,tvDiagnosticsTimer=null,tvStartupTimer=null,tvPlayAttemptId=0;
+let tvLastFrameAt=0,tvFrameMonitorId=null,tvLastStallRecoveryAt=0,tvFullscreenCandidateLevel="",tvFullscreenCandidateCount=0;
 let tvPerfChannelKey="",tvPerfStartedAt=0,tvPerfFirstPlayingAt=0,tvPerfBufferCount=0,tvPerfBufferingStartedAt=0,tvPerfBufferingMs=0;
 function resetTVPerformance(key){
  tvPerfChannelKey=key;tvPerfStartedAt=key?Date.now():0;tvPerfFirstPlayingAt=0;tvPerfBufferCount=0;tvPerfBufferingStartedAt=0;tvPerfBufferingMs=0;
@@ -3126,7 +3128,7 @@ function paintTVFullscreenNetworkAlternating(level,mbpsLabel,qualityLabel,detail
    No speed-test files, polling downloads, or additional network requests. */
 function resetTVFullscreenNetworkMeasurement(){
  tvFullscreenSamples=[];tvFullscreenMeasuredMbps=null;tvFullscreenRequiredMbps=null;tvFullscreenSpeedAt=0;
- tvFullscreenPlaybackLevel="unknown";
+ tvFullscreenPlaybackLevel="unknown";tvFullscreenCandidateLevel="";tvFullscreenCandidateCount=0;
  paintTVFullscreenNetwork("unknown","— Mbps • Waiting","Waiting for the active TV stream measurement");
 }
 function recordTVMeasuredMbps(value){
@@ -3148,6 +3150,24 @@ function recordTVFragmentThroughput(data){
  const bytes=Number(stats.loaded),start=Number(loading.start),end=Number(loading.end),elapsed=end-start;
  if(bytes<=0||!Number.isFinite(start)||!Number.isFinite(end)||elapsed<20||elapsed>120000)return;
  recordTVMeasuredMbps((bytes*8)/(elapsed*1000));
+}
+function stabilizeTVFullscreenLevel(level,buffer){
+ if(!level)return tvFullscreenPlaybackLevel;
+ if(tvFullscreenPlaybackLevel==="unknown"||level===tvFullscreenPlaybackLevel){
+  tvFullscreenCandidateLevel="";tvFullscreenCandidateCount=0;return level;
+ }
+ if(level==="bad"&&buffer<0.5){
+  tvFullscreenCandidateLevel="";tvFullscreenCandidateCount=0;return level;
+ }
+ if(tvFullscreenCandidateLevel===level)tvFullscreenCandidateCount++;
+ else{tvFullscreenCandidateLevel=level;tvFullscreenCandidateCount=1}
+ if(tvFullscreenCandidateCount>=2){
+  tvFullscreenCandidateLevel="";tvFullscreenCandidateCount=0;return level;
+ }
+ return tvFullscreenPlaybackLevel;
+}
+function tvFullscreenLevelLabel(level){
+ return level==="very-good"?"Very Good":level==="good"?"Good":level==="weak"?"Weak":level==="bad"?"Bad":"Checking";
 }
 function updateTVFullscreenNetwork(){
  if(navigator.onLine===false){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","— Mbps • Offline","Device is offline; no stream data is being transferred");return}
@@ -3174,8 +3194,9 @@ function updateTVFullscreenNetwork(){
    else if((ratio!==null&&ratio<1.4)||estimate<3){estimateLevel="weak";estimateLabel="Weak"}
    else if((ratio!==null&&ratio<2)||estimate<6){estimateLevel="good";estimateLabel="Good"}
    else{estimateLevel="very-good";estimateLabel="Very Good"}
-   tvFullscreenPlaybackLevel=estimateLevel;
-   paintTVFullscreenNetworkAlternating(estimateLevel,"~"+estimate.toFixed(1)+" Mbps",estimateLabel,"Browser network estimate, not a direct stream measurement"+(required?" • channel bitrate "+required.toFixed(2)+" Mbps":"")+" • "+buffer.toFixed(1)+"s buffer");
+   const stableEstimateLevel=stabilizeTVFullscreenLevel(estimateLevel,buffer);
+   tvFullscreenPlaybackLevel=stableEstimateLevel;
+   paintTVFullscreenNetworkAlternating(stableEstimateLevel,"~"+estimate.toFixed(1)+" Mbps",tvFullscreenLevelLabel(stableEstimateLevel),"Browser network estimate, not a direct stream measurement"+(required?" • channel bitrate "+required.toFixed(2)+" Mbps":"")+" • "+buffer.toFixed(1)+"s buffer");
    return;
   }
   tvFullscreenPlaybackLevel=buffer<1?"bad":"unknown";
@@ -3195,9 +3216,10 @@ function updateTVFullscreenNetwork(){
   else if(measured<6){level="good";label="Good"}
   else{level="very-good";label="Very Good"}
  }
- tvFullscreenPlaybackLevel=level;
+ const stableLevel=stabilizeTVFullscreenLevel(level,buffer);
+ tvFullscreenPlaybackLevel=stableLevel;
  const compared=ratio===null?"active channel bitrate not exposed":"channel bitrate "+required.toFixed(2)+" Mbps • headroom "+ratio.toFixed(1)+"×";
- paintTVFullscreenNetworkAlternating(level,measured.toFixed(1)+" Mbps",label,measured.toFixed(2)+" Mbps measured from active TV fragments • "+compared+" • "+buffer.toFixed(1)+"s buffer");
+ paintTVFullscreenNetworkAlternating(stableLevel,measured.toFixed(1)+" Mbps",tvFullscreenLevelLabel(stableLevel),measured.toFixed(2)+" Mbps measured from active TV fragments • "+compared+" • "+buffer.toFixed(1)+"s buffer");
 }
 function getTVNetwork(){
  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
@@ -3217,10 +3239,35 @@ function updateTVDiagnostics(){
   try{if(typeof hls.latency==="number"&&isFinite(hls.latency))latency=hls.latency.toFixed(1)+"s"}catch(_){}
  }
  tvDiag("diagBitrate",bitrate);tvDiag("diagLatency",latency);
+ let dropped="—";
+ try{
+  const playback=typeof tvPlayer.getVideoPlaybackQuality==="function"?tvPlayer.getVideoPlaybackQuality():null;
+  const total=playback&&Number.isFinite(Number(playback.totalVideoFrames))?Number(playback.totalVideoFrames):Number(tvPlayer.webkitDecodedFrameCount);
+  const count=playback&&Number.isFinite(Number(playback.droppedVideoFrames))?Number(playback.droppedVideoFrames):Number(tvPlayer.webkitDroppedFrameCount);
+  if(Number.isFinite(total)&&total>0&&Number.isFinite(count))dropped=Math.round(count)+" / "+Math.round(total)+" ("+((count/total)*100).toFixed(1)+"%)";
+  else if(Number.isFinite(total)&&total>0)dropped="Available; count unsupported";
+ }catch(_){}
+ tvDiag("diagDroppedFrames",dropped);
  tvDiag("diagHealth",Math.round(Math.max(0,Math.min(100,100-tvRetryAttempt*8-(buffer<1?15:0)-(buffer<3?8:0))))+"%");
  updateTVPerformance();
 }
-function stopTVTimers(){clearTimeout(tvRetryTimer);clearTimeout(tvAbrCapTimer);clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);tvRetryTimer=tvDiagnosticsTimer=tvStallTimer=tvAbrCapTimer=null}
+function stopTVFrameMonitor(){
+ if(tvFrameMonitorId!==null&&typeof tvPlayer.cancelVideoFrameCallback==="function"){
+  try{tvPlayer.cancelVideoFrameCallback(tvFrameMonitorId)}catch(_){}
+ }
+ tvFrameMonitorId=null;tvLastFrameAt=0;
+}
+function startTVFrameMonitor(){
+ stopTVFrameMonitor();
+ if(typeof tvPlayer.requestVideoFrameCallback!=="function")return;
+ const onFrame=()=>{
+  if(!currentTV)return;
+  tvLastFrameAt=Date.now();
+  try{tvFrameMonitorId=tvPlayer.requestVideoFrameCallback(onFrame)}catch(_){tvFrameMonitorId=null}
+ };
+ try{tvFrameMonitorId=tvPlayer.requestVideoFrameCallback(onFrame)}catch(_){tvFrameMonitorId=null}
+}
+function stopTVTimers(){clearTimeout(tvRetryTimer);clearTimeout(tvAbrCapTimer);clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);stopTVFrameMonitor();tvRetryTimer=tvDiagnosticsTimer=tvStallTimer=tvAbrCapTimer=null}
 function destroyTVEngine(){stopTVTimers();if(hls){try{hls.destroy()}catch(_){}hls=null}if(window.jonMpegtsPlayer){try{window.jonMpegtsPlayer.destroy()}catch(_){}window.jonMpegtsPlayer=null}if(window.jonDashPlayer){try{window.jonDashPlayer.reset()}catch(_){}window.jonDashPlayer=null}}
 function cleanupPreviousTV(){destroyTVEngine();try{tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load()}catch(_){}}
 function buildTVSources(channel){
@@ -3238,13 +3285,19 @@ function buildTVSources(channel){
  return list;
 }
 function startTVDiagnostics(){
- clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();
+ clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);
+ tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();tvLastStallRecoveryAt=0;
+ startTVFrameMonitor();
  tvDiagnosticsTimer=setInterval(updateTVDiagnostics,10000);
  tvStallTimer=setInterval(()=>{
-  if(!currentTV||tvPlayer.paused)return;
-  const now=tvPlayer.currentTime||0;
-  if(now!==tvLastProgress){tvLastProgress=now;tvLastProgressAt=Date.now();return}
-  if(Date.now()-tvLastProgressAt>TV_STALL_LIMIT_MS){tvStatus("⏳ Stalled — recovering...");recoverTVStream();tvLastProgressAt=Date.now()}
+  if(!currentTV||tvPlayer.paused||tvPlayer.ended)return;
+  const now=Number(tvPlayer.currentTime)||0,wallNow=Date.now();
+  if(Math.abs(now-tvLastProgress)>0.05){tvLastProgress=now;tvLastProgressAt=wallNow}
+  const playbackClockStale=wallNow-tvLastProgressAt>TV_STALL_LIMIT_MS;
+  const presentedFramesStale=typeof tvPlayer.requestVideoFrameCallback==="function"&&tvLastFrameAt>0&&wallNow-tvLastFrameAt>TV_STALL_LIMIT_MS;
+  if((playbackClockStale||presentedFramesStale)&&wallNow-tvLastStallRecoveryAt>10000){
+   tvLastStallRecoveryAt=wallNow;tvStatus("⏳ Playback stalled — recovering...");recoverTVStream();
+  }
  },3000);
 }
 function configureHLS(){
@@ -3363,13 +3416,13 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
   hls.on(Hls.Events.MEDIA_ATTACHED,()=>{try{hls.loadSource(source)}catch(_){recoverTVStream()}});
   hls.on(Hls.Events.MANIFEST_PARSED,()=>{updateQuality();populateTVQualitySelect();applyTVQuality();try{tvPlayer.play().then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){tvStatus("▶ Tap PLAY")}});
   hls.on(Hls.Events.LEVEL_SWITCHED,()=>{updateQuality();populateTVQualitySelect();updateTVDiagnostics()});
-  hls.on(Hls.Events.FRAG_BUFFERED,()=>{tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();setTVConnected()});
+  hls.on(Hls.Events.FRAG_BUFFERED,()=>{updateTVFullscreenNetwork()});
   hls.on(Hls.Events.FRAG_LOADED,(event,data)=>{recordTVFragmentThroughput(data)});
   hls.on(Hls.Events.ERROR,(event,data)=>{if(!data||!data.fatal)return;tvStatus("🔄 Recovering stream...");if(data.type===Hls.ErrorTypes.MEDIA_ERROR){try{hls.recoverMediaError();return}catch(_){} }recoverTVStream()});
  }else if(isM3U8&&tvPlayer.canPlayType("application/vnd.apple.mpegurl")){
   tvPlayer.src=source;tvPlayer.addEventListener("loadedmetadata",()=>{try{tvPlayer.play().then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){}},{once:true});
  }else if((kind==="flv"||kind==="ts")&&window.mpegts&&mpegts.isSupported()){
-  try{window.jonMpegtsPlayer=mpegts.createPlayer({type:kind==="flv"?"flv":"mpegts",url:source,isLive:true},{enableWorker:true,enableStashBuffer:true,stashInitialSize:384});window.jonMpegtsPlayer.attachMediaElement(tvPlayer);window.jonMpegtsPlayer.on(mpegts.Events.ERROR,()=>recoverTVStream());window.jonMpegtsPlayer.on(mpegts.Events.STATISTICS_INFO,(stats)=>{tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();if(stats&&Number.isFinite(Number(stats.speed))&&Number(stats.speed)>0)recordTVMeasuredMbps(Number(stats.speed)*8/1000)});window.jonMpegtsPlayer.load();window.jonMpegtsPlayer.play().catch(()=>tvNeedTapToPlay());}
+  try{window.jonMpegtsPlayer=mpegts.createPlayer({type:kind==="flv"?"flv":"mpegts",url:source,isLive:true},{enableWorker:true,enableStashBuffer:true,stashInitialSize:384});window.jonMpegtsPlayer.attachMediaElement(tvPlayer);window.jonMpegtsPlayer.on(mpegts.Events.ERROR,()=>recoverTVStream());window.jonMpegtsPlayer.on(mpegts.Events.STATISTICS_INFO,(stats)=>{if(stats&&Number.isFinite(Number(stats.speed))&&Number(stats.speed)>0)recordTVMeasuredMbps(Number(stats.speed)*8/1000)});window.jonMpegtsPlayer.load();window.jonMpegtsPlayer.play().catch(()=>tvNeedTapToPlay());}
   catch(_){tvStatus("⚠️ MPEG-TS/FLV player failed");recoverTVStream()}
  }else if(kind==="dash"&&window.dashjs){
   try{window.jonDashPlayer=dashjs.MediaPlayer().create();window.jonDashPlayer.initialize(tvPlayer,source,true);window.jonDashPlayer.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED,()=>{setTVConnected();updateTVDiagnostics()});window.jonDashPlayer.on(dashjs.MediaPlayer.events.PLAYBACK_PROGRESS,()=>{try{const kbps=window.jonDashPlayer.getAverageThroughput("video");if(Number.isFinite(Number(kbps))&&Number(kbps)>0)recordTVMeasuredMbps(Number(kbps)/1000)}catch(_){}});window.jonDashPlayer.on(dashjs.MediaPlayer.events.ERROR,()=>recoverTVStream());}
@@ -3552,8 +3605,7 @@ function scheduleTVAutoQualityRestore(){
 tvPlayer.addEventListener("play",()=>{const b=document.getElementById("tvPlayPauseBtn");if(b)b.textContent="⏸ PAUSE"});
 tvPlayer.addEventListener("pause",()=>{const b=document.getElementById("tvPlayPauseBtn");if(b)b.textContent="▶ PLAY"});
 /* TV EVENTS - recovery, never delete a channel */
-tvPlayer.addEventListener("playing",()=>{clearTimeout(tvStartupTimer);if(tvPerfStartedAt&&!tvPerfFirstPlayingAt)tvPerfFirstPlayingAt=Date.now();if(tvPerfBufferingStartedAt){tvPerfBufferingMs+=Date.now()-tvPerfBufferingStartedAt;tvPerfBufferingStartedAt=0}updateTVPerformance();scheduleTVAutoQualityRestore();tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();setTVConnected()});
-tvPlayer.addEventListener("progress",()=>{tvLastProgressAt=Date.now()});
+tvPlayer.addEventListener("playing",()=>{clearTimeout(tvStartupTimer);if(tvPerfStartedAt&&!tvPerfFirstPlayingAt)tvPerfFirstPlayingAt=Date.now();if(tvPerfBufferingStartedAt){tvPerfBufferingMs+=Date.now()-tvPerfBufferingStartedAt;tvPerfBufferingStartedAt=0}updateTVPerformance();scheduleTVAutoQualityRestore();tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();tvLastStallRecoveryAt=0;setTVConnected()});
 tvPlayer.addEventListener("waiting",()=>{if(currentTV){if(tvPerfFirstPlayingAt&&!tvPerfBufferingStartedAt){tvPerfBufferingStartedAt=Date.now();tvPerfBufferCount++}updateTVPerformance();lowerTVAutoQualityOnBuffer();tvStatus("⏳ Buffering...")}});
 tvPlayer.addEventListener("stalled",()=>{if(currentTV){tvStatus("⏳ Stalled — recovering...");recoverTVStream()}});
 tvPlayer.addEventListener("error",()=>{if(currentTV){tvStatus("⚠️ Stream error — recovering...");recoverTVStream()}});
