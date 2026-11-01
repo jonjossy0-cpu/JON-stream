@@ -3119,7 +3119,7 @@ function paintTVFullscreenNetwork(level,label,detail){
 /* Show Mbps and its quality grade in the same compact badge, alternating
    once per second so the two values never consume width side by side. */
 function paintTVFullscreenNetworkAlternating(level,mbpsLabel,qualityLabel,detail){
- const showMbps=(Math.floor(Date.now()/1000)%2)===0;
+ const showMbps=(Math.floor(Date.now()/10000)%2)===0;
  paintTVFullscreenNetwork(level,showMbps?mbpsLabel:qualityLabel,detail);
 }
 /* Measure only media fragments that the active player already downloads.
@@ -3239,7 +3239,7 @@ function buildTVSources(channel){
 }
 function startTVDiagnostics(){
  clearInterval(tvDiagnosticsTimer);clearInterval(tvStallTimer);tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();
- tvDiagnosticsTimer=setInterval(updateTVDiagnostics,1000);
+ tvDiagnosticsTimer=setInterval(updateTVDiagnostics,10000);
  tvStallTimer=setInterval(()=>{
   if(!currentTV||tvPlayer.paused)return;
   const now=tvPlayer.currentTime||0;
