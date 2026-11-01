@@ -3130,11 +3130,7 @@ function recordTVFragmentThroughput(data){
   let totalBytes=0,totalMs=0;for(const sample of tvFullscreenSamples){totalBytes+=sample.bytes;totalMs+=sample.ms}
   if(totalMs>0){tvFullscreenMeasuredMbps=(totalBytes*8)/(totalMs*1000);tvFullscreenSpeedAt=Date.now();return}
  }
- /* hls.js also exposes its own ABR throughput estimate (bits/second), derived
-    from the same media-fragment downloads. */
- const estimate=Number(hls&&hls.bandwidthEstimate);
- if(Number.isFinite(estimate)&&estimate>0){tvFullscreenMeasuredMbps=estimate/1000000;tvFullscreenSpeedAt=Date.now()}
-}
+ }
 function recordTVTransfer(bytes,start,end){
  bytes=Number(bytes);start=Number(start);end=Number(end);
  if(!Number.isFinite(bytes)||bytes<=0||!Number.isFinite(start)||!Number.isFinite(end)||end<=start)return;
@@ -3155,34 +3151,29 @@ function updateTVFullscreenNetwork(){
  tvFullscreenRequiredMbps=required||null;
  const fresh=tvFullscreenMeasuredMbps!==null&&(Date.now()-tvFullscreenSpeedAt)<45000;
  if(!fresh){
-  /* Universal passive fallback: use the browser/OS network estimate.
-     This makes the indicator useful across HLS, DASH, TS and native players
-     without issuing any extra requests. It is NOT stream throughput. */
-  const connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
-  const downlink=connection&&Number(connection.downlink);
-  if(Number.isFinite(downlink)&&downlink>0){
-   const effective=String(connection.effectiveType||"").toLowerCase();
-   const level=(effective==="slow-2g"||effective==="2g")?"bad":(effective==="3g"?"weak":"unknown");
-   tvFullscreenPlaybackLevel=level;
-   paintTVFullscreenNetwork(level,downlink.toFixed(1)+" Mbps • Network estimate",
-    "Estimated available network downlink reported by the device/browser; not measured stream throughput or a speed test"+
-    (effective?" • "+effective.toUpperCase():"")+(buffer>0?" • "+buffer.toFixed(1)+"s buffer":""));
+   tvFullscreenPlaybackLevel="unknown";
+   paintTVFullscreenNetwork("unknown","— Mbps • Unavailable",
+    "No real active-stream transfer measurement is available from this player/device");
    return;
   }
-  tvFullscreenPlaybackLevel="unknown";
-  paintTVFullscreenNetwork("unknown","— Mbps • Unavailable",
-   "This device/browser exposes neither active-stream transfer timing nor a network downlink estimate");
-  return;
- }
- const measured=tvFullscreenMeasuredMbps,ratio=required>0?measured/required:null;
- let level,label;
- if(tvPlayer.readyState<2||buffer<2||(ratio!==null&&ratio<1)){level="bad";label="Insufficient"}
- else if(buffer<5||(ratio!==null&&ratio<1.5)){level="weak";label="Limited"}
- else if(buffer>=12&&(ratio===null||ratio>=2.5)){level="very-good";label="Strong"}
- else{level="good";label="Stable"}
- tvFullscreenPlaybackLevel=level;
- const compared=ratio===null?"channel bitrate unavailable":"channel needs "+required.toFixed(2)+" Mbps ("+ratio.toFixed(1)+"×)";
- paintTVFullscreenNetwork(level,measured.toFixed(1)+" Mbps",measured.toFixed(2)+" Mbps measured from recent active-stream transfers • "+compared+" • "+buffer.toFixed(1)+"s buffer • stream throughput, not total line speed");
+  const measured=tvFullscreenMeasuredMbps,ratio=required>0?measured/required:null;
+  let level,label;
+  if(ratio!==null){
+   if(ratio<1){level="weak";label="Weak"}
+   else if(ratio<1.5){level="bad";label="Bad"}
+   else if(ratio<2.5){level="good";label="Good"}
+   else{level="very-good";label="Very Good"}
+  }else{
+   if(measured<2){level="weak";label="Weak"}
+   else if(measured<5){level="bad";label="Bad"}
+   else if(measured<10){level="good";label="Good"}
+   else{level="very-good";label="Very Good"}
+  }
+  tvFullscreenPlaybackLevel=level;
+  paintTVFullscreenNetwork(level,measured.toFixed(1)+" Mbps • "+label,
+   measured.toFixed(2)+" Mbps measured from recent active-stream transfers"+
+   (ratio===null?"":" • channel requires "+required.toFixed(2)+" Mbps")+
+   " • live stream throughput, not total line speed");
 }
 function getTVNetwork(){
  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
