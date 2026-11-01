@@ -2185,14 +2185,14 @@ const radioNetworkConnection=navigator.connection||navigator.mozConnection||navi
 if(radioNetworkConnection&&radioNetworkConnection.addEventListener){
  radioNetworkConnection.addEventListener("change",recoverRadioOnNetworkChange);
 }
-window.addEventListener("online",()=>{tvFullscreenMeasuredMbps=null;measureTVFullscreenDownloadSpeed();updateTVFullscreenNetwork();
+window.addEventListener("online",()=>{updateTVFullscreenNetwork();
  if(currentStation){
   setRadioAdvancedStatus("📶 Online — reconnecting...");
   radioAdvancedRetryAttempts=0;
   recoverRadioOnNetworkChange();
  }
 });
-window.addEventListener("offline",()=>{tvFullscreenMeasuredMbps=null;updateTVFullscreenNetwork();
+window.addEventListener("offline",()=>{updateTVFullscreenNetwork();
  if(currentStation)setRadioAdvancedStatus("🔴 Network offline — waiting...");
 });
 
@@ -3109,49 +3109,27 @@ function updateCurrentTVHealthFromPlayer(state,title){
 }
 
 function tvDiag(id,value){const e=document.getElementById(id);if(e)e.textContent=String(value)}
-let tvFullscreenMeasuredMbps=null,tvFullscreenSpeedTestAt=0,tvFullscreenSpeedTestBusy=false,tvFullscreenSpeedTestTimer=null;
+let tvFullscreenPlaybackLevel="unknown";
 function paintTVFullscreenNetwork(level,label,detail){
  const badge=document.getElementById("tvFullscreenNetwork");if(!badge)return;
- badge.dataset.level=level;badge.title="Measured download speed: "+detail;
- badge.setAttribute("aria-label","Measured network download speed: "+detail);
+ badge.dataset.level=level;badge.title="TV playback health: "+detail;
+ badge.setAttribute("aria-label","TV playback health: "+detail);
  const text=document.getElementById("tvFullscreenNetworkLabel");if(text)text.textContent=label;
 }
-async function measureTVFullscreenDownloadSpeed(){
- if(tvFullscreenSpeedTestBusy||navigator.onLine===false){if(navigator.onLine===false)paintTVFullscreenNetwork("bad","Offline","Offline");return}
- tvFullscreenSpeedTestBusy=true;
- paintTVFullscreenNetwork("unknown","Testing…","Speed test in progress");
- const started=performance.now();let received=0;const controller=new AbortController();
- const timeout=setTimeout(()=>controller.abort(),8000);
- try{
-  const bytes=524288;
-  const response=await fetch("https://speed.cloudflare.com/__down?bytes="+bytes+"&_="+Date.now(),{method:"GET",cache:"no-store",mode:"cors",credentials:"omit",signal:controller.signal});
-  if(!response.ok||!response.body)throw new Error("Speed test endpoint unavailable");
-  const reader=response.body.getReader();
-  while(true){const part=await reader.read();if(part.done)break;received+=part.value.byteLength}
-  const seconds=(performance.now()-started)/1000;
-  if(received<=0||seconds<=0)throw new Error("No measurable download data");
-  tvFullscreenMeasuredMbps=(received*8)/(seconds*1000000);
-  tvFullscreenSpeedTestAt=Date.now();
-  const mbps=tvFullscreenMeasuredMbps;
-  const level=mbps<1?"bad":mbps<3?"weak":mbps<8?"good":"very-good";
-  const label=mbps<1?"Bad":mbps<3?"Weak":mbps<8?"Good":"Very Good";
-  paintTVFullscreenNetwork(level,mbps.toFixed(1)+" Mbps",mbps.toFixed(2)+" Mbps");
- }catch(error){
-  paintTVFullscreenNetwork("unknown","N/A","Speed test unavailable");
- }finally{clearTimeout(timeout);tvFullscreenSpeedTestBusy=false}
-}
+/* Assess the active TV stream's real playable buffer. No external speed-test
+   download is performed, so diagnostics never compete with TV media. */
 function updateTVFullscreenNetwork(){
- if(navigator.onLine===false){paintTVFullscreenNetwork("bad","Offline","Offline");return}
- if(tvFullscreenMeasuredMbps!==null){
-  const age=Date.now()-tvFullscreenSpeedTestAt;
-  if(age<90000){
-   const mbps=tvFullscreenMeasuredMbps,level=mbps<1?"bad":mbps<3?"weak":mbps<8?"good":"very-good";
-   const label=mbps<1?"Bad":mbps<3?"Weak":mbps<8?"Good":"Very Good";
-   paintTVFullscreenNetwork(level,mbps.toFixed(1)+" Mbps",mbps.toFixed(2)+" Mbps");
-   return;
-  }
+ if(navigator.onLine===false){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","Bad","Device is offline");return}
+ if(!currentTV||!tvPlayer||tvPlayer.paused||tvPlayer.ended){
+  tvFullscreenPlaybackLevel="unknown";paintTVFullscreenNetwork("unknown","Waiting","Start a TV channel to assess playback");return;
  }
- if(!tvFullscreenSpeedTestBusy)paintTVFullscreenNetwork("unknown","Testing…","Speed test in progress");
+ if(tvPlayer.error){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","Bad","The active TV stream reported a playback error");return}
+ let bufferedSeconds=0;
+ try{for(let i=0;i<tvPlayer.buffered.length;i++){const from=tvPlayer.buffered.start(i),to=tvPlayer.buffered.end(i);if(tvPlayer.currentTime>=from-0.25&&tvPlayer.currentTime<=to+0.25){bufferedSeconds=Math.max(0,to-tvPlayer.currentTime);break}}}catch(_){}
+ if(tvPlayer.readyState<2){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","Bad","The TV stream is not ready to play");return}
+ let level,label;
+ if(bufferedSeconds<2){level="bad";label="Bad"}else if(bufferedSeconds<5){level="weak";label="Weak"}else if(bufferedSeconds<12){level="good";label="Good"}else{level="very-good";label="Very Good"}
+ tvFullscreenPlaybackLevel=level;paintTVFullscreenNetwork(level,label,bufferedSeconds.toFixed(1)+" seconds of playable TV buffer");
 }
 function getTVNetwork(){
  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
@@ -3160,7 +3138,6 @@ function getTVNetwork(){
 }
 function updateTVDiagnostics(){
  updateTVFullscreenNetwork();
- if(!tvFullscreenSpeedTestTimer){measureTVFullscreenDownloadSpeed();tvFullscreenSpeedTestTimer=setInterval(measureTVFullscreenDownloadSpeed,60000)}
  if(!currentTV)return;
  let buffer=0;
  try{if(tvPlayer.buffered.length)buffer=Math.max(0,tvPlayer.buffered.end(tvPlayer.buffered.length-1)-tvPlayer.currentTime)}catch(_){}
