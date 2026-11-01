@@ -3155,8 +3155,8 @@ function updateTVFullscreenNetwork(){
  const fresh=tvFullscreenMeasuredMbps!==null&&(Date.now()-tvFullscreenSpeedAt)<45000;
  if(!fresh){
    tvFullscreenPlaybackLevel="unknown";
-   paintTVFullscreenNetwork("unknown","— Mbps • Unavailable",
-    "No real active-stream transfer measurement is available from this player/device");
+   paintTVFullscreenNetwork("unknown","Checking…",
+    "Measuring throughput from completed transfers of the active TV stream");
    return;
   }
   const measured=tvFullscreenMeasuredMbps,ratio=required>0?measured/required:null;
