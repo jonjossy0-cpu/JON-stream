@@ -3132,7 +3132,7 @@ function recordTVFragmentThroughput(data){
  }
  /* hls.js also exposes its own ABR throughput estimate (bits/second), derived
     from the same media-fragment downloads. */
- const estimate=Number(window.hls&&window.hls.bandwidthEstimate);
+ const estimate=Number(hls&&hls.bandwidthEstimate);
  if(Number.isFinite(estimate)&&estimate>0){tvFullscreenMeasuredMbps=estimate/1000000;tvFullscreenSpeedAt=Date.now()}
 }
 function recordTVTransfer(bytes,start,end){
@@ -3168,7 +3168,7 @@ function updateTVFullscreenNetwork(){
  else{level="good";label="Stable"}
  tvFullscreenPlaybackLevel=level;
  const compared=ratio===null?"channel bitrate unavailable":"channel needs "+required.toFixed(2)+" Mbps ("+ratio.toFixed(1)+"×)";
- paintTVFullscreenNetwork(level,measured.toFixed(1)+" Mbps",measured.toFixed(2)+" Mbps measured from the last "+tvFullscreenSamples.length+" active HLS media fragments • "+compared+" • "+buffer.toFixed(1)+"s buffer • stream throughput, not total line speed");
+ paintTVFullscreenNetwork(level,measured.toFixed(1)+" Mbps",measured.toFixed(2)+" Mbps measured from recent active-stream transfers • "+compared+" • "+buffer.toFixed(1)+"s buffer • stream throughput, not total line speed");
 }
 function getTVNetwork(){
  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
