@@ -3152,7 +3152,8 @@ function updateTVFullscreenNetwork(){
  else{level="good";label="Good"}
  tvFullscreenPlaybackLevel=level;
  const compared=ratio===null?"channel bitrate unavailable":"channel needs "+required.toFixed(2)+" Mbps ("+ratio.toFixed(1)+"×)";
- paintTVFullscreenNetwork(level,measured.toFixed(1)+" Mbps",measured.toFixed(2)+" Mbps measured from TV fragments • "+compared+" • "+buffer.toFixed(1)+"s buffer");
+ const showMbps=(Math.floor(Date.now()/1800)%2)===0;
+ paintTVFullscreenNetwork(level,showMbps?measured.toFixed(1)+" Mbps":label,measured.toFixed(2)+" Mbps measured from TV fragments • "+compared+" • "+buffer.toFixed(1)+"s buffer");
 }
 function getTVNetwork(){
  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
