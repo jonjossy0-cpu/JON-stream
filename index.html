@@ -3109,29 +3109,44 @@ function updateCurrentTVHealthFromPlayer(state,title){
 }
 
 function tvDiag(id,value){const e=document.getElementById(id);if(e)e.textContent=String(value)}
-let tvFullscreenPlaybackLevel="unknown",tvFullscreenMeasuredMbps=null,tvFullscreenRequiredMbps=null,tvFullscreenSpeedAt=0;
+let tvFullscreenPlaybackLevel="unknown",tvFullscreenMeasuredMbps=null,tvFullscreenRequiredMbps=null,tvFullscreenSpeedAt=0,tvFullscreenSamples=[];
 function paintTVFullscreenNetwork(level,label,detail){
  const badge=document.getElementById("tvFullscreenNetwork");if(!badge)return;
+ const unavailable=String(label).includes("Unavailable");
+ badge.style.display=unavailable?"none":"";
+ if(unavailable)return;
  badge.dataset.level=level;badge.title="TV stream bandwidth: "+detail;
  badge.setAttribute("aria-label","TV stream bandwidth: "+detail);
  const text=document.getElementById("tvFullscreenNetworkLabel");if(text)text.textContent=label;
 }
-/* HLS.js reports bytes and download timing for fragments already required by
-   the playing channel. Reuse those measurements; never fetch a test file. */
+/* Reuse only completed media-fragment transfers already required by HLS playback.
+   A tiny rolling sample smooths spikes; no test download or extra network request. */
 function recordTVFragmentThroughput(data){
- const stats=data&&data.stats;
- if(!stats||!stats.loaded||!stats.loading)return;
- const elapsed=(stats.loading.end||0)-(stats.loading.start||0);
- if(elapsed<=0)return;
- tvFullscreenMeasuredMbps=(stats.loaded*8)/(elapsed*1000);
- tvFullscreenSpeedAt=Date.now();
+ const stats=data&&data.stats,frag=data&&data.frag;
+ if(!stats)return;
+ if(frag&&frag.type&&frag.type!=="main")return;
+ const bytes=Number(stats.loaded),loading=stats.loading||{};
+ const start=Number(loading.start),end=Number(loading.end),elapsed=end-start;
+ if(Number.isFinite(bytes)&&bytes>0&&Number.isFinite(start)&&Number.isFinite(end)&&elapsed>0){
+  tvFullscreenSamples.push({bytes,ms:elapsed,at:Date.now()});
+  if(tvFullscreenSamples.length>5)tvFullscreenSamples.shift();
+  let totalBytes=0,totalMs=0;for(const sample of tvFullscreenSamples){totalBytes+=sample.bytes;totalMs+=sample.ms}
+  if(totalMs>0){tvFullscreenMeasuredMbps=(totalBytes*8)/(totalMs*1000);tvFullscreenSpeedAt=Date.now();return}
+ }
+ }
+function recordTVTransfer(bytes,start,end){
+ bytes=Number(bytes);start=Number(start);end=Number(end);
+ if(!Number.isFinite(bytes)||bytes<=0||!Number.isFinite(start)||!Number.isFinite(end)||end<=start)return;
+ tvFullscreenSamples.push({bytes,ms:end-start,at:Date.now()});if(tvFullscreenSamples.length>5)tvFullscreenSamples.shift();
+ let totalBytes=0,totalMs=0;for(const sample of tvFullscreenSamples){totalBytes+=sample.bytes;totalMs+=sample.ms}
+ if(totalMs>0){tvFullscreenMeasuredMbps=(totalBytes*8)/(totalMs*1000);tvFullscreenSpeedAt=Date.now()}
 }
 function updateTVFullscreenNetwork(){
- if(navigator.onLine===false){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","— Mbps • Bad","Device is offline");return}
+ if(navigator.onLine===false){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","— Mbps • Offline","Device is offline; no live stream throughput is available");return}
  if(!currentTV||!tvPlayer||tvPlayer.paused||tvPlayer.ended){
-  tvFullscreenPlaybackLevel="unknown";paintTVFullscreenNetwork("unknown","— Mbps • Waiting","Start a TV channel to assess its stream");return;
+  tvFullscreenPlaybackLevel="unknown";paintTVFullscreenNetwork("unknown","— Mbps • Waiting","Start a TV channel to measure its active stream");return;
  }
- if(tvPlayer.error){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","— Mbps • Bad","The active TV stream reported a playback error");return}
+ if(tvPlayer.error){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","— Mbps • Playback error","The active TV stream reported a playback error");return}
  let buffer=0;
  try{for(let i=0;i<tvPlayer.buffered.length;i++){const from=tvPlayer.buffered.start(i),to=tvPlayer.buffered.end(i);if(tvPlayer.currentTime>=from-0.25&&tvPlayer.currentTime<=to+0.25){buffer=Math.max(0,to-tvPlayer.currentTime);break}}}catch(_){}
  let required=0;
@@ -3139,21 +3154,29 @@ function updateTVFullscreenNetwork(){
  tvFullscreenRequiredMbps=required||null;
  const fresh=tvFullscreenMeasuredMbps!==null&&(Date.now()-tvFullscreenSpeedAt)<45000;
  if(!fresh){
-  const suffix=required?(" • needs "+required.toFixed(2)+" Mbps"):"";
-  tvFullscreenPlaybackLevel=buffer<2?"bad":"unknown";
-  paintTVFullscreenNetwork(tvFullscreenPlaybackLevel,"— Mbps • "+(buffer<2?"Bad":"Checking"), "Waiting for measured throughput from the active TV stream"+suffix);
-  return;
- }
- const measured=tvFullscreenMeasuredMbps,ratio=required>0?measured/required:null;
- let level,label;
- if(tvPlayer.readyState<2||buffer<2||(ratio!==null&&ratio<1)){level="bad";label="Bad"}
- else if(buffer<5||(ratio!==null&&ratio<1.5)){level="weak";label="Weak"}
- else if(buffer>=12&&(ratio===null||ratio>=2.5)){level="very-good";label="Very Good"}
- else{level="good";label="Good"}
- tvFullscreenPlaybackLevel=level;
- const compared=ratio===null?"channel bitrate unavailable":"channel needs "+required.toFixed(2)+" Mbps ("+ratio.toFixed(1)+"×)";
- const showMbps=(Math.floor(Date.now()/1800)%2)===0;
- paintTVFullscreenNetwork(level,showMbps?measured.toFixed(1)+" Mbps":label,measured.toFixed(2)+" Mbps measured from TV fragments • "+compared+" • "+buffer.toFixed(1)+"s buffer");
+   tvFullscreenPlaybackLevel="unknown";
+   paintTVFullscreenNetwork("unknown","Checking…",
+    "Measuring throughput from completed transfers of the active TV stream");
+   return;
+  }
+  const measured=tvFullscreenMeasuredMbps,ratio=required>0?measured/required:null;
+  let level,label;
+  if(ratio!==null){
+   if(ratio<1){level="weak";label="Weak"}
+   else if(ratio<1.5){level="bad";label="Bad"}
+   else if(ratio<2.5){level="good";label="Good"}
+   else{level="very-good";label="Very Good"}
+  }else{
+   if(measured<2){level="weak";label="Weak"}
+   else if(measured<5){level="bad";label="Bad"}
+   else if(measured<10){level="good";label="Good"}
+   else{level="very-good";label="Very Good"}
+  }
+  tvFullscreenPlaybackLevel=level;
+  paintTVFullscreenNetwork(level,measured.toFixed(1)+" Mbps • "+label,
+   measured.toFixed(2)+" Mbps measured from recent active-stream transfers"+
+   (ratio===null?"":" • channel requires "+required.toFixed(2)+" Mbps")+
+   " • live stream throughput, not total line speed");
 }
 function getTVNetwork(){
  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
@@ -3278,6 +3301,7 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  clearTimeout(tvRetryTimer);
  tvRetryTimer=null;
  const startupAttemptId=++tvPlayAttemptId;
+ tvFullscreenSamples=[];tvFullscreenMeasuredMbps=null;tvFullscreenSpeedAt=0;updateTVFullscreenNetwork();
  const baseChannel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
  const channel=baseChannel;
  const perfKey=String(channel.name||name||"TV")+"|"+String(baseChannel.url||url||"");
@@ -3323,10 +3347,10 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  }else if(isM3U8&&tvPlayer.canPlayType("application/vnd.apple.mpegurl")){
   tvPlayer.src=source;tvPlayer.addEventListener("loadedmetadata",()=>{try{tvPlayer.play().then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){}},{once:true});
  }else if((kind==="flv"||kind==="ts")&&window.mpegts&&mpegts.isSupported()){
-  try{window.jonMpegtsPlayer=mpegts.createPlayer({type:kind==="flv"?"flv":"mpegts",url:source,isLive:true},{enableWorker:true,enableStashBuffer:true,stashInitialSize:384});window.jonMpegtsPlayer.attachMediaElement(tvPlayer);window.jonMpegtsPlayer.on(mpegts.Events.ERROR,()=>recoverTVStream());window.jonMpegtsPlayer.on(mpegts.Events.STATISTICS_INFO,()=>{tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();setTVConnected()});window.jonMpegtsPlayer.load();window.jonMpegtsPlayer.play().catch(()=>tvNeedTapToPlay());}
+  try{window.jonMpegtsPlayer=mpegts.createPlayer({type:kind==="flv"?"flv":"mpegts",url:source,isLive:true},{enableWorker:true,enableStashBuffer:true,stashInitialSize:384});window.jonMpegtsPlayer.attachMediaElement(tvPlayer);window.jonMpegtsPlayer.on(mpegts.Events.ERROR,()=>recoverTVStream());window.jonMpegtsPlayer.on(mpegts.Events.STATISTICS_INFO,()=>{const si=window.jonMpegtsPlayer&&window.jonMpegtsPlayer.statisticsInfo;const speed=si&&Number(si.speed);if(Number.isFinite(speed)&&speed>0){tvFullscreenMeasuredMbps=(speed*8)/1000;tvFullscreenSpeedAt=Date.now();updateTVFullscreenNetwork()}tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();setTVConnected()});window.jonMpegtsPlayer.load();window.jonMpegtsPlayer.play().catch(()=>tvNeedTapToPlay());}
   catch(_){tvStatus("⚠️ MPEG-TS/FLV player failed");recoverTVStream()}
  }else if(kind==="dash"&&window.dashjs){
-  try{window.jonDashPlayer=dashjs.MediaPlayer().create();window.jonDashPlayer.initialize(tvPlayer,source,true);window.jonDashPlayer.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED,()=>{setTVConnected();updateTVDiagnostics()});window.jonDashPlayer.on(dashjs.MediaPlayer.events.ERROR,()=>recoverTVStream());}
+  try{window.jonDashPlayer=dashjs.MediaPlayer().create();window.jonDashPlayer.initialize(tvPlayer,source,true);window.jonDashPlayer.on(dashjs.MediaPlayer.events.FRAGMENT_LOADING_COMPLETED,e=>{const q=e&&e.request;if(q&&q.type==="MediaSegment"&&q.requestStartDate&&q.requestEndDate){recordTVTransfer(q.bytesLoaded,q.requestStartDate.getTime(),q.requestEndDate.getTime());updateTVFullscreenNetwork()}});window.jonDashPlayer.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED,()=>{setTVConnected();updateTVDiagnostics()});window.jonDashPlayer.on(dashjs.MediaPlayer.events.ERROR,()=>recoverTVStream());}
   catch(_){tvStatus("⚠️ DASH player failed");recoverTVStream()}
  }else if(kind==="webrtc"){
   tvStatus("⚠️ WebRTC requires a compatible WebRTC player/signaling source");tvDiag("diagSource","WebRTC — player/signaling required");
