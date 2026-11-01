@@ -3116,6 +3116,12 @@ function paintTVFullscreenNetwork(level,label,detail){
  badge.setAttribute("aria-label","TV stream bandwidth: "+detail);
  const text=document.getElementById("tvFullscreenNetworkLabel");if(text)text.textContent=label;
 }
+/* Show Mbps and its quality grade in the same compact badge, alternating
+   once per second so the two values never consume width side by side. */
+function paintTVFullscreenNetworkAlternating(level,mbpsLabel,qualityLabel,detail){
+ const showMbps=(Math.floor(Date.now()/1000)%2)===0;
+ paintTVFullscreenNetwork(level,showMbps?mbpsLabel:qualityLabel,detail);
+}
 /* Measure only media fragments that the active player already downloads.
    No speed-test files, polling downloads, or additional network requests. */
 function resetTVFullscreenNetworkMeasurement(){
@@ -3169,7 +3175,7 @@ function updateTVFullscreenNetwork(){
    else if((ratio!==null&&ratio<2)||estimate<6){estimateLevel="good";estimateLabel="Good"}
    else{estimateLevel="very-good";estimateLabel="Very Good"}
    tvFullscreenPlaybackLevel=estimateLevel;
-   paintTVFullscreenNetwork(estimateLevel,"~"+estimate.toFixed(1)+" Mbps • "+estimateLabel,"Browser network estimate, not a direct stream measurement"+(required?" • channel bitrate "+required.toFixed(2)+" Mbps":"")+" • "+buffer.toFixed(1)+"s buffer");
+   paintTVFullscreenNetworkAlternating(estimateLevel,"~"+estimate.toFixed(1)+" Mbps",estimateLabel,"Browser network estimate, not a direct stream measurement"+(required?" • channel bitrate "+required.toFixed(2)+" Mbps":"")+" • "+buffer.toFixed(1)+"s buffer");
    return;
   }
   tvFullscreenPlaybackLevel=buffer<1?"bad":"unknown";
@@ -3191,7 +3197,7 @@ function updateTVFullscreenNetwork(){
  }
  tvFullscreenPlaybackLevel=level;
  const compared=ratio===null?"active channel bitrate not exposed":"channel bitrate "+required.toFixed(2)+" Mbps • headroom "+ratio.toFixed(1)+"×";
- paintTVFullscreenNetwork(level,measured.toFixed(1)+" Mbps • "+label,measured.toFixed(2)+" Mbps measured from active TV fragments • "+compared+" • "+buffer.toFixed(1)+"s buffer");
+ paintTVFullscreenNetworkAlternating(level,measured.toFixed(1)+" Mbps",label,measured.toFixed(2)+" Mbps measured from active TV fragments • "+compared+" • "+buffer.toFixed(1)+"s buffer");
 }
 function getTVNetwork(){
  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
