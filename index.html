@@ -3127,11 +3127,11 @@ function recordTVFragmentThroughput(data){
  tvFullscreenSpeedAt=Date.now();
 }
 function updateTVFullscreenNetwork(){
- if(navigator.onLine===false){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","Offline","Device is offline");return}
+ if(navigator.onLine===false){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","— Mbps • Bad","Device is offline");return}
  if(!currentTV||!tvPlayer||tvPlayer.paused||tvPlayer.ended){
-  tvFullscreenPlaybackLevel="unknown";paintTVFullscreenNetwork("unknown","Waiting","Start a TV channel to assess its stream");return;
+  tvFullscreenPlaybackLevel="unknown";paintTVFullscreenNetwork("unknown","— Mbps • Waiting","Start a TV channel to assess its stream");return;
  }
- if(tvPlayer.error){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","Bad","The active TV stream reported a playback error");return}
+ if(tvPlayer.error){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","— Mbps • Bad","The active TV stream reported a playback error");return}
  let buffer=0;
  try{for(let i=0;i<tvPlayer.buffered.length;i++){const from=tvPlayer.buffered.start(i),to=tvPlayer.buffered.end(i);if(tvPlayer.currentTime>=from-0.25&&tvPlayer.currentTime<=to+0.25){buffer=Math.max(0,to-tvPlayer.currentTime);break}}}catch(_){}
  let required=0;
@@ -3141,7 +3141,7 @@ function updateTVFullscreenNetwork(){
  if(!fresh){
   const suffix=required?(" • needs "+required.toFixed(2)+" Mbps"):"";
   tvFullscreenPlaybackLevel=buffer<2?"bad":"unknown";
-  paintTVFullscreenNetwork(tvFullscreenPlaybackLevel,buffer<2?"Bad":"Checking", "Waiting for measured throughput from the active TV stream"+suffix);
+  paintTVFullscreenNetwork(tvFullscreenPlaybackLevel,"— Mbps • "+(buffer<2?"Bad":"Checking"), "Waiting for measured throughput from the active TV stream"+suffix);
   return;
  }
  const measured=tvFullscreenMeasuredMbps,ratio=required>0?measured/required:null;
