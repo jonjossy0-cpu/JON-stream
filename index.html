@@ -3325,7 +3325,7 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  const baseChannel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
  const channel=baseChannel;
  const perfKey=String(channel.name||name||"TV")+"|"+String(baseChannel.url||url||"");
- const resetTVMetrics=perfKey!==tvPerfChannelKey||(resetRetry&&sourceIndex===0);
+ const resetTVMetrics=perfKey!==tvPerfChannelKey||sourceIndex!==tvSourceIndex||(resetRetry&&sourceIndex===0);
  if(resetTVMetrics)resetTVPerformance(perfKey);
  if(resetTVMetrics)resetTVFullscreenNetworkMeasurement();
  currentTV={...channel,url:jonNormalizeStreamUrl(url)};currentTVIndex=index;tvSourceList=buildTVSources(currentTV).map(jonNormalizeStreamUrl).filter(Boolean);
