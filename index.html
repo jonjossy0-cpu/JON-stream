@@ -3109,29 +3109,35 @@ function updateCurrentTVHealthFromPlayer(state,title){
 }
 
 function tvDiag(id,value){const e=document.getElementById(id);if(e)e.textContent=String(value)}
-let tvFullscreenPlaybackLevel="unknown",tvFullscreenMeasuredMbps=null,tvFullscreenRequiredMbps=null,tvFullscreenSpeedAt=0;
+let tvFullscreenPlaybackLevel="unknown",tvFullscreenMeasuredMbps=null,tvFullscreenRequiredMbps=null,tvFullscreenSpeedAt=0,tvFullscreenSamples=[];
 function paintTVFullscreenNetwork(level,label,detail){
  const badge=document.getElementById("tvFullscreenNetwork");if(!badge)return;
  badge.dataset.level=level;badge.title="TV stream bandwidth: "+detail;
  badge.setAttribute("aria-label","TV stream bandwidth: "+detail);
  const text=document.getElementById("tvFullscreenNetworkLabel");if(text)text.textContent=label;
 }
-/* HLS.js reports bytes and download timing for fragments already required by
-   the playing channel. Reuse those measurements; never fetch a test file. */
+/* Reuse only completed media-fragment transfers already required by HLS playback.
+   A tiny rolling sample smooths spikes; no test download or extra network request. */
 function recordTVFragmentThroughput(data){
- const stats=data&&data.stats;
- if(!stats||!stats.loaded||!stats.loading)return;
- const elapsed=(stats.loading.end||0)-(stats.loading.start||0);
- if(elapsed<=0)return;
- tvFullscreenMeasuredMbps=(stats.loaded*8)/(elapsed*1000);
+ const stats=data&&data.stats,frag=data&&data.frag;
+ if(!stats||!Number.isFinite(stats.loaded)||stats.loaded<=0||!stats.loading)return;
+ if(frag&&frag.type&&frag.type!=="main")return;
+ const start=stats.loading.start,end=stats.loading.end,elapsed=end-start;
+ if(!Number.isFinite(start)||!Number.isFinite(end)||elapsed<=0)return;
+ tvFullscreenSamples.push({bytes:stats.loaded,ms:elapsed,at:Date.now()});
+ if(tvFullscreenSamples.length>5)tvFullscreenSamples.shift();
+ let bytes=0,ms=0;
+ for(const sample of tvFullscreenSamples){bytes+=sample.bytes;ms+=sample.ms}
+ if(ms<=0)return;
+ tvFullscreenMeasuredMbps=(bytes*8)/(ms*1000);
  tvFullscreenSpeedAt=Date.now();
 }
 function updateTVFullscreenNetwork(){
- if(navigator.onLine===false){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","— Mbps • Bad","Device is offline");return}
+ if(navigator.onLine===false){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","— Mbps • Offline","Device is offline; no live stream throughput is available");return}
  if(!currentTV||!tvPlayer||tvPlayer.paused||tvPlayer.ended){
-  tvFullscreenPlaybackLevel="unknown";paintTVFullscreenNetwork("unknown","— Mbps • Waiting","Start a TV channel to assess its stream");return;
+  tvFullscreenPlaybackLevel="unknown";paintTVFullscreenNetwork("unknown","— Mbps • Waiting","Start a TV channel to measure its active stream");return;
  }
- if(tvPlayer.error){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","— Mbps • Bad","The active TV stream reported a playback error");return}
+ if(tvPlayer.error){tvFullscreenPlaybackLevel="bad";paintTVFullscreenNetwork("bad","— Mbps • Playback error","The active TV stream reported a playback error");return}
  let buffer=0;
  try{for(let i=0;i<tvPlayer.buffered.length;i++){const from=tvPlayer.buffered.start(i),to=tvPlayer.buffered.end(i);if(tvPlayer.currentTime>=from-0.25&&tvPlayer.currentTime<=to+0.25){buffer=Math.max(0,to-tvPlayer.currentTime);break}}}catch(_){}
  let required=0;
@@ -3139,27 +3145,20 @@ function updateTVFullscreenNetwork(){
  tvFullscreenRequiredMbps=required||null;
  const fresh=tvFullscreenMeasuredMbps!==null&&(Date.now()-tvFullscreenSpeedAt)<45000;
  if(!fresh){
-  const suffix=required?(" • needs "+required.toFixed(2)+" Mbps"):"";
-  let fallbackLevel,fallbackLabel;
-  if(tvPlayer.readyState<2||buffer<2){fallbackLevel="bad";fallbackLabel="Bad"}
-  else if(buffer<5){fallbackLevel="weak";fallbackLabel="Weak"}
-  else if(buffer>=12){fallbackLevel="very-good";fallbackLabel="Very Good"}
-  else{fallbackLevel="good";fallbackLabel="Good"}
-  tvFullscreenPlaybackLevel=fallbackLevel;
-  const showFallbackMbps=(Math.floor(Date.now()/1800)%2)===0;
-  paintTVFullscreenNetwork(fallbackLevel,showFallbackMbps?"— Mbps":fallbackLabel,"Live playback health from the active TV buffer; stream Mbps measurement is not available for this player"+suffix);
+  tvFullscreenPlaybackLevel="unknown";
+  const reason=(hls?"Waiting for real HLS fragment measurement":"This player does not expose reliable segment byte/timing data");
+  paintTVFullscreenNetwork("unknown","— Mbps • Unavailable",reason+(required?" • channel bitrate "+required.toFixed(2)+" Mbps":""));
   return;
  }
  const measured=tvFullscreenMeasuredMbps,ratio=required>0?measured/required:null;
  let level,label;
- if(tvPlayer.readyState<2||buffer<2||(ratio!==null&&ratio<1)){level="bad";label="Bad"}
- else if(buffer<5||(ratio!==null&&ratio<1.5)){level="weak";label="Weak"}
- else if(buffer>=12&&(ratio===null||ratio>=2.5)){level="very-good";label="Very Good"}
- else{level="good";label="Good"}
+ if(tvPlayer.readyState<2||buffer<2||(ratio!==null&&ratio<1)){level="bad";label="Insufficient"}
+ else if(buffer<5||(ratio!==null&&ratio<1.5)){level="weak";label="Limited"}
+ else if(buffer>=12&&(ratio===null||ratio>=2.5)){level="very-good";label="Strong"}
+ else{level="good";label="Stable"}
  tvFullscreenPlaybackLevel=level;
  const compared=ratio===null?"channel bitrate unavailable":"channel needs "+required.toFixed(2)+" Mbps ("+ratio.toFixed(1)+"×)";
- const showMbps=(Math.floor(Date.now()/1800)%2)===0;
- paintTVFullscreenNetwork(level,showMbps?measured.toFixed(1)+" Mbps":label,measured.toFixed(2)+" Mbps measured from TV fragments • "+compared+" • "+buffer.toFixed(1)+"s buffer");
+ paintTVFullscreenNetwork(level,measured.toFixed(1)+" Mbps",measured.toFixed(2)+" Mbps measured from the last "+tvFullscreenSamples.length+" active HLS media fragments • "+compared+" • "+buffer.toFixed(1)+"s buffer • stream throughput, not total line speed");
 }
 function getTVNetwork(){
  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
@@ -3284,6 +3283,7 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  clearTimeout(tvRetryTimer);
  tvRetryTimer=null;
  const startupAttemptId=++tvPlayAttemptId;
+ tvFullscreenSamples=[];tvFullscreenMeasuredMbps=null;tvFullscreenSpeedAt=0;updateTVFullscreenNetwork();
  const baseChannel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
  const channel=baseChannel;
  const perfKey=String(channel.name||name||"TV")+"|"+String(baseChannel.url||url||"");
