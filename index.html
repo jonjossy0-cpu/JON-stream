@@ -3155,9 +3155,23 @@ function updateTVFullscreenNetwork(){
  tvFullscreenRequiredMbps=required||null;
  const fresh=tvFullscreenMeasuredMbps!==null&&(Date.now()-tvFullscreenSpeedAt)<45000;
  if(!fresh){
+  /* Universal passive fallback: use the browser/OS network estimate.
+     This makes the indicator useful across HLS, DASH, TS and native players
+     without issuing any extra requests. It is NOT stream throughput. */
+  const connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+  const downlink=connection&&Number(connection.downlink);
+  if(Number.isFinite(downlink)&&downlink>0){
+   const effective=String(connection.effectiveType||"").toLowerCase();
+   const level=(effective==="slow-2g"||effective==="2g")?"bad":(effective==="3g"?"weak":"unknown");
+   tvFullscreenPlaybackLevel=level;
+   paintTVFullscreenNetwork(level,downlink.toFixed(1)+" Mbps • Network estimate",
+    "Estimated available network downlink reported by the device/browser; not measured stream throughput or a speed test"+
+    (effective?" • "+effective.toUpperCase():"")+(buffer>0?" • "+buffer.toFixed(1)+"s buffer":""));
+   return;
+  }
   tvFullscreenPlaybackLevel="unknown";
-  const reason=(hls?"Waiting for real HLS fragment measurement":"This player does not expose reliable segment byte/timing data");
-  paintTVFullscreenNetwork("unknown","— Mbps • Unavailable",reason+(required?" • channel bitrate "+required.toFixed(2)+" Mbps":""));
+  paintTVFullscreenNetwork("unknown","— Mbps • Unavailable",
+   "This device/browser exposes neither active-stream transfer timing nor a network downlink estimate");
   return;
  }
  const measured=tvFullscreenMeasuredMbps,ratio=required>0?measured/required:null;
