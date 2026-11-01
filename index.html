@@ -3140,8 +3140,14 @@ function updateTVFullscreenNetwork(){
  const fresh=tvFullscreenMeasuredMbps!==null&&(Date.now()-tvFullscreenSpeedAt)<45000;
  if(!fresh){
   const suffix=required?(" • needs "+required.toFixed(2)+" Mbps"):"";
-  tvFullscreenPlaybackLevel=buffer<2?"bad":"unknown";
-  paintTVFullscreenNetwork(tvFullscreenPlaybackLevel,"— Mbps • "+(buffer<2?"Bad":"Checking"), "Waiting for measured throughput from the active TV stream"+suffix);
+  let fallbackLevel,fallbackLabel;
+  if(tvPlayer.readyState<2||buffer<2){fallbackLevel="bad";fallbackLabel="Bad"}
+  else if(buffer<5){fallbackLevel="weak";fallbackLabel="Weak"}
+  else if(buffer>=12){fallbackLevel="very-good";fallbackLabel="Very Good"}
+  else{fallbackLevel="good";fallbackLabel="Good"}
+  tvFullscreenPlaybackLevel=fallbackLevel;
+  const showFallbackMbps=(Math.floor(Date.now()/1800)%2)===0;
+  paintTVFullscreenNetwork(fallbackLevel,showFallbackMbps?"— Mbps":fallbackLabel,"Live playback health from the active TV buffer; stream Mbps measurement is not available for this player"+suffix);
   return;
  }
  const measured=tvFullscreenMeasuredMbps,ratio=required>0?measured/required:null;
