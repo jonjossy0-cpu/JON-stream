@@ -3112,6 +3112,9 @@ function tvDiag(id,value){const e=document.getElementById(id);if(e)e.textContent
 let tvFullscreenPlaybackLevel="unknown",tvFullscreenMeasuredMbps=null,tvFullscreenRequiredMbps=null,tvFullscreenSpeedAt=0,tvFullscreenSamples=[];
 function paintTVFullscreenNetwork(level,label,detail){
  const badge=document.getElementById("tvFullscreenNetwork");if(!badge)return;
+ const unavailable=String(label).includes("Unavailable");
+ badge.style.display=unavailable?"none":"";
+ if(unavailable)return;
  badge.dataset.level=level;badge.title="TV stream bandwidth: "+detail;
  badge.setAttribute("aria-label","TV stream bandwidth: "+detail);
  const text=document.getElementById("tvFullscreenNetworkLabel");if(text)text.textContent=label;
