@@ -5337,9 +5337,9 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 
     if (result.confirmationRequired) {
       const accepted = window.confirm(
-        "ይህ ኢሜይል በሌላ መሣሪያ ላይ አሁን ተጠቅሟል።\n\n" +
-        "ከዚያ መሣሪያ እንዲወጣ እና በዚህ መሣሪያ እንዲገባ ይፈቅዳሉ?\n\n" +
-        "OK = አዎ (ቀድሞው መሣሪያ ይወጣል)\nCancel = አይ (ቀድሞው ይቆያል፣ ይህኛው አይገባም)"
+        "This email is already signed in on another device.\n\n" +
+        "Do you want to sign out the other device and continue on this device?\n\n" +
+        "OK = Yes (sign out the other device and continue here)\nCancel = No (keep the other device signed in; cancel this login)"
       );
 
       if (!accepted) {
@@ -5348,7 +5348,7 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
         stopRetries();
         setSessionState(false, "replacement_declined");
         try { await signOut(auth); } catch (_) {}
-        showSessionMessage("የመግባት ጥያቄውን ሰርዘዋል። የቀድሞው መሣሪያ እንደነበረ ይቀጥላል።");
+        showSessionMessage("Login cancelled. The other device remains signed in.");
         return;
       }
 
@@ -5412,7 +5412,7 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
       await activateSession(user, session);
     } catch (error) {
       setSessionState(false, "verification_failed");
-      showSessionMessage("JON Stream የመሣሪያ ማረጋገጫን ማጠናቀቅ አልቻለም። ኢንተርኔትን ያረጋግጡ፤ አካውንቱን ከማስወጣት ይልቅ ማረጋገጫው እንደገና ይሞከራል።");
+      showSessionMessage("JON Stream could not verify this device session. Check your internet connection. Verification will retry automatically; you will not be signed out because of a temporary connection error.");
       console.warn("JON Stream device-session verification failed:", error);
       if (retryTimer === null) {
         retryTimer = setInterval(() => { void retryPendingSession(); }, 15000);
