@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/session/active",
+      "destination": "/api/session/active.js"
+    },
+    {
       "source": "/api/subscription/config",
       "destination": "/api/subscription/config.js"
     },
