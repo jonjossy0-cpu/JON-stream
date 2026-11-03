@@ -4539,7 +4539,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 
 <script type="module">
 import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, signOut, reload } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, signOut, reload } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 const authPanel=document.getElementById("jonAccountPanel");
 window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
 
@@ -4713,20 +4713,36 @@ if(authPanel){
    }catch(e){message(authErrorText(e,"Sign up"),true);}
    finally{setBusy(false);}
  });
+ // Complete a Google redirect sign-in when the browser returns to JON Stream.
+ (async()=>{
+   try{
+     const result=await getRedirectResult(auth);
+     if(result&&result.user){
+       await result.user.reload();
+       message("Google sign-in successful.");
+     }
+   }catch(error){
+     message(authErrorText(error,"Google sign in"),true);
+   }
+ })();
  $("jonGoogleSignin").addEventListener("click",async()=>{
    setBusy(true);message("Connecting to Google…");
    try{
      const provider=new GoogleAuthProvider();
      provider.setCustomParameters({prompt:"select_account"});
-     await signInWithPopup(auth,provider);
-     message("Google sign-in successful.");
+     const credential=await signInWithPopup(auth,provider);
+     if(!credential||!credential.user||!credential.user.email)throw new Error("Google returned no account email. Please try again.");
+     message("Google sign-in successful: "+credential.user.email);
    }catch(e){
      const code=String(e&&e.code||"");
-     if(code==="auth/popup-blocked"){
+     const redirectCodes=["auth/popup-blocked","auth/popup-closed-by-browser","auth/operation-not-supported-in-this-environment","auth/web-storage-unsupported"];
+     if(redirectCodes.includes(code)){
        message("Opening secure Google sign-in…");
-       await signInWithRedirect(auth,new GoogleAuthProvider());
-     }else if(code==="auth/cancelled-popup-request"){
-       message("Google sign-in was cancelled. Please try again.",true);
+       try{await signInWithRedirect(auth,new GoogleAuthProvider());}
+       catch(redirectError){message(authErrorText(redirectError,"Google sign in"),true);setBusy(false);}
+       return;
+     }else if(code==="auth/cancelled-popup-request"||code==="auth/popup-closed-by-user"){
+       message("Google sign-in was cancelled. Please tap Continue with Google again.",true);
      }else{message(authErrorText(e,"Google sign in"),true);}
    }finally{setBusy(false);}
  });
