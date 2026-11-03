@@ -5271,7 +5271,7 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
       },
       body: JSON.stringify({ action, sessionId, confirm: confirmReplacement }),
       cache: "no-store",
-      credentials: "omit"
+      credentials: "same-origin"
     });
     const data = await response.json().catch(() => ({}));
     if (response.status === 409) {
