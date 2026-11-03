@@ -5210,5 +5210,235 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
  };
 })();
 </script>
+<script type="module" id="jonSingleDeviceSessionGuard">
+import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+(() => {
+  "use strict";
+  const API_BASE = window.JON_SESSION_API_BASE ||
+    (location.hostname.endsWith(".vercel.app") ? location.origin : "https://jon-stream.vercel.app");
+  const STORAGE_KEY = "jonStreamActiveDeviceSessionV1";
+  const auth = getAuth(getApp());
+  let activeSession = null;
+  let checkTimer = null;
+  let retryTimer = null;
+  let transition = Promise.resolve();
+  let signingOutForReplacement = false;
+  let pendingUser = null;
+  let pendingSession = null;
+
+  function getDeviceSessionId() {
+    let value = "";
+    try { value = localStorage.getItem(STORAGE_KEY) || ""; } catch (_) {}
+    if (/^[a-f0-9]{64}$/i.test(value)) return value;
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    value = Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+    try { localStorage.setItem(STORAGE_KEY, value); } catch (_) {}
+    return value;
+  }
+
+  function showSessionMessage(text) {
+    const panel = document.getElementById("jonAccountPanel");
+    const output = document.getElementById("jonAccountError");
+    if (panel) panel.hidden = false;
+    if (output) {
+      output.textContent = text;
+      output.style.color = "#fca5a5";
+    }
+  }
+
+  function setSessionState(active, details) {
+    window.__JON_SESSION_ACTIVE = active === true;
+    window.__JON_SESSION_GUARD = {
+      ready: true,
+      active: active === true,
+      status: details || (active ? "active" : "inactive")
+    };
+    window.dispatchEvent(new CustomEvent("jon-session-state-changed", {
+      detail: window.__JON_SESSION_GUARD
+    }));
+  }
+
+  async function requestSession(action, user, sessionId, confirmReplacement = false) {
+    const token = await user.getIdToken();
+    const response = await fetch(API_BASE + "/api/session/active", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ action, sessionId, confirm: confirmReplacement }),
+      cache: "no-store",
+      credentials: "same-origin"
+    });
+    const data = await response.json().catch(() => ({}));
+    if (response.status === 409) {
+      const error = new Error(data.error || "This account is active on another device.");
+      error.code = data.errorCode || "SESSION_REPLACED";
+      throw error;
+    }
+    if (!response.ok) {
+      throw new Error(data.error || ("Device session check failed (" + response.status + ")"));
+    }
+    return data;
+  }
+
+  function stopChecks() {
+    if (checkTimer !== null) clearInterval(checkTimer);
+    checkTimer = null;
+  }
+
+  function stopRetries() {
+    if (retryTimer !== null) clearInterval(retryTimer);
+    retryTimer = null;
+  }
+
+  async function releaseSession(session) {
+    if (!session) return;
+    try {
+      await requestSession("release", session.user, session.sessionId);
+    } catch (error) {
+      console.warn("JON Stream session release could not be confirmed:", error);
+    }
+  }
+
+  async function loseReplacedSession() {
+    if (signingOutForReplacement) return;
+    signingOutForReplacement = true;
+    stopChecks();
+    activeSession = null;
+    setSessionState(false, "replaced");
+    try { await signOut(auth); } catch (error) {
+      console.warn("JON Stream could not sign out the replaced session:", error);
+    }
+    showSessionMessage("This account was signed in on another device. For account security, this device has been signed out.");
+    signingOutForReplacement = false;
+  }
+
+  async function checkActiveSession() {
+    const session = activeSession;
+    if (!session) return;
+    try {
+      const result = await requestSession("check", session.user, session.sessionId);
+      if (!result.active) await loseReplacedSession();
+    } catch (error) {
+      if (error.code === "SESSION_REPLACED") {
+        await loseReplacedSession();
+      } else {
+        console.warn("JON Stream device-session heartbeat failed:", error);
+      }
+    }
+  }
+
+  async function activateSession(user, session) {
+    let result = await requestSession("claim", user, session.sessionId);
+
+    if (result.confirmationRequired) {
+      const accepted = window.confirm(
+        "This email is already signed in on another device.\n\n" +
+        "Do you want to sign out the other device and continue on this device?\n\n" +
+        "OK = Yes (sign out the other device and continue here)\nCancel = No (keep the other device signed in; cancel this login)"
+      );
+
+      if (!accepted) {
+        pendingUser = null;
+        pendingSession = null;
+        stopRetries();
+        setSessionState(false, "replacement_declined");
+        try { await signOut(auth); } catch (_) {}
+        showSessionMessage("Login cancelled. The other device remains signed in.");
+        return;
+      }
+
+      result = await requestSession("claim", user, session.sessionId, true);
+    }
+
+    if (!result.active) throw new Error("The server did not activate this device session.");
+
+    pendingUser = null;
+    pendingSession = null;
+    stopRetries();
+    activeSession = session;
+    setSessionState(true, "active");
+    stopChecks();
+    checkTimer = setInterval(() => { void checkActiveSession(); }, 15000);
+    if (result.replaced) {
+      console.info("JON Stream: the previous device session was replaced after user confirmation.");
+    }
+  }
+
+  async function retryPendingSession() {
+    if (!pendingUser || !pendingSession || activeSession) return;
+    const user = pendingUser;
+    const session = pendingSession;
+    try {
+      await activateSession(user, session);
+    } catch (error) {
+      console.warn("JON Stream device-session retry failed:", error);
+    }
+  }
+
+  async function handleAuthChange(user) {
+    if (activeSession && (!user || activeSession.uid !== user.uid)) {
+      stopChecks();
+      const previous = activeSession;
+      activeSession = null;
+      setSessionState(false, "inactive");
+      await releaseSession(previous);
+    }
+
+    if (!user) {
+      pendingUser = null;
+      pendingSession = null;
+      stopChecks();
+      stopRetries();
+      setSessionState(false, "signed_out");
+      return;
+    }
+
+    if (activeSession && activeSession.uid === user.uid) return;
+
+    const session = {
+      uid: user.uid,
+      user,
+      sessionId: getDeviceSessionId()
+    };
+    pendingUser = user;
+    pendingSession = session;
+
+    try {
+      await activateSession(user, session);
+    } catch (error) {
+      setSessionState(false, "verification_failed");
+      showSessionMessage("JON Stream could not verify this device session. Check your internet connection. Verification will retry automatically; you will not be signed out because of a temporary connection error.");
+      console.warn("JON Stream device-session verification failed:", error);
+      if (retryTimer === null) {
+        retryTimer = setInterval(() => { void retryPendingSession(); }, 15000);
+      }
+    }
+  }
+
+  onAuthStateChanged(auth, user => {
+    transition = transition.then(() => handleAuthChange(user)).catch(error => {
+      console.error("JON Stream device-session guard failed:", error);
+      setSessionState(false, "error");
+    });
+  });
+
+  window.addEventListener("focus", () => {
+    void checkActiveSession();
+    void retryPendingSession();
+  });
+  window.addEventListener("online", () => { void retryPendingSession(); });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      void checkActiveSession();
+      void retryPendingSession();
+    }
+  });
+})();
+</script>
 </body>
 </html>
