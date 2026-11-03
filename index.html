@@ -5222,8 +5222,11 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
   const auth = getAuth(getApp());
   let activeSession = null;
   let checkTimer = null;
+  let retryTimer = null;
   let transition = Promise.resolve();
   let signingOutForReplacement = false;
+  let pendingUser = null;
+  let pendingSession = null;
 
   function getDeviceSessionId() {
     let value = "";
@@ -5258,7 +5261,7 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
     }));
   }
 
-  async function requestSession(action, user, sessionId) {
+  async function requestSession(action, user, sessionId, confirmReplacement = false) {
     const token = await user.getIdToken();
     const response = await fetch(API_BASE + "/api/session/active", {
       method: "POST",
@@ -5266,7 +5269,7 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
         "Authorization": "Bearer " + token,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ action, sessionId }),
+      body: JSON.stringify({ action, sessionId, confirm: confirmReplacement }),
       cache: "no-store",
       credentials: "omit"
     });
@@ -5285,6 +5288,11 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
   function stopChecks() {
     if (checkTimer !== null) clearInterval(checkTimer);
     checkTimer = null;
+  }
+
+  function stopRetries() {
+    if (retryTimer !== null) clearInterval(retryTimer);
+    retryTimer = null;
   }
 
   async function releaseSession(session) {
@@ -5319,10 +5327,56 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
       if (error.code === "SESSION_REPLACED") {
         await loseReplacedSession();
       } else {
-        // A temporary network failure does not silently transfer the session.
-        // The next heartbeat/focus check retries against the server.
         console.warn("JON Stream device-session heartbeat failed:", error);
       }
+    }
+  }
+
+  async function activateSession(user, session) {
+    let result = await requestSession("claim", user, session.sessionId);
+
+    if (result.confirmationRequired) {
+      const accepted = window.confirm(
+        "ይህ ኢሜይል በሌላ መሣሪያ ላይ አሁን ተጠቅሟል።\n\n" +
+        "ከዚያ መሣሪያ እንዲወጣ እና በዚህ መሣሪያ እንዲገባ ይፈቅዳሉ?\n\n" +
+        "OK = አዎ (ቀድሞው መሣሪያ ይወጣል)\nCancel = አይ (ቀድሞው ይቆያል፣ ይህኛው አይገባም)"
+      );
+
+      if (!accepted) {
+        pendingUser = null;
+        pendingSession = null;
+        stopRetries();
+        setSessionState(false, "replacement_declined");
+        try { await signOut(auth); } catch (_) {}
+        showSessionMessage("የመግባት ጥያቄውን ሰርዘዋል። የቀድሞው መሣሪያ እንደነበረ ይቀጥላል።");
+        return;
+      }
+
+      result = await requestSession("claim", user, session.sessionId, true);
+    }
+
+    if (!result.active) throw new Error("The server did not activate this device session.");
+
+    pendingUser = null;
+    pendingSession = null;
+    stopRetries();
+    activeSession = session;
+    setSessionState(true, "active");
+    stopChecks();
+    checkTimer = setInterval(() => { void checkActiveSession(); }, 15000);
+    if (result.replaced) {
+      console.info("JON Stream: the previous device session was replaced after user confirmation.");
+    }
+  }
+
+  async function retryPendingSession() {
+    if (!pendingUser || !pendingSession || activeSession) return;
+    const user = pendingUser;
+    const session = pendingSession;
+    try {
+      await activateSession(user, session);
+    } catch (error) {
+      console.warn("JON Stream device-session retry failed:", error);
     }
   }
 
@@ -5336,6 +5390,10 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
     }
 
     if (!user) {
+      pendingUser = null;
+      pendingSession = null;
+      stopChecks();
+      stopRetries();
       setSessionState(false, "signed_out");
       return;
     }
@@ -5347,21 +5405,18 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
       user,
       sessionId: getDeviceSessionId()
     };
+    pendingUser = user;
+    pendingSession = session;
+
     try {
-      const result = await requestSession("claim", user, session.sessionId);
-      if (!result.active) throw new Error("The server did not activate this device session.");
-      activeSession = session;
-      setSessionState(true, "active");
-      stopChecks();
-      checkTimer = setInterval(() => { void checkActiveSession(); }, 15000);
-      if (result.replaced) {
-        console.info("JON Stream: the previous device session was replaced.");
-      }
+      await activateSession(user, session);
     } catch (error) {
-      activeSession = null;
       setSessionState(false, "verification_failed");
-      try { await signOut(auth); } catch (_) {}
-      showSessionMessage("JON Stream could not verify this device session. Please check your connection and sign in again. (" + String(error.message || error) + ")");
+      showSessionMessage("JON Stream የመሣሪያ ማረጋገጫን ማጠናቀቅ አልቻለም። ኢንተርኔትን ያረጋግጡ፤ አካውንቱን ከማስወጣት ይልቅ ማረጋገጫው እንደገና ይሞከራል።");
+      console.warn("JON Stream device-session verification failed:", error);
+      if (retryTimer === null) {
+        retryTimer = setInterval(() => { void retryPendingSession(); }, 15000);
+      }
     }
   }
 
@@ -5372,9 +5427,16 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
     });
   });
 
-  window.addEventListener("focus", () => { void checkActiveSession(); });
+  window.addEventListener("focus", () => {
+    void checkActiveSession();
+    void retryPendingSession();
+  });
+  window.addEventListener("online", () => { void retryPendingSession(); });
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) void checkActiveSession();
+    if (!document.hidden) {
+      void checkActiveSession();
+      void retryPendingSession();
+    }
   });
 })();
 </script>
