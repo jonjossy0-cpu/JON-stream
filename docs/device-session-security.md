@@ -3,8 +3,10 @@
 ## Behavior
 
 - A Firebase account can hold one active JON Stream browser/device session at a time.
-- A successful sign-in claims the session for that Firebase UID.
-- A second device signing in with the same account atomically replaces the previous session.
+- A successful sign-in claims the session when no other device is active.
+- If another device is active, the new device must ask the user for confirmation before replacing it.
+- If the user declines, the new device is signed back out and the existing device session remains unchanged.
+- If the user confirms, the server atomically replaces the previous session; the previous device signs out on its next heartbeat/focus check.
 - The previous device checks its session every 15 seconds and on browser focus/return from background. If replaced, it signs out locally and Premium playback is stopped by the existing auth-state handler.
 - Signing out releases the session only when the signing-out device still owns it. It cannot release a newer device's session.
 - Multiple tabs in the same browser profile share one random session ID through local storage, so opening another tab does not count as another device.
