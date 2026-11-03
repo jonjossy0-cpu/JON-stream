@@ -51,12 +51,18 @@ test("hashes session IDs deterministically without storing the raw ID", () => {
   assert.notEqual(hashSessionId(idA), idA);
 });
 
-test("a new device claim replaces the previous active session", async () => {
+test("a second device must be confirmed before replacing the active session", async () => {
   const { db, records } = createFakeFirestore();
   const first = await applySessionAction({ db, uid: "user-1", sessionId: idA, action: "claim", FieldValue });
-  const second = await applySessionAction({ db, uid: "user-1", sessionId: idB, action: "claim", FieldValue });
+  const declined = await applySessionAction({ db, uid: "user-1", sessionId: idB, action: "claim", FieldValue });
   assert.deepEqual(first, { active: true, replaced: false });
-  assert.deepEqual(second, { active: true, replaced: true });
+  assert.deepEqual(declined, { active: false, confirmationRequired: true, replaced: false });
+  assert.equal(records.get("user-1").sessionIdHash, hashSessionId(idA));
+
+  const accepted = await applySessionAction({
+    db, uid: "user-1", sessionId: idB, action: "claim", FieldValue, confirm: true
+  });
+  assert.deepEqual(accepted, { active: true, replaced: true });
   assert.equal(records.get("user-1").sessionIdHash, hashSessionId(idB));
 });
 
