@@ -27,7 +27,8 @@ module.exports = async function handler(req, res) {
       uid: user.uid,
       sessionId,
       action,
-      FieldValue
+      FieldValue,
+      confirm: body.confirm === true
     });
 
     if (action === "check" && !result.active) {
