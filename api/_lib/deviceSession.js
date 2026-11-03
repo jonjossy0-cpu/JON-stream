@@ -10,7 +10,7 @@ function hashSessionId(value) {
   return crypto.createHash("sha256").update(String(value)).digest("hex");
 }
 
-async function applySessionAction({ db, uid, sessionId, action, FieldValue }) {
+async function applySessionAction({ db, uid, sessionId, action, FieldValue, confirm = false }) {
   const sessionHash = hashSessionId(sessionId);
   const sessionRef = db.collection("activeUserSessions").doc(uid);
 
@@ -20,6 +20,9 @@ async function applySessionAction({ db, uid, sessionId, action, FieldValue }) {
     const matches = snapshot.exists && current.sessionIdHash === sessionHash;
 
     if (action === "claim") {
+      if (snapshot.exists && !matches && !confirm) {
+        return { active: false, confirmationRequired: true, replaced: false };
+      }
       transaction.set(sessionRef, {
         sessionIdHash: sessionHash,
         claimedAt: FieldValue.serverTimestamp(),
