@@ -5518,7 +5518,7 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
  gate.setAttribute("aria-live","polite");
  frame.appendChild(gate);
 
- const unlockedParentalChannels=new Set();
+ let unlockedParentalChannelId="";
  let selectedChannelIndex=(typeof currentTVIndex==="number"?currentTVIndex:-1);
  let pendingChannel=null;
 
@@ -5585,7 +5585,7 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
    }
    const target=pendingChannel;
    const id=channelLockId(target.channel);
-   if(id)unlockedParentalChannels.add(id);
+   if(id)unlockedParentalChannelId=id;
    hideGate();
    originalPlayTVStream(target.channel.url,target.channel.name,target.index);
   };
@@ -5636,9 +5636,10 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
   const resolvedIndex=Number.isInteger(index)&&index>=0?index:
    (Array.isArray(tvChannels)?tvChannels.indexOf(channel):-1);
   if(resolvedIndex>=0)selectedChannelIndex=resolvedIndex;
+  if(unlockedParentalChannelId&&unlockedParentalChannelId!==channelLockId(channel))unlockedParentalChannelId="";
   if(isParentalRestricted(channel)){
    const id=channelLockId(channel);
-   if(!id||!unlockedParentalChannels.has(id)){
+   if(!id||unlockedParentalChannelId!==id){
     showParentalGate(channel,resolvedIndex);return;
    }
   }
@@ -5666,6 +5667,12 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
   if(!channel)return;
   selectedChannelIndex=previous;
   attemptPlay(channel.url,channel.name,previous);
+ };
+ const originalStopTV=typeof window.stopTV==="function"?window.stopTV.bind(window):null;
+ window.stopTV=function(){
+  unlockedParentalChannelId="";
+  hideGate();
+  if(originalStopTV)return originalStopTV();
  };
  window.toggleTVPlay=function(){
   if(gate&&!gate.hidden){
