@@ -1,7 +1,7 @@
 const { getServices } = require("./_lib/firebaseAdmin");
 const { decodeTicket, isWithinChannelRoot } = require("./_lib/playbackTicket");
 
-const ALLOWED_HOSTS = new Set(["88.212.15.19","154.58.202.18","5.9.121.178","23.237.104.106","amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv"]);
+const ALLOWED_HOSTS = new Set(["88.212.15.19","154.58.202.18","5.9.121.178","23.237.104.106","amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv","rbmn-live.akamaized.net","mediatailor.us-west-2.amazonaws.com","streams2.sofast.tv"]);
 const MAX_PLAYLIST_BYTES = 1_000_000;
 
 function corsHeaders() {
