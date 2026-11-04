@@ -111,6 +111,9 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
 
         def style = '\n<style id="jonMobileFullscreenChannelNav">\n' +
                 '/* Compact fullscreen channel navigation: icons only, minimal space. */\n' +
+                '/* Mobile 7.1 only: remove the large native play overlay and keep the video surface black before playback. */\n' +
+                '#tvVideoFrame,#tvPlayer{background:#000!important}\n' +
+                '#tvPlayer::-webkit-media-controls-start-playback-button,#tvPlayer::-webkit-media-controls-overlay-play-button{display:none!important;-webkit-appearance:none}\n' +
                 '#tvVideoFrame .tv-fullscreen-bottom #tvFullscreenPrevious,\n' +
                 '#tvVideoFrame .tv-fullscreen-bottom #tvFullscreenNext{min-width:34px;width:34px;min-height:32px;padding:4px;font-size:15px;line-height:1;flex:0 0 34px}\n' +
                 '</style>\n'
