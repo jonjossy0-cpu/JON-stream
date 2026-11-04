@@ -5652,8 +5652,14 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 
  window.playTVStream=attemptPlay;
  window.nextTV=function(){
+  // A channel-navigation action always ends the previous channel's PIN session,
+  // even when the navigation later returns to that same locked channel.
+  unlockedParentalChannelId="";
   if(!Array.isArray(filteredTV)||!filteredTV.length)return;
-  let next=selectedChannelIndex<0?0:selectedChannelIndex+1;
+  const activeUrl=String((typeof currentTV!=="undefined"&&currentTV&&currentTV.url)||"");
+  let activeIndex=filteredTV.findIndex(channel=>channel&&String(channel.url||"")===activeUrl);
+  if(activeIndex<0)activeIndex=selectedChannelIndex;
+  let next=activeIndex<0?0:activeIndex+1;
   if(next>=filteredTV.length)next=0;
   const channel=filteredTV[next];
   if(!channel)return;
@@ -5661,8 +5667,13 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
   attemptPlay(channel.url,channel.name,next);
  };
  window.previousTV=function(){
+  // Do not retain a PIN grant across Previous/Next navigation.
+  unlockedParentalChannelId="";
   if(!Array.isArray(filteredTV)||!filteredTV.length)return;
-  let previous=selectedChannelIndex<=0?filteredTV.length-1:selectedChannelIndex-1;
+  const activeUrl=String((typeof currentTV!=="undefined"&&currentTV&&currentTV.url)||"");
+  let activeIndex=filteredTV.findIndex(channel=>channel&&String(channel.url||"")===activeUrl);
+  if(activeIndex<0)activeIndex=selectedChannelIndex;
+  let previous=activeIndex<=0?filteredTV.length-1:activeIndex-1;
   const channel=filteredTV[previous];
   if(!channel)return;
   selectedChannelIndex=previous;
