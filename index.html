@@ -4472,19 +4472,44 @@ function seed(){const a=all(),x=document.activeElement;if(x&&a.includes(x))set(x
 window.addEventListener("keydown",e=>{
  const typing=document.activeElement;
  if(["INPUT","TEXTAREA"].includes(typing?.tagName)){
-  const backKey=["Escape","BrowserBack","GoBack"].includes(e.key)||[4,27,10009,461].includes(e.keyCode||e.which);
+  const keyName=String(e.key||"");
+  const keyCode=Number(e.keyCode||e.which||0);
+  const backKey=["Escape","Back","BrowserBack","GoBack","Exit","TVExit"].includes(keyName)||
+   [4,27,10009,461,10182,166].includes(keyCode);
   if(backKey){
    e.preventDefault();e.stopImmediatePropagation();
    typing.blur();
    return;
   }
   if(e.key==="Enter"&&!e.repeat){
-   e.preventDefault();e.stopImmediatePropagation();
    if(typing.id==="jonAccountEmail"){
+    e.preventDefault();e.stopImmediatePropagation();
     document.getElementById("jonAccountPassword")?.focus();
-   }else if(typing.id==="jonAccountPassword"){
-    document.getElementById("jonAccountSignin")?.click();
+    return;
    }
+   if(typing.id==="jonAccountPassword"){
+    e.preventDefault();e.stopImmediatePropagation();
+    document.getElementById("jonAccountSignin")?.click();
+    return;
+   }
+   if(typing.id==="jonPinInput"){
+    const action=document.getElementById("jonSavePin")||document.getElementById("jonToggleLock");
+    if(action){e.preventDefault();e.stopImmediatePropagation();action.click();return;}
+   }
+   if(typing.id==="jonFsParentalPassword"){
+    const action=document.getElementById("jonFsParentalUnlock");
+    if(action){e.preventDefault();e.stopImmediatePropagation();action.click();return;}
+   }
+   if(typing.tagName==="TEXTAREA")return;
+   if(typing.form){
+    e.preventDefault();e.stopImmediatePropagation();
+    if(typeof typing.form.requestSubmit==="function")typing.form.requestSubmit();
+    else typing.form.submit();
+    return;
+   }
+   /* Search and other single-line fields: Enter confirms the text and closes the TV keyboard. */
+   e.preventDefault();e.stopImmediatePropagation();
+   typing.blur();
    return;
   }
   return;
