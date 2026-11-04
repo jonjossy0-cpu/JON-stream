@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#07111f">
-<title>JON FM ETHIOPIA</title>
+<title>FUTURE RADIO</title>
 
 <style>
 *{box-sizing:border-box}
@@ -387,11 +387,11 @@ button{
 <div class="brand">
 
 <img
-src="logo.png"
+src="https://imglink.cc/cdn/dQZZtFKCS8.png"
 class="logo"
 alt="JON Media Service">
 
-<h1>JON FM ETHIOPIA</h1>
+<h1>FUTURE RADIO</h1>
 
 <p>🇪🇹 Ethiopian Digital Radio & TV</p>
 
@@ -512,7 +512,7 @@ oninput="renderRadio()">
 <!-- FEATURED -->
 
 <h2 class="title">
-⭐ JON FM Featured
+⭐ FUTURE RADIO Featured
 </h2>
 
 <div id="featured"></div>
@@ -710,7 +710,7 @@ onclick="setTVFilter('International')">
 <div class="about">
 
 <b>
-ℹ️ About JON FM ETHIOPIA
+ℹ️ About FUTURE RADIO
 </b>
 
 <p>
@@ -742,7 +742,7 @@ onclick="shareApp()">
 <div class="footer">
 
 <img
-src="logo.png"
+src="https://imglink.cc/cdn/dQZZtFKCS8.png"
 alt="JON Media Service">
 
 <br><br>
@@ -1075,7 +1075,7 @@ return `
 </div>
 
 <div class="station-meta">
-JON FM Featured
+FUTURE RADIO Featured
 </div>
 
 </div>
@@ -1859,10 +1859,10 @@ navigator.share
 navigator.share({
 
 title:
-"JON FM ETHIOPIA",
+"FUTURE RADIO",
 
 text:
-"JON FM ETHIOPIA Radio & TV",
+"FUTURE RADIO Radio & TV",
 
 url:
 location.href
