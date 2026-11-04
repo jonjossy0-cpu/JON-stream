@@ -5597,7 +5597,8 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
   pendingChannel={channel,index};
   pauseBlockedPlayback();
   const access=window.jonPremiumAccess||{};
-  const signedOut=access.status==="signed_out"||!window.__JON_AUTH_SIGNED_IN;
+  const accountState=(document.getElementById("jonAccountState")?.textContent||"").toLowerCase();
+  const signedOut=access.status==="signed_out"||/not signed in/i.test(accountState)||(!access.ready&&!/signed in/i.test(accountState));
   gate.innerHTML=
    '<div class="jon-fs-gate-card">'+
     '<div class="jon-fs-gate-kicker"><span>✦</span> JON STREAM PREMIUM</div>'+
