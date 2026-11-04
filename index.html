@@ -5440,5 +5440,252 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
   });
 })();
 </script>
+
+
+<!-- JON STREAM: Fullscreen restricted-channel navigation and access panels -->
+<style id="jonFullscreenAccessGateStyles">
+#tvVideoFrame{position:relative}
+#jonFullscreenAccessGate{
+ position:absolute;z-index:120;inset:58px 12px 82px;
+ display:flex;align-items:center;justify-content:center;
+ padding:10px;pointer-events:none;box-sizing:border-box;
+}
+#jonFullscreenAccessGate[hidden]{display:none!important}
+#jonFullscreenAccessGate .jon-fs-gate-card{
+ width:min(100%,430px);max-height:100%;overflow:auto;pointer-events:auto;
+ color:#f7fbff;text-align:left;border:1px solid rgba(91,190,255,.42);
+ border-radius:16px;padding:16px;
+ background:linear-gradient(145deg,rgba(10,25,43,.97),rgba(5,13,25,.97));
+ box-shadow:0 14px 42px rgba(0,0,0,.48),inset 0 0 22px rgba(0,165,255,.07);
+ backdrop-filter:blur(12px);font:13px/1.5 Arial,Helvetica,sans-serif;
+}
+#jonFullscreenAccessGate .jon-fs-gate-kicker{
+ display:flex;align-items:center;gap:8px;margin:0 0 9px;
+ color:#8bdcff;font-size:10px;font-weight:900;letter-spacing:1.4px;text-transform:uppercase
+}
+#jonFullscreenAccessGate h3{margin:0 0 7px;font-size:clamp(17px,2.4vw,22px);line-height:1.2;color:#fff}
+#jonFullscreenAccessGate p{margin:7px 0;color:#d1deeb}
+#jonFullscreenAccessGate .jon-fs-gate-muted{font-size:11px;color:#9db0c5}
+#jonFullscreenAccessGate .jon-fs-gate-input{
+ display:block;width:100%;height:42px;margin:12px 0 8px;padding:0 12px;
+ border:1px solid #47617d;border-radius:10px;background:#081525;color:#fff;
+ font-size:16px;letter-spacing:3px;outline:none;box-sizing:border-box
+}
+#jonFullscreenAccessGate .jon-fs-gate-input:focus{border-color:#38bdf8;box-shadow:0 0 0 2px rgba(56,189,248,.18)}
+#jonFullscreenAccessGate .jon-fs-gate-actions{display:flex;gap:8px;margin-top:11px}
+#jonFullscreenAccessGate .jon-fs-gate-actions button{
+ flex:1;min-height:39px;padding:9px 10px;border:0;border-radius:10px;
+ background:linear-gradient(100deg,#087fce,#1757b8);color:#fff;
+ font-size:11px;font-weight:900;letter-spacing:.35px;cursor:pointer
+}
+#jonFullscreenAccessGate .jon-fs-gate-actions button.secondary{
+ background:#1b2d42;border:1px solid #3a506a;color:#e4edf7
+}
+#jonFullscreenAccessGate .jon-fs-gate-benefits{
+ display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0
+}
+#jonFullscreenAccessGate .jon-fs-gate-benefit{
+ display:flex;align-items:center;gap:7px;padding:8px;
+ border:1px solid rgba(214,166,60,.25);border-radius:9px;
+ background:rgba(214,166,60,.07);font-size:11px;color:#f2e5c5
+}
+#jonFullscreenAccessGate .jon-fs-gate-benefit span:first-child{font-size:15px}
+#jonFullscreenAccessGate .jon-fs-gate-error{min-height:16px;color:#ff9b9b;font-size:11px}
+@media(max-width:600px){
+ #jonFullscreenAccessGate{inset:48px 6px 76px;padding:5px}
+ #jonFullscreenAccessGate .jon-fs-gate-card{padding:12px;border-radius:13px}
+ #jonFullscreenAccessGate .jon-fs-gate-benefits{gap:5px}
+ #jonFullscreenAccessGate .jon-fs-gate-benefit{padding:6px;font-size:10px}
+}
+@media(max-height:430px){
+ #jonFullscreenAccessGate{inset:38px 8px 64px}
+ #jonFullscreenAccessGate .jon-fs-gate-card{padding:9px}
+ #jonFullscreenAccessGate .jon-fs-gate-benefits{margin:7px 0}
+}
+</style>
+<script id="jonFullscreenAccessGateLogic">
+(function(){
+ "use strict";
+ const frame=document.getElementById("tvVideoFrame");
+ if(!frame||typeof window.playTVStream!=="function")return;
+
+ const originalPlayTVStream=window.playTVStream.bind(window);
+ const gate=document.createElement("div");
+ gate.id="jonFullscreenAccessGate";
+ gate.hidden=true;
+ gate.setAttribute("role","dialog");
+ gate.setAttribute("aria-modal","false");
+ gate.setAttribute("aria-live","polite");
+ frame.appendChild(gate);
+
+ const unlockedParentalChannels=new Set();
+ let selectedChannelIndex=(typeof currentTVIndex==="number"?currentTVIndex:-1);
+ let pendingChannel=null;
+
+ function getChannel(url,name,index){
+  if(Array.isArray(filteredTV)&&Number.isInteger(index)&&index>=0&&filteredTV[index])return filteredTV[index];
+  if(Array.isArray(tvChannels)){
+   const found=tvChannels.find(channel=>channel&&(
+    String(channel.url||"")===String(url||"")||
+    (name&&String(channel.name||"")===String(name))
+   ));
+   if(found)return found;
+  }
+  return url||name?{url,name,accessTier:"free"}:null;
+ }
+ function channelLockId(channel){return String(channel&&channel.url||"").trim()}
+ function isParentalRestricted(channel){
+  if(!channel)return false;
+  const id=channelLockId(channel);
+  let locks=[];
+  try{locks=JSON.parse(localStorage.getItem("jonTVChannelLocks")||"[]")}catch(_){}
+  const globalLock=localStorage.getItem("jonStreamParentalLocked")==="1";
+  return globalLock||(!!id&&Array.isArray(locks)&&locks.includes(id));
+ }
+ function parentalPin(){return localStorage.getItem("jonStreamParentalPin")||""}
+ function isPremiumRestricted(channel){
+  return !!channel&&String(channel.accessTier||"free").toLowerCase()==="premium"&&
+   !(window.jonPremiumAccess&&window.jonPremiumAccess.ready===true&&window.jonPremiumAccess.allowed===true);
+ }
+ function pauseBlockedPlayback(){
+  try{const player=document.getElementById("tvPlayer");if(player)player.pause()}catch(_){}
+ }
+ function hideGate(){
+  gate.hidden=true;
+  gate.innerHTML="";
+  pendingChannel=null;
+ }
+ function showParentalGate(channel,index){
+  pendingChannel={channel,index};
+  pauseBlockedPlayback();
+  gate.innerHTML=
+   '<div class="jon-fs-gate-card">'+
+    '<div class="jon-fs-gate-kicker"><span>🔒</span> PARENTAL CONTROL</div>'+
+    '<h3>This Channel Is Restricted</h3>'+
+    '<p><strong>'+escapeHTML(String(channel.name||"This channel"))+'</strong> has been locked by Parental Controls.</p>'+
+    '<p>Enter your Parental Control password to unlock and watch this channel.</p>'+
+    (parentalPin()
+      ? '<input class="jon-fs-gate-input" id="jonFsParentalPassword" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Enter 4-digit PIN" aria-label="Parental Control password">'
+      : '<p class="jon-fs-gate-error">A Parental Control PIN has not been configured. Set a PIN in Parental Control settings before playback.</p>')+
+    '<div class="jon-fs-gate-error" id="jonFsParentalError" aria-live="polite"></div>'+
+    (parentalPin()
+      ? '<div class="jon-fs-gate-actions"><button type="button" id="jonFsParentalUnlock">UNLOCK &amp; PLAY</button></div>'
+      : '')+
+    '<p class="jon-fs-gate-muted">You can continue browsing channels using Next and Previous. Playback remains locked until the correct password is entered.</p>'+
+   '</div>';
+  gate.hidden=false;
+  const input=gate.querySelector("#jonFsParentalPassword");
+  const unlock=()=>{
+   if(!pendingChannel||!input)return;
+   const saved=parentalPin(),entered=input.value;
+   if(!saved||entered!==saved){
+    const error=gate.querySelector("#jonFsParentalError");
+    if(error)error.textContent="Incorrect password. Please try again.";
+    input.value="";input.focus();return;
+   }
+   const target=pendingChannel;
+   const id=channelLockId(target.channel);
+   if(id)unlockedParentalChannels.add(id);
+   hideGate();
+   originalPlayTVStream(target.channel.url,target.channel.name,target.index);
+  };
+  gate.querySelector("#jonFsParentalUnlock")?.addEventListener("click",unlock);
+  input?.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();unlock()}});
+  if(input)setTimeout(()=>input.focus(),40);
+ }
+ function showPremiumGate(channel,index){
+  pendingChannel={channel,index};
+  pauseBlockedPlayback();
+  const access=window.jonPremiumAccess||{};
+  const accountState=(document.getElementById("jonAccountState")?.textContent||"").toLowerCase();
+  const signedOut=access.status==="signed_out"||/not signed in/i.test(accountState)||(!access.ready&&!/signed in/i.test(accountState));
+  gate.innerHTML=
+   '<div class="jon-fs-gate-card">'+
+    '<div class="jon-fs-gate-kicker"><span>✦</span> JON STREAM PREMIUM</div>'+
+    '<h3>Unlock the Full Experience</h3>'+
+    '<p><strong>'+escapeHTML(String(channel.name||"This channel"))+'</strong> is available exclusively to Premium members.</p>'+
+    '<p>Become a Premium member to enjoy exclusive entertainment and an uninterrupted viewing experience.</p>'+
+    '<div class="jon-fs-gate-benefits">'+
+     '<div class="jon-fs-gate-benefit"><span>📺</span><span>Exclusive Premium TV channels</span></div>'+
+     '<div class="jon-fs-gate-benefit"><span>🚫</span><span>Ad-free viewing experience</span></div>'+
+     '<div class="jon-fs-gate-benefit"><span>✨</span><span>Exclusive entertainment and services</span></div>'+
+     '<div class="jon-fs-gate-benefit"><span>👑</span><span>Enhanced Premium experience</span></div>'+
+    '</div>'+
+    '<p>'+(signedOut
+      ? 'Sign in and verify your email to enjoy your <strong>3-Day Free Trial</strong>.'
+      : 'Your account needs verified email status and an active Premium entitlement. Choose a Monthly or Annual membership to unlock this channel.')+'</p>'+
+    '<div class="jon-fs-gate-actions"><button type="button" id="jonFsPremiumAction">'+(signedOut?'SIGN IN &amp; GET STARTED':'EXPLORE PREMIUM MEMBERSHIP')+'</button></div>'+
+    '<p class="jon-fs-gate-muted">Premium access is required to play this channel. You can continue browsing with Next and Previous at any time.</p>'+
+   '</div>';
+  gate.hidden=false;
+  gate.querySelector("#jonFsPremiumAction")?.addEventListener("click",async()=>{
+   hideGate();
+   try{
+    if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen();
+    else if(document.webkitFullscreenElement&&document.webkitExitFullscreen)document.webkitExitFullscreen();
+   }catch(_){}
+   const account=document.getElementById("jonAccountPanel");
+   if(account){account.hidden=false;account.scrollIntoView?.({behavior:"smooth",block:"center"});}
+   const profileButton=document.getElementById("profileToggleBtn");
+   if(profileButton)profileButton.setAttribute("aria-expanded","true");
+  });
+ }
+ function attemptPlay(url,name,index,sourceIndex,resetRetry){
+  const channel=getChannel(url,name,index);
+  if(!channel)return;
+  const resolvedIndex=Number.isInteger(index)&&index>=0?index:
+   (Array.isArray(tvChannels)?tvChannels.indexOf(channel):-1);
+  if(resolvedIndex>=0)selectedChannelIndex=resolvedIndex;
+  if(isParentalRestricted(channel)){
+   const id=channelLockId(channel);
+   if(!id||!unlockedParentalChannels.has(id)){
+    showParentalGate(channel,resolvedIndex);return;
+   }
+  }
+  if(isPremiumRestricted(channel)){
+   showPremiumGate(channel,resolvedIndex);return;
+  }
+  hideGate();
+  return originalPlayTVStream(url,name,index,sourceIndex,resetRetry);
+ }
+
+ window.playTVStream=attemptPlay;
+ window.nextTV=function(){
+  if(!Array.isArray(filteredTV)||!filteredTV.length)return;
+  let next=selectedChannelIndex<0?0:selectedChannelIndex+1;
+  if(next>=filteredTV.length)next=0;
+  const channel=filteredTV[next];
+  if(!channel)return;
+  selectedChannelIndex=next;
+  attemptPlay(channel.url,channel.name,next);
+ };
+ window.previousTV=function(){
+  if(!Array.isArray(filteredTV)||!filteredTV.length)return;
+  let previous=selectedChannelIndex<=0?filteredTV.length-1:selectedChannelIndex-1;
+  const channel=filteredTV[previous];
+  if(!channel)return;
+  selectedChannelIndex=previous;
+  attemptPlay(channel.url,channel.name,previous);
+ };
+ window.toggleTVPlay=function(){
+  if(gate&&!gate.hidden){
+   if(pendingChannel)attemptPlay(pendingChannel.channel.url,pendingChannel.channel.name,pendingChannel.index);
+   return;
+  }
+  const index=selectedChannelIndex>=0?selectedChannelIndex:(typeof currentTVIndex==="number"?currentTVIndex:0);
+  const channel=Array.isArray(filteredTV)?filteredTV[index]:null;
+  if(channel){attemptPlay(channel.url,channel.name,index);return}
+  if(typeof currentTV!=="undefined"&&currentTV)attemptPlay(currentTV.url,currentTV.name,index);
+ };
+ window.addEventListener("jon-premium-access-changed",()=>{
+  if(!pendingChannel||!gate.hidden)return;
+  if(!isPremiumRestricted(pendingChannel.channel)){
+   const target=pendingChannel;
+   attemptPlay(target.channel.url,target.channel.name,target.index);
+  }
+ });
+})();
+</script>
+
 </body>
 </html>
