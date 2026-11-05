@@ -14,7 +14,6 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
   import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app-check.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
-  import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
   import { getStorage, ref as storageRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-storage.js";
 
   const firebaseConfig = {
@@ -36,22 +35,66 @@
     window.__JON_APP_CHECK = appCheck;
     try { getAnalytics(app); } catch (_) {}
 
-    const db = getFirestore(app);
     const storage = getStorage(app);
-    window.__JON_RESOLVE_MEDIA_URL = async function(value){ const v=String(value??"").trim(); if(!v)return ""; if(/^https?:\/\//i.test(v)||/^data:/i.test(v)||/^blob:/i.test(v))return v; try{return await getDownloadURL(storageRef(storage,v.startsWith("gs://")?v:v.replace(/^\/+/,"")))}catch(e){console.warn("JON media URL could not be resolved:",v,e);return "";} };
-    const ref = doc(db, "jonStream", "appData");
-    onSnapshot(ref, (snap) => {
-      window.__JON_FIREBASE_DATA = snap.exists() ? snap.data() : null;
-      window.dispatchEvent(new CustomEvent("jon-firebase-data", {
-        detail: window.__JON_FIREBASE_DATA
-      }));
-    }, (error) => {
-      console.error("JON Stream Firestore listener failed:", error);
-      window.dispatchEvent(new CustomEvent("jon-firebase-error", {detail: error}));
+    window.__JON_RESOLVE_MEDIA_URL = async function(value){
+      const v = String(value ?? "").trim();
+      if (!v) return "";
+      if (/^https?:\\/\\//i.test(v) || /^data:/i.test(v) || /^blob:/i.test(v)) return v;
+      try {
+        return await getDownloadURL(storageRef(storage, v.startsWith("gs://") ? v : v.replace(/^\\/+/, "")));
+      } catch (e) {
+        console.warn("JON media URL could not be resolved:", v, e);
+        return "";
+      }
+    };
+
+    // GitHub Pages and Android use the stable production API. Vercel Preview
+    // deployments use their own origin so tests never depend on Production.
+    const apiOrigin = window.JON_PUBLIC_DATA_API_ORIGIN ||
+      (location.hostname.endsWith(".vercel.app") ? location.origin : "https://jon-stream.vercel.app");
+    let publicDataRequest = null;
+    let publicDataLoadedAt = 0;
+
+    async function loadPublicAppData() {
+      if (publicDataRequest) return publicDataRequest;
+      if (publicDataLoadedAt && Date.now() - publicDataLoadedAt < 60000) return;
+
+      publicDataRequest = (async () => {
+        const response = await fetch(apiOrigin + "/api/public/app-data", {
+          method: "GET",
+          headers: { "Accept": "application/json" }
+        });
+        if (!response.ok) throw new Error("Public app data API returned HTTP " + response.status);
+        const payload = await response.json();
+        if (!payload || !payload.data || typeof payload.data !== "object" || Array.isArray(payload.data)) {
+          throw new Error("Public app data API returned an invalid response");
+        }
+        window.__JON_FIREBASE_DATA = payload.data;
+        window.dispatchEvent(new CustomEvent("jon-firebase-data", {
+          detail: window.__JON_FIREBASE_DATA
+        }));
+        publicDataLoadedAt = Date.now();
+      })();
+
+      try {
+        await publicDataRequest;
+      } catch (error) {
+        console.error("JON Stream public app data request failed:", error);
+        window.dispatchEvent(new CustomEvent("jon-firebase-error", { detail: error }));
+      } finally {
+        publicDataRequest = null;
+      }
+    }
+
+    void loadPublicAppData();
+    window.addEventListener("focus", () => { void loadPublicAppData(); });
+    window.addEventListener("online", () => { void loadPublicAppData(); });
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) void loadPublicAppData();
     });
   } catch (error) {
-    console.error("JON Stream Firebase connection failed:", error);
-    window.dispatchEvent(new CustomEvent("jon-firebase-error", {detail: error}));
+    console.error("JON Stream initialization failed:", error);
+    window.dispatchEvent(new CustomEvent("jon-firebase-error", { detail: error }));
   }
 </script>
 
