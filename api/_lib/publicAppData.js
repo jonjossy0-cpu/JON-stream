@@ -1,7 +1,9 @@
 "use strict";
 
 // Explicit public allowlist for the existing jonStream/appData document.
-// Never return premium entitlements, profiles, admin records, or billing data.
+// Preserve every TV/Radio channel field exactly as stored, including ALL
+// Free and Premium source URLs. Removing a URL breaks the existing player.
+// Private account, entitlement, admin, and billing collections remain excluded.
 const PUBLIC_APP_DATA_FIELDS = Object.freeze([
   "tv",
   "radio",
@@ -11,33 +13,6 @@ const PUBLIC_APP_DATA_FIELDS = Object.freeze([
   "settings",
   "prompt"
 ]);
-
-const PREMIUM_SOURCE_FIELDS = new Set([
-  "url", "streamUrl", "source", "sourceUrl", "playbackUrl", "backupUrl",
-  "backupUrls", "backupStreams", "streamUrls", "sources", "gatewayUrl",
-  "gatewayURL", "proxyUrl", "proxyURL", "hlsGateway", "hlsUrl",
-  "playlistUrl", "manifestUrl", "fallbackUrl", "link", "stream", "primaryUrl",
-  "primaryStream", "backupStream", "backupStreamUrl", "sourceURL", "playbackURL"
-].map(field => field.toLowerCase()));
-
-function removePremiumSources(value) {
-  if (Array.isArray(value)) return value.map(removePremiumSources);
-  if (!value || typeof value !== "object") return value;
-  const output = {};
-  for (const [key, child] of Object.entries(value)) {
-    if (PREMIUM_SOURCE_FIELDS.has(key.toLowerCase())) continue;
-    output[key] = removePremiumSources(child);
-  }
-  return output;
-}
-
-function sanitizeChannelList(value) {
-  return value.map(channel => {
-    if (!channel || typeof channel !== "object" ||
-        String(channel.accessTier || "free").toLowerCase() !== "premium") return channel;
-    return removePremiumSources(channel);
-  });
-}
 
 function selectPublicAppData(source) {
   const input = source && typeof source === "object" && !Array.isArray(source) ? source : {};
@@ -53,7 +28,7 @@ function selectPublicAppData(source) {
       if (typeof value === "string" || typeof value === "boolean" || typeof value === "number") output.prompt = value;
       continue;
     }
-    if (Array.isArray(value)) output[field] = (field === "tv" || field === "radio") ? sanitizeChannelList(value) : value;
+    if (Array.isArray(value)) output[field] = value;
   }
 
   return output;
