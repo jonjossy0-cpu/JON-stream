@@ -4613,6 +4613,19 @@ window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
 
 if(authPanel){
  const auth=getAuth(getApp());
+ window.jonGetPremiumPlaybackTicket=async(channel)=>{
+   const user=auth.currentUser;
+   if(!user||!user.emailVerified)throw new Error("Sign in with a verified email to play Premium channels.");
+   const channelId=["premiumChannelId","playbackChannelId","channelId","id"].map(key=>String(channel&&channel[key]||"").trim()).find(value=>/^[a-zA-Z0-9_-]{1,100}$/.test(value));
+   if(!channelId)throw new Error("Premium channel ID is missing. Please contact JON Stream support.");
+   const token=await user.getIdToken();
+   const apiBase=/\\.vercel\\.app$/i.test(location.hostname)?location.origin:"https://jon-stream.vercel.app";
+   const response=await fetch(apiBase+"/api/subscription/playback-ticket",{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({channelId}),cache:"no-store"});
+   const data=await response.json().catch(()=>({error:"Invalid playback authorization response"}));
+   if(!response.ok||!data.playbackUrl)throw new Error(data.error||("Premium authorization failed ("+response.status+")"));
+   return {...data,playbackUrl:new URL(data.playbackUrl,apiBase).toString()};
+ };
+
  const $=id=>document.getElementById(id);
  const message=(text,isError=false)=>{ $("jonAccountError").textContent=text||""; $("jonAccountError").style.color=isError?"#fca5a5":"#86efac"; };
  const authErrorText=(error,action)=>{
