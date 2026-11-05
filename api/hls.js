@@ -74,20 +74,49 @@ function rewritePlaylist(body, baseUrl, gatewayOrigin, ticket) {
 async function getChannel(channelId) {
   const { db } = getServices();
   const snap = await db.collection("premiumPlaybackChannels").doc(channelId).get();
-  if (!snap.exists) return null;
-  const data = snap.data() || {};
-  if (data.active !== true || String(data.accessTier || "").toLowerCase() !== "premium") return null;
-  return data;
+  if (snap.exists) {
+    const data = snap.data() || {};
+    if (data.active !== true || String(data.accessTier || "").toLowerCase() !== "premium") return null;
+    return data;
+  }
+  const appSnap = await db.collection("jonStream").doc("appData").get();
+  const appData = appSnap.exists ? appSnap.data() || {} : {};
+  const idFields = ["premiumChannelId", "playbackChannelId", "channelId", "id"];
+  const sourceFields = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link"];
+  for (const group of ["tv", "radio"]) {
+    const items = Array.isArray(appData[group]) ? appData[group] : [];
+    const match = items.find(item => item &&
+      String(item.accessTier || "").toLowerCase() === "premium" &&
+      item.active !== false && item.enabled !== false &&
+      idFields.some(key => String(item[key] || "").trim() === channelId)
+    );
+    if (!match) continue;
+    const sourceUrl = sourceFields.map(key => match[key]).find(value => typeof value === "string" && value.trim());
+    return sourceUrl ? { ...match, sourceUrl } : null;
+  }
+  return null;
 }
 
 async function isCataloguedPremiumUrl(target) {
   const { db } = getServices();
   const snapshot = await db.collection("premiumPlaybackChannels").get();
-  return snapshot.docs.some(doc => {
+  const catalogMatch = snapshot.docs.some(doc => {
     const data = doc.data() || {};
     return String(data.accessTier || "").toLowerCase() === "premium" &&
       typeof data.sourceUrl === "string" &&
       isWithinChannelRoot(target, data.sourceUrl);
+  });
+  if (catalogMatch) return true;
+  const appSnap = await db.collection("jonStream").doc("appData").get();
+  const appData = appSnap.exists ? appSnap.data() || {} : {};
+  const sourceFields = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link"];
+  return ["tv", "radio"].some(group => {
+    const items = Array.isArray(appData[group]) ? appData[group] : [];
+    return items.some(item => {
+      if (!item || String(item.accessTier || "").toLowerCase() !== "premium") return false;
+      const sourceUrl = sourceFields.map(key => item[key]).find(value => typeof value === "string" && value.trim());
+      return !!sourceUrl && isWithinChannelRoot(target, sourceUrl);
+    });
   });
 }
 
