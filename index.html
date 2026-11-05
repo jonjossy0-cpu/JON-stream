@@ -31,7 +31,16 @@
         throw new Error("Public app data API returned an invalid response");
       }
       window.__JON_FIREBASE_DATA = payload.data;
-      window.dispatchEvent(new CustomEvent("jon-firebase-data", { detail: payload.data }));
+      const dispatchPublicData = () => {
+        window.dispatchEvent(new CustomEvent("jon-firebase-data", { detail: payload.data }));
+      };
+      // Telegram/TV browsers can finish this fetch before later page scripts
+      // register their listeners. Keep the API loader, but emit after parsing.
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", dispatchPublicData, { once: true });
+      } else {
+        dispatchPublicData();
+      }
       loadedAt = Date.now();
     })();
     try {
