@@ -3019,6 +3019,16 @@ function renderTV(list){
 
   card.querySelector(".tv-play").onclick=()=>{
    if(!jonAllowsChannel(channel)) return;
+   /* Reveal the TV display synchronously on the channel-button gesture.
+      This keeps Telegram Mini App and TV-browser WebViews from missing the
+      player reveal while the playback/access handler initializes. */
+   const displayBox=document.getElementById("tvPlayerBox");
+   if(typeof setMode==="function")setMode("tv");
+   if(displayBox){
+    displayBox.hidden=false;
+    displayBox.style.setProperty("display","block","important");
+    displayBox.classList.add("tv-display-persistent");
+   }
    playTVStream(channel.url,channel.name,index);
   };
 
