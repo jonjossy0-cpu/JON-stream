@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/public/app-data",
+      "destination": "/api/public/app-data.js"
+    },
+    {
       "source": "/api/session/active",
       "destination": "/api/session/active.js"
     },
