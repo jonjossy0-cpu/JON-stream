@@ -62,7 +62,7 @@ module.exports = async function handler(req, res) {
     const publicSnap = await db.collection("jonStream").doc("appData").get();
     const publicData = publicSnap.exists ? publicSnap.data() || {} : {};
     const idFields = ["premiumChannelId", "playbackChannelId", "channelId", "id"];
-    const sourceFields = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link"];
+    const sourceFields = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link", "source", "primaryStream", "stream"];
     let publicMatch = null;
     let publicGroup = "";
     for (const group of ["tv", "radio"]) {
