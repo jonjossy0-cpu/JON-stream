@@ -4161,7 +4161,9 @@ body.jon-ad-visible{padding-bottom:85px}
          the saved order again so moved channels keep their positions. */
       reapplySavedTVOrder();
       buildCountryFilter();
-      renderTV(filteredTV);
+      // Recompute the visible list from the merged Firebase catalog. The old
+      // filteredTV array contains only built-in channels and hides new rows.
+      searchTVChannels();
       const st=document.getElementById('tvStatus'); if(st) st.innerHTML='📺 '+tvChannels.length+' TV channels available';
     }
     if(Array.isArray(remote.radio)){
