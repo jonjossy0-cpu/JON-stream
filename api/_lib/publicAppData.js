@@ -1,12 +1,15 @@
 "use strict";
 
+// Explicit public allowlist for the existing jonStream/appData document.
+// Never return premium entitlements, profiles, admin records, or billing data.
 const PUBLIC_APP_DATA_FIELDS = Object.freeze([
   "tv",
   "radio",
   "ads",
   "notifications",
+  "backgrounds",
   "settings",
-  "backgrounds"
+  "prompt"
 ]);
 
 function selectPublicAppData(source) {
@@ -16,9 +19,11 @@ function selectPublicAppData(source) {
   for (const field of PUBLIC_APP_DATA_FIELDS) {
     const value = input[field];
     if (field === "settings") {
-      if (value && typeof value === "object" && !Array.isArray(value)) {
-        output.settings = value;
-      }
+      if (value && typeof value === "object" && !Array.isArray(value)) output.settings = value;
+      continue;
+    }
+    if (field === "prompt") {
+      if (typeof value === "string" || typeof value === "boolean" || typeof value === "number") output.prompt = value;
       continue;
     }
     if (Array.isArray(value)) output[field] = value;
