@@ -31,7 +31,16 @@
         throw new Error("Public app data API returned an invalid response");
       }
       window.__JON_FIREBASE_DATA = payload.data;
-      window.dispatchEvent(new CustomEvent("jon-firebase-data", { detail: payload.data }));
+      const dispatchPublicData = () => {
+        window.dispatchEvent(new CustomEvent("jon-firebase-data", { detail: payload.data }));
+      };
+      // Telegram/TV browsers can finish this fetch before later page scripts
+      // register their listeners. Keep the API loader, but emit after parsing.
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", dispatchPublicData, { once: true });
+      } else {
+        dispatchPublicData();
+      }
       loadedAt = Date.now();
     })();
     try {
@@ -3430,8 +3439,11 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  if(resetTVMetrics)resetTVFullscreenNetworkMeasurement();
  currentTV={...channel,url:jonNormalizeStreamUrl(url)};currentTVIndex=index;tvSourceList=buildTVSources(currentTV).map(jonNormalizeStreamUrl).filter(Boolean);
  tvSourceIndex=Math.max(0,Math.min(sourceIndex,tvSourceList.length-1));
- document.getElementById("tvPlayerBox").style.display="block";
- document.getElementById("tvPlayerBox").classList.add("tv-display-persistent");
+ const tvDisplayBox=document.getElementById("tvPlayerBox");
+ if(typeof setMode==="function")setMode("tv");
+ tvDisplayBox.hidden=false;
+ tvDisplayBox.style.setProperty("display","block","important");
+ tvDisplayBox.classList.add("tv-display-persistent");
  document.getElementById("tvPlayerTitle").innerHTML="📺 "+escapeHTML(name);tvStatus("🔄 Connecting...");
   /* Reveal the existing fullscreen controls after a channel change, then retain their normal auto-hide. */
   const fullscreenFrame=document.getElementById("tvVideoFrame");
