@@ -26,13 +26,65 @@
     measurementId: "G-CEEKQDJXFS"
   };
 
+  // Load shared public app data independently from Firebase/App Check initialization.
+  // GitHub Pages must still receive TV/Radio catalog data if browser-side Firebase setup fails.
+  const apiOrigin = window.JON_PUBLIC_DATA_API_ORIGIN ||
+    (location.hostname.endsWith(".vercel.app") ? location.origin : "https://jon-stream-git-mainv-jonjossy0-5772.vercel.app");
+  let publicDataRequest = null;
+  let publicDataLoadedAt = 0;
+
+  async function loadPublicAppData() {
+    if (publicDataRequest) return publicDataRequest;
+    if (publicDataLoadedAt && Date.now() - publicDataLoadedAt < 60000) return;
+
+    publicDataRequest = (async () => {
+      const response = await fetch(apiOrigin + "/api/public/app-data", {
+        method: "GET",
+        headers: { "Accept": "application/json" }
+      });
+      if (!response.ok) throw new Error("Public app data API returned HTTP " + response.status);
+      const payload = await response.json();
+      if (!payload || !payload.data || typeof payload.data !== "object" || Array.isArray(payload.data)) {
+        throw new Error("Public app data API returned an invalid response");
+      }
+      window.__JON_FIREBASE_DATA = payload.data;
+      window.dispatchEvent(new CustomEvent("jon-firebase-data", {
+        detail: window.__JON_FIREBASE_DATA
+      }));
+      publicDataLoadedAt = Date.now();
+    })();
+
+    try {
+      await publicDataRequest;
+    } catch (error) {
+      console.error("JON Stream public app data request failed:", error);
+      window.dispatchEvent(new CustomEvent("jon-firebase-error", { detail: error }));
+    } finally {
+      publicDataRequest = null;
+    }
+  }
+
+  void loadPublicAppData();
+  window.addEventListener("focus", () => { void loadPublicAppData(); });
+  window.addEventListener("online", () => { void loadPublicAppData(); });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) void loadPublicAppData();
+  });
+
+  // Firebase remains responsible for Auth, Storage and protected operations.
+  // App Check failure must not block public catalog loading or Firebase Storage setup.
   try {
     const app = initializeApp(firebaseConfig);
-    const appCheck = initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider("6Le3cbYtAAAAAOdcVa3NOG1Md2ZADXvlnvf-ZlU1"),
-      isTokenAutoRefreshEnabled: true
-    });
-    window.__JON_APP_CHECK = appCheck;
+    try {
+      const appCheck = initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider("6Le3cbYtAAAAAOdcVa3NOG1Md2ZADXvlnvf-ZlU1"),
+        isTokenAutoRefreshEnabled: true
+      });
+      window.__JON_APP_CHECK = appCheck;
+    } catch (appCheckError) {
+      console.error("JON Stream App Check initialization failed:", appCheckError);
+      window.dispatchEvent(new CustomEvent("jon-app-check-error", { detail: appCheckError }));
+    }
     try { getAnalytics(app); } catch (_) {}
 
     const storage = getStorage(app);
@@ -41,56 +93,12 @@
       if (!v) return "";
       if (v.startsWith("http://") || v.startsWith("https://") || v.startsWith("data:") || v.startsWith("blob:")) return v;
       try {
-        return await getDownloadURL(storageRef(storage, v.startsWith("gs://") ? v : v.replace(/^\/+/, "")));
+        return await getDownloadURL(storageRef(storage, v.startsWith("gs://") ? v : v.replace(/^\\/+/, "")));
       } catch (e) {
         console.warn("JON media URL could not be resolved:", v, e);
         return "";
       }
     };
-
-    // Shared public app data is served by the Vercel API; Firestore is read server-side only.
-    const apiOrigin = window.JON_PUBLIC_DATA_API_ORIGIN ||
-      (location.hostname.endsWith(".vercel.app") ? location.origin : "https://jon-stream-git-mainv-jonjossy0-5772.vercel.app");
-    let publicDataRequest = null;
-    let publicDataLoadedAt = 0;
-
-    async function loadPublicAppData() {
-      if (publicDataRequest) return publicDataRequest;
-      if (publicDataLoadedAt && Date.now() - publicDataLoadedAt < 60000) return;
-
-      publicDataRequest = (async () => {
-        const response = await fetch(apiOrigin + "/api/public/app-data", {
-          method: "GET",
-          headers: { "Accept": "application/json" }
-        });
-        if (!response.ok) throw new Error("Public app data API returned HTTP " + response.status);
-        const payload = await response.json();
-        if (!payload || !payload.data || typeof payload.data !== "object" || Array.isArray(payload.data)) {
-          throw new Error("Public app data API returned an invalid response");
-        }
-        window.__JON_FIREBASE_DATA = payload.data;
-        window.dispatchEvent(new CustomEvent("jon-firebase-data", {
-          detail: window.__JON_FIREBASE_DATA
-        }));
-        publicDataLoadedAt = Date.now();
-      })();
-
-      try {
-        await publicDataRequest;
-      } catch (error) {
-        console.error("JON Stream public app data request failed:", error);
-        window.dispatchEvent(new CustomEvent("jon-firebase-error", { detail: error }));
-      } finally {
-        publicDataRequest = null;
-      }
-    }
-
-    void loadPublicAppData();
-    window.addEventListener("focus", () => { void loadPublicAppData(); });
-    window.addEventListener("online", () => { void loadPublicAppData(); });
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) void loadPublicAppData();
-    });
   } catch (error) {
     console.error("JON Stream Firebase connection failed:", error);
     window.dispatchEvent(new CustomEvent("jon-firebase-error", {detail: error}));
