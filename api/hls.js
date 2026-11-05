@@ -81,7 +81,7 @@ async function getChannel(channelId) {
   ]);
   const appData = appSnap.exists ? appSnap.data() || {} : {};
   const idFields = ["premiumChannelId", "playbackChannelId", "channelId", "id"];
-  const sourceFields = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link"];
+  const sourceFields = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link", "source", "primaryStream", "stream"];
   let publicMatch = null;
   for (const group of ["tv", "radio"]) {
     const items = Array.isArray(appData[group]) ? appData[group] : [];
@@ -139,7 +139,7 @@ async function isCataloguedPremiumUrl(target) {
   if (catalogMatch) return true;
   const appSnap = await db.collection("jonStream").doc("appData").get();
   const appData = appSnap.exists ? appSnap.data() || {} : {};
-  const sourceFields = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link"];
+  const sourceFields = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link", "source", "primaryStream", "stream"];
   return ["tv", "radio"].some(group => {
     const items = Array.isArray(appData[group]) ? appData[group] : [];
     return items.some(item => {
