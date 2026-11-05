@@ -75,28 +75,56 @@ function rewritePlaylist(body, baseUrl, gatewayOrigin, ticket) {
 
 async function getChannel(channelId) {
   const { db } = getServices();
-  const snap = await db.collection("premiumPlaybackChannels").doc(channelId).get();
-  if (snap.exists) {
-    const data = snap.data() || {};
-    if (data.active !== true || String(data.accessTier || "").toLowerCase() !== "premium") return null;
-    return data;
-  }
-  const appSnap = await db.collection("jonStream").doc("appData").get();
+  const [catalogSnap, appSnap] = await Promise.all([
+    db.collection("premiumPlaybackChannels").doc(channelId).get(),
+    db.collection("jonStream").doc("appData").get()
+  ]);
   const appData = appSnap.exists ? appSnap.data() || {} : {};
   const idFields = ["premiumChannelId", "playbackChannelId", "channelId", "id"];
   const sourceFields = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link"];
+  let publicMatch = null;
   for (const group of ["tv", "radio"]) {
     const items = Array.isArray(appData[group]) ? appData[group] : [];
-    const match = items.find(item => item &&
+    publicMatch = items.find(item => item &&
       String(item.accessTier || "").toLowerCase() === "premium" &&
       item.active !== false && item.enabled !== false &&
       idFields.some(key => String(item[key] || "").trim() === channelId)
-    );
-    if (!match) continue;
-    const sourceUrl = sourceFields.map(key => match[key]).find(value => typeof value === "string" && value.trim());
-    return sourceUrl ? { ...match, sourceUrl } : null;
+    ) || null;
+    if (publicMatch) break;
   }
-  return null;
+
+  if (catalogSnap.exists) {
+    const catalog = catalogSnap.data() || {};
+    if (catalog.active !== true || String(catalog.accessTier || "").toLowerCase() !== "premium") return null;
+    const catalogSource = typeof catalog.sourceUrl === "string" ? catalog.sourceUrl : "";
+    let selectedSource = null;
+    try {
+      const candidate = new URL(catalogSource);
+      if (isAllowed(candidate)) selectedSource = candidate.toString();
+    } catch (_) {}
+    // Match the ticket issuer's stale-catalog fallback: when the private
+    // catalog URL is no longer permitted, use the server-side public TV/Radio
+    // record only if its source passes the exact same gateway allowlist.
+    if (!selectedSource && publicMatch) {
+      const publicSource = sourceFields.map(key => publicMatch[key])
+        .find(value => typeof value === "string" && value.trim());
+      try {
+        const candidate = new URL(publicSource);
+        if (isAllowed(candidate)) selectedSource = candidate.toString();
+      } catch (_) {}
+    }
+    if (!selectedSource) return null;
+    return { ...catalog, sourceUrl: selectedSource };
+  }
+
+  if (!publicMatch) return null;
+  const sourceUrl = sourceFields.map(key => publicMatch[key])
+    .find(value => typeof value === "string" && value.trim());
+  if (!sourceUrl) return null;
+  try {
+    if (!isAllowed(new URL(sourceUrl))) return null;
+  } catch (_) { return null; }
+  return { ...publicMatch, sourceUrl };
 }
 
 async function isCataloguedPremiumUrl(target) {
