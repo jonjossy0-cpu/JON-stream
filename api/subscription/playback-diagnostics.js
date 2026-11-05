@@ -17,15 +17,53 @@ function safeProjectId() {
   }
 }
 
-function sourceIsAllowed(value) {
-  try {
-    const url = new URL(value);
-    return ["http:", "https:"].includes(url.protocol) &&
-      !url.username && !url.password && ALLOWED_HOSTS.has(url.hostname) &&
-      ALLOWED_ENDPOINTS.has(endpointKey(url));
-  } catch (_) {
-    return false;
+const SOURCE_FIELDS = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link", "source", "primaryStream", "stream"];
+
+function inspectSource(value) {
+  if (typeof value !== "string" || !value.trim()) {
+    return { configured: false, reason: "SOURCE_FIELD_MISSING" };
   }
+  try {
+    const url = new URL(value.trim());
+    const schemeAllowed = ["http:", "https:"].includes(url.protocol);
+    const credentialsAbsent = !url.username && !url.password;
+    const hostAllowed = ALLOWED_HOSTS.has(url.hostname);
+    const endpoint = endpointKey(url);
+    const endpointAllowed = ALLOWED_ENDPOINTS.has(endpoint);
+    let reason = "OK";
+    if (!schemeAllowed) reason = "SCHEME_NOT_ALLOWED";
+    else if (!credentialsAbsent) reason = "URL_CREDENTIALS_NOT_ALLOWED";
+    else if (!hostAllowed) reason = "HOST_NOT_ALLOWLISTED";
+    else if (!endpointAllowed) reason = "HOST_PORT_NOT_ALLOWLISTED";
+    return {
+      configured: true,
+      scheme: url.protocol.replace(":", ""),
+      hostname: url.hostname,
+      port: url.port || (url.protocol === "https:" ? "443" : "80"),
+      schemeAllowed,
+      credentialsAbsent,
+      hostAllowed,
+      endpointAllowed,
+      allowed: reason === "OK",
+      reason
+    };
+  } catch (_) {
+    return { configured: true, allowed: false, reason: "SOURCE_NOT_ABSOLUTE_URL" };
+  }
+}
+
+function inspectSourceFields(item) {
+  const fields = {};
+  for (const key of SOURCE_FIELDS) {
+    if (item && Object.prototype.hasOwnProperty.call(item, key)) {
+      const value = item[key];
+      fields[key] = typeof value === "string"
+        ? { present: true, nonEmpty: !!value.trim(), ...inspectSource(value) }
+        : { present: true, valueType: Array.isArray(value) ? "array" : typeof value, reason: "SOURCE_FIELD_NOT_STRING" };
+    }
+  }
+  const selected = SOURCE_FIELDS.find(key => typeof (item && item[key]) === "string" && item[key].trim());
+  return { fields, selectedField: selected || null, selected: selected ? inspectSource(item[selected]) : { configured: false, reason: "NO_SUPPORTED_SOURCE_FIELD" } };
 }
 
 function publicChannelSummary(item, catalog) {
@@ -49,7 +87,9 @@ function publicChannelSummary(item, catalog) {
     catalogDocumentId: match ? match.id : null,
     active: data ? data.active === true : null,
     catalogAccessTier: data ? String(data.accessTier || "").toLowerCase() : null,
-    sourceConfiguredAndAllowed: data ? sourceIsAllowed(data.sourceUrl) : null
+    sourceConfiguredAndAllowed: data ? inspectSource(data.sourceUrl).allowed === true : null,
+    publicSourceInspection: inspectSourceFields(item),
+    catalogSourceInspection: data ? inspectSource(data.sourceUrl) : null
   };
 }
 
@@ -91,7 +131,8 @@ module.exports = async function handler(req, res) {
         .filter(Boolean),
       active: data.active === true,
       accessTier: String(data.accessTier || "").toLowerCase(),
-      sourceConfiguredAndAllowed: sourceIsAllowed(data.sourceUrl)
+      sourceConfiguredAndAllowed: inspectSource(data.sourceUrl).allowed === true,
+      sourceInspection: inspectSource(data.sourceUrl)
     }));
 
     return res.status(200).json({
