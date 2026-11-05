@@ -1905,7 +1905,7 @@ async function loadRadioCurrentSource(){
    if(typeof window.jonGetPremiumPlaybackTicket!=="function")throw new Error("Premium playback authorization is not ready. Please retry.");
    const ticket=await window.jonGetPremiumPlaybackTicket(currentStation);
    url=ticket.playbackUrl;isHls=ticket.isHls===true;radioPlaybackUrl=url;
-  }catch(error){setRadioAdvancedStatus("🔒 "+String(error&&error.message||"Premium authorization failed"));return null}
+  }catch(error){setRadioAdvancedStatus("🔒 "+String(error&&error.message||"Premium authorization failed"));throw error}
  }else{radioPlaybackUrl=url}
  if(!url)return null;
  if(isHls&&window.Hls&&Hls.isSupported()){
@@ -1979,8 +1979,8 @@ async function selectStation(index){
  const initialPlayback=loadRadioCurrentSource();
  if(initialPlayback&&initialPlayback.then)initialPlayback.then(()=>{
   radioStatus.innerHTML="🟢 Connected";
- }).catch(()=>{
-  radioStatus.innerHTML="▶ Tap PLAY";
+ }).catch(error=>{
+  radioStatus.innerHTML="🔒 "+escapeHTML(String(error&&error.message||"Premium playback authorization failed"));
  });
 }
 
