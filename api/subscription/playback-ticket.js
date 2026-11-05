@@ -107,6 +107,14 @@ module.exports = async function handler(req, res) {
         return res.status(403).json({ error: "Premium channel is not enabled", errorCode: channel.active !== true ? "PREMIUM_CHANNEL_INACTIVE" : "PREMIUM_CHANNEL_TIER_MISMATCH", stage: "catalog", catalogChannelId: channelSnap.id });
       }
       source = validateSource(channel.sourceUrl);
+      // A stale/incomplete private catalog row must not mask a valid source
+      // already present on the authoritative TV/Radio appData channel record.
+      if (!source) {
+        const publicSourceValue = sourceFields
+          .map(key => publicMatch[key])
+          .find(value => typeof value === "string" && value.trim());
+        source = validateSource(publicSourceValue);
+      }
       canonicalChannelId = channelSnap.id;
     } else {
       // publicMatch came directly from Firestore appData on the server, not from
