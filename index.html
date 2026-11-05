@@ -93,7 +93,7 @@
       if (!v) return "";
       if (v.startsWith("http://") || v.startsWith("https://") || v.startsWith("data:") || v.startsWith("blob:")) return v;
       try {
-        return await getDownloadURL(storageRef(storage, v.startsWith("gs://") ? v : v.replace(/^\\/+/, "")));
+        return await getDownloadURL(storageRef(storage, v.startsWith("gs://") ? v : v.replace(/^[/]+/, "")));
       } catch (e) {
         console.warn("JON media URL could not be resolved:", v, e);
         return "";
