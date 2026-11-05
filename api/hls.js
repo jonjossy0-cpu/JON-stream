@@ -200,9 +200,16 @@ module.exports = async function handler(req, res) {
       const value = upstream.headers.get(name);
       if (value) res.setHeader(name, value);
     }
-    const buffer = req.method === "HEAD" ? null : Buffer.from(await upstream.arrayBuffer());
     res.statusCode = upstream.status;
-    return res.end(buffer || undefined);
+    if (req.method === "HEAD" || !upstream.body) return res.end();
+    // Stream live media through without buffering the full response in memory.
+    const { Readable } = require("stream");
+    const mediaStream = Readable.fromWeb(upstream.body);
+    mediaStream.on("error", () => {
+      if (!res.headersSent) res.status(502).end("Gateway stream error");
+      else res.destroy();
+    });
+    return mediaStream.pipe(res);
   } catch (_) {
     return res.status(502).send("Gateway upstream error");
   }
