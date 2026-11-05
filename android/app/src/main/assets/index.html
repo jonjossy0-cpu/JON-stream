@@ -36,12 +36,12 @@
     try { getAnalytics(app); } catch (_) {}
 
     const storage = getStorage(app);
-    window.__JON_RESOLVE_MEDIA_URL = async function(value){
+    window.__JON_RESOLVE_MEDIA_URL = async function(value) {
       const v = String(value ?? "").trim();
       if (!v) return "";
-      if (/^https?:\\/\\//i.test(v) || /^data:/i.test(v) || /^blob:/i.test(v)) return v;
+      if (v.startsWith("http://") || v.startsWith("https://") || v.startsWith("data:") || v.startsWith("blob:")) return v;
       try {
-        return await getDownloadURL(storageRef(storage, v.startsWith("gs://") ? v : v.replace(/^\\/+/, "")));
+        return await getDownloadURL(storageRef(storage, v.startsWith("gs://") ? v : v.replace(/^\/+/, "")));
       } catch (e) {
         console.warn("JON media URL could not be resolved:", v, e);
         return "";
