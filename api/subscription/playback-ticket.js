@@ -104,33 +104,8 @@ module.exports = async function handler(req, res) {
       if (match) channelSnap = match;
     }
 
-    // If the Channel List contains this Premium channel but the private source
-    // record is missing, rebuild only that record from the matching list entry.
-    if (!channelSnap.exists) {
-      const rawSource = sourceFields.map(key => publicMatch[key]).find(value => typeof value === "string" && value.trim());
-      const safeSource = validateSource(rawSource);
-      if (safeSource) {
-        const ids = [...new Set(idFields.map(key => String(publicMatch[key] || "").trim()).filter(id => /^[a-zA-Z0-9_-]{1,100}$/.test(id)))];
-        const canonicalId = ids.includes(channelId) ? channelId : ids[0];
-        if (canonicalId) {
-          const targetRef = channelCollection.doc(canonicalId);
-          await targetRef.set({
-            channelId: ids[0],
-            publicChannelId: ids[0],
-            publicChannelIds: ids,
-            name: String(publicMatch.name || publicMatch.title || "Premium channel").slice(0, 120),
-            category: String(publicMatch.category || publicGroup).slice(0, 80),
-            active: publicMatch.active === false ? false : true,
-            accessTier: "premium",
-            sourceUrl: safeSource.toString(),
-            isHls: safeSource.pathname.toLowerCase().endsWith(".m3u8"),
-            syncedFrom: "jonStream/appData",
-            updatedAt: FieldValue.serverTimestamp()
-          }, { merge: true });
-          channelSnap = await targetRef.get();
-        }
-      }
-    }
+    // Never create or mutate the private playback catalog during playback authorization.
+    // Catalog entries must be provisioned through the trusted admin workflow.
     if (!channelSnap.exists) return res.status(404).json({ error: "Premium channel not found", errorCode: "PREMIUM_CHANNEL_NOT_FOUND", stage: "catalog", requestedChannelId: channelId });
     const channel = channelSnap.data() || {};
     if (channel.active !== true || String(channel.accessTier || "").toLowerCase() !== "premium") {
