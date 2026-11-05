@@ -18,14 +18,14 @@ const PREMIUM_SOURCE_FIELDS = new Set([
   "gatewayURL", "proxyUrl", "proxyURL", "hlsGateway", "hlsUrl",
   "playlistUrl", "manifestUrl", "fallbackUrl", "link", "stream", "primaryUrl",
   "primaryStream", "backupStream", "backupStreamUrl", "sourceURL", "playbackURL"
-]);
+].map(field => field.toLowerCase()));
 
 function removePremiumSources(value) {
   if (Array.isArray(value)) return value.map(removePremiumSources);
   if (!value || typeof value !== "object") return value;
   const output = {};
   for (const [key, child] of Object.entries(value)) {
-    if (PREMIUM_SOURCE_FIELDS.has(key) || PREMIUM_SOURCE_FIELDS.has(key.toLowerCase())) continue;
+    if (PREMIUM_SOURCE_FIELDS.has(key.toLowerCase())) continue;
     output[key] = removePremiumSources(child);
   }
   return output;
