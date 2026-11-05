@@ -16,7 +16,8 @@ const PREMIUM_SOURCE_FIELDS = new Set([
   "url", "streamUrl", "source", "sourceUrl", "playbackUrl", "backupUrl",
   "backupUrls", "backupStreams", "streamUrls", "sources", "gatewayUrl",
   "gatewayURL", "proxyUrl", "proxyURL", "hlsGateway", "hlsUrl",
-  "playlistUrl", "manifestUrl", "fallbackUrl"
+  "playlistUrl", "manifestUrl", "fallbackUrl", "link", "stream", "primaryUrl",
+  "primaryStream", "backupStream", "backupStreamUrl", "sourceURL", "playbackURL"
 ]);
 
 function removePremiumSources(value) {
@@ -24,7 +25,7 @@ function removePremiumSources(value) {
   if (!value || typeof value !== "object") return value;
   const output = {};
   for (const [key, child] of Object.entries(value)) {
-    if (PREMIUM_SOURCE_FIELDS.has(key)) continue;
+    if (PREMIUM_SOURCE_FIELDS.has(key) || PREMIUM_SOURCE_FIELDS.has(key.toLowerCase())) continue;
     output[key] = removePremiumSources(child);
   }
   return output;
