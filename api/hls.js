@@ -1,7 +1,9 @@
 const { getServices } = require("./_lib/firebaseAdmin");
 const { decodeTicket, isWithinChannelRoot } = require("./_lib/playbackTicket");
 
-const ALLOWED_HOSTS = new Set(["88.212.15.19","154.58.202.18","5.9.121.178","23.237.104.106","amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv"]);
+const ALLOWED_HOSTS = new Set(["88.212.15.19","154.58.202.18","5.9.121.178","23.237.104.106","45.166.93.156","stitcher-ipv4.pluto.tv","amg00627-amg00627c29-rakuten-it-3989.playouts.now.amagi.tv","appletree-mytimeuk-rakuten.amagi.tv","63.141.239.226","stream8.cinerama.uz","38.252.238.18","45.162.64.114","45.177.114.115","168.197.104.22","170.83.16.50","cdn-5.nxplay.com.br","stream.telfazalive.com","edge.novastream.et","bozztv.com","rpn.bozztv.com","amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv"]);
+const ALLOWED_ENDPOINTS = new Set(["88.212.15.19:80","88.212.15.19:443","154.58.202.18:80","154.58.202.18:443","5.9.121.178:80","5.9.121.178:443","23.237.104.106:80","23.237.104.106:443","45.166.93.156:80","45.166.93.156:443","45.166.93.156:9999","stitcher-ipv4.pluto.tv:443","amg00627-amg00627c29-rakuten-it-3989.playouts.now.amagi.tv:443","appletree-mytimeuk-rakuten.amagi.tv:443","63.141.239.226:81","stream8.cinerama.uz:443","38.252.238.18:8000","45.162.64.114:80","45.177.114.115:80","168.197.104.22:80","170.83.16.50:80","cdn-5.nxplay.com.br:443","stream.telfazalive.com:443","edge.novastream.et:443","bozztv.com:443","rpn.bozztv.com:443","amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv:443"]);
+function endpointKey(url) { return `${url.hostname}:${url.port || (url.protocol === "https:" ? "443" : "80")}`; }
 const MAX_PLAYLIST_BYTES = 1_000_000;
 
 function corsHeaders() {
@@ -16,7 +18,7 @@ function corsHeaders() {
 
 function isAllowed(url) {
   return ["http:", "https:"].includes(url.protocol) &&
-    !url.username && !url.password && !url.port && ALLOWED_HOSTS.has(url.hostname);
+    !url.username && !url.password && ALLOWED_HOSTS.has(url.hostname) && ALLOWED_ENDPOINTS.has(endpointKey(url));
 }
 
 function absolutize(value, base) {
@@ -73,21 +75,78 @@ function rewritePlaylist(body, baseUrl, gatewayOrigin, ticket) {
 
 async function getChannel(channelId) {
   const { db } = getServices();
-  const snap = await db.collection("premiumPlaybackChannels").doc(channelId).get();
-  if (!snap.exists) return null;
-  const data = snap.data() || {};
-  if (data.active !== true || String(data.accessTier || "").toLowerCase() !== "premium") return null;
-  return data;
+  const [catalogSnap, appSnap] = await Promise.all([
+    db.collection("premiumPlaybackChannels").doc(channelId).get(),
+    db.collection("jonStream").doc("appData").get()
+  ]);
+  const appData = appSnap.exists ? appSnap.data() || {} : {};
+  const idFields = ["premiumChannelId", "playbackChannelId", "channelId", "id"];
+  const sourceFields = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link", "source", "primaryStream", "stream"];
+  let publicMatch = null;
+  for (const group of ["tv", "radio"]) {
+    const items = Array.isArray(appData[group]) ? appData[group] : [];
+    publicMatch = items.find(item => item &&
+      String(item.accessTier || "").toLowerCase() === "premium" &&
+      item.active !== false && item.enabled !== false &&
+      idFields.some(key => String(item[key] || "").trim() === channelId)
+    ) || null;
+    if (publicMatch) break;
+  }
+
+  if (catalogSnap.exists) {
+    const catalog = catalogSnap.data() || {};
+    if (catalog.active !== true || String(catalog.accessTier || "").toLowerCase() !== "premium") return null;
+    const catalogSource = typeof catalog.sourceUrl === "string" ? catalog.sourceUrl : "";
+    let selectedSource = null;
+    try {
+      const candidate = new URL(catalogSource);
+      if (isAllowed(candidate)) selectedSource = candidate.toString();
+    } catch (_) {}
+    // Match the ticket issuer's stale-catalog fallback: when the private
+    // catalog URL is no longer permitted, use the server-side public TV/Radio
+    // record only if its source passes the exact same gateway allowlist.
+    if (!selectedSource && publicMatch) {
+      const publicSource = sourceFields.map(key => publicMatch[key])
+        .find(value => typeof value === "string" && value.trim());
+      try {
+        const candidate = new URL(publicSource);
+        if (isAllowed(candidate)) selectedSource = candidate.toString();
+      } catch (_) {}
+    }
+    if (!selectedSource) return null;
+    return { ...catalog, sourceUrl: selectedSource };
+  }
+
+  if (!publicMatch) return null;
+  const sourceUrl = sourceFields.map(key => publicMatch[key])
+    .find(value => typeof value === "string" && value.trim());
+  if (!sourceUrl) return null;
+  try {
+    if (!isAllowed(new URL(sourceUrl))) return null;
+  } catch (_) { return null; }
+  return { ...publicMatch, sourceUrl };
 }
 
 async function isCataloguedPremiumUrl(target) {
   const { db } = getServices();
   const snapshot = await db.collection("premiumPlaybackChannels").get();
-  return snapshot.docs.some(doc => {
+  const catalogMatch = snapshot.docs.some(doc => {
     const data = doc.data() || {};
     return String(data.accessTier || "").toLowerCase() === "premium" &&
       typeof data.sourceUrl === "string" &&
       isWithinChannelRoot(target, data.sourceUrl);
+  });
+  if (catalogMatch) return true;
+  const appSnap = await db.collection("jonStream").doc("appData").get();
+  const appData = appSnap.exists ? appSnap.data() || {} : {};
+  const sourceFields = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link", "source", "primaryStream", "stream"];
+  return ["tv", "radio"].some(group => {
+    const items = Array.isArray(appData[group]) ? appData[group] : [];
+    return items.some(item => {
+      if (!item || String(item.accessTier || "").toLowerCase() !== "premium") return false;
+      const sourceUrl = sourceFields.map(key => item[key]).find(value => typeof value === "string" && value.trim());
+      return !!sourceUrl && isWithinChannelRoot(target, sourceUrl);
+    });
   });
 }
 
@@ -200,9 +259,16 @@ module.exports = async function handler(req, res) {
       const value = upstream.headers.get(name);
       if (value) res.setHeader(name, value);
     }
-    const buffer = req.method === "HEAD" ? null : Buffer.from(await upstream.arrayBuffer());
     res.statusCode = upstream.status;
-    return res.end(buffer || undefined);
+    if (req.method === "HEAD" || !upstream.body) return res.end();
+    // Stream live media through without buffering the full response in memory.
+    const { Readable } = require("stream");
+    const mediaStream = Readable.fromWeb(upstream.body);
+    mediaStream.on("error", () => {
+      if (!res.headersSent) res.status(502).end("Gateway stream error");
+      else res.destroy();
+    });
+    return mediaStream.pipe(res);
   } catch (_) {
     return res.status(502).send("Gateway upstream error");
   }

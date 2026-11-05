@@ -4,13 +4,9 @@ const { getServices, requireUser, sendError, setCors } = require("../_lib/fireba
 const DAY_MS = 86400000;
 const TICKET_TTL_SECONDS = 4 * 60 * 60;
 const emailKey = email => crypto.createHash("sha256").update(String(email || "").trim().toLowerCase()).digest("hex");
-const ALLOWED_HOSTS = new Set([
-  "88.212.15.19",
-  "154.58.202.18",
-  "5.9.121.178",
-  "23.237.104.106",
-  "amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv"
-]);
+const ALLOWED_HOSTS = new Set(["88.212.15.19","154.58.202.18","5.9.121.178","23.237.104.106","45.166.93.156","stitcher-ipv4.pluto.tv","amg00627-amg00627c29-rakuten-it-3989.playouts.now.amagi.tv","appletree-mytimeuk-rakuten.amagi.tv","63.141.239.226","stream8.cinerama.uz","38.252.238.18","45.162.64.114","45.177.114.115","168.197.104.22","170.83.16.50","cdn-5.nxplay.com.br","stream.telfazalive.com","edge.novastream.et","bozztv.com","rpn.bozztv.com","amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv"]);
+const ALLOWED_ENDPOINTS = new Set(["88.212.15.19:80","88.212.15.19:443","154.58.202.18:80","154.58.202.18:443","5.9.121.178:80","5.9.121.178:443","23.237.104.106:80","23.237.104.106:443","45.166.93.156:80","45.166.93.156:443","45.166.93.156:9999","stitcher-ipv4.pluto.tv:443","amg00627-amg00627c29-rakuten-it-3989.playouts.now.amagi.tv:443","appletree-mytimeuk-rakuten.amagi.tv:443","63.141.239.226:81","stream8.cinerama.uz:443","38.252.238.18:8000","45.162.64.114:80","45.177.114.115:80","168.197.104.22:80","170.83.16.50:80","cdn-5.nxplay.com.br:443","stream.telfazalive.com:443","edge.novastream.et:443","bozztv.com:443","rpn.bozztv.com:443","amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv:443"]);
+function endpointKey(url) { return `${url.hostname}:${url.port || (url.protocol === "https:" ? "443" : "80")}`; }
 
 function b64url(value) {
   return Buffer.from(value).toString("base64url");
@@ -30,8 +26,8 @@ function validateSource(sourceUrl) {
     return null;
   }
   if (!["http:", "https:"].includes(source.protocol) ||
-      source.username || source.password || source.port ||
-      !ALLOWED_HOSTS.has(source.hostname)) return null;
+      source.username || source.password || !ALLOWED_HOSTS.has(source.hostname) ||
+      !ALLOWED_ENDPOINTS.has(endpointKey(source))) return null;
   return source;
 }
 
@@ -66,7 +62,7 @@ module.exports = async function handler(req, res) {
     const publicSnap = await db.collection("jonStream").doc("appData").get();
     const publicData = publicSnap.exists ? publicSnap.data() || {} : {};
     const idFields = ["premiumChannelId", "playbackChannelId", "channelId", "id"];
-    const sourceFields = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link"];
+    const sourceFields = ["sourceUrl", "playbackUrl", "streamUrl", "url", "link", "source", "primaryStream", "stream"];
     let publicMatch = null;
     let publicGroup = "";
     for (const group of ["tv", "radio"]) {
@@ -86,14 +82,12 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Private catalog holds the server-trusted playback source, but it cannot add
-    // channels that are not present in the public TV/Radio Channel List.
+    // Prefer the private playback catalog when provisioned. If a channel has not
+    // yet been copied there, use the server-read TV/Radio appData record instead.
+    // This keeps the main channel list authoritative and avoids hiding channels or
+    // failing playback solely because a duplicate private catalog document is absent.
     const channelCollection = db.collection("premiumPlaybackChannels");
     let channelSnap = await channelCollection.doc(channelId).get();
-
-    // Public channel IDs can differ from the canonical private catalog document ID.
-    // Resolve only against explicit ID fields in the server-side catalog; never trust
-    // a source URL or access tier supplied by the browser.
     if (!channelSnap.exists) {
       const catalogSnap = await channelCollection.get();
       const aliases = new Set(["channelId", "id", "premiumChannelId", "playbackChannelId", "publicChannelId"]);
@@ -104,40 +98,36 @@ module.exports = async function handler(req, res) {
       if (match) channelSnap = match;
     }
 
-    // If the Channel List contains this Premium channel but the private source
-    // record is missing, rebuild only that record from the matching list entry.
-    if (!channelSnap.exists) {
-      const rawSource = sourceFields.map(key => publicMatch[key]).find(value => typeof value === "string" && value.trim());
-      const safeSource = validateSource(rawSource);
-      if (safeSource) {
-        const ids = [...new Set(idFields.map(key => String(publicMatch[key] || "").trim()).filter(id => /^[a-zA-Z0-9_-]{1,100}$/.test(id)))];
-        const canonicalId = ids.includes(channelId) ? channelId : ids[0];
-        if (canonicalId) {
-          const targetRef = channelCollection.doc(canonicalId);
-          await targetRef.set({
-            channelId: ids[0],
-            publicChannelId: ids[0],
-            publicChannelIds: ids,
-            name: String(publicMatch.name || publicMatch.title || "Premium channel").slice(0, 120),
-            category: String(publicMatch.category || publicGroup).slice(0, 80),
-            active: publicMatch.active === false ? false : true,
-            accessTier: "premium",
-            sourceUrl: safeSource.toString(),
-            isHls: safeSource.pathname.toLowerCase().endsWith(".m3u8"),
-            syncedFrom: "jonStream/appData",
-            updatedAt: FieldValue.serverTimestamp()
-          }, { merge: true });
-          channelSnap = await targetRef.get();
-        }
+    let channel;
+    let canonicalChannelId;
+    let source;
+    if (channelSnap.exists) {
+      channel = channelSnap.data() || {};
+      if (channel.active !== true || String(channel.accessTier || "").toLowerCase() !== "premium") {
+        return res.status(403).json({ error: "Premium channel is not enabled", errorCode: channel.active !== true ? "PREMIUM_CHANNEL_INACTIVE" : "PREMIUM_CHANNEL_TIER_MISMATCH", stage: "catalog", catalogChannelId: channelSnap.id });
       }
+      source = validateSource(channel.sourceUrl);
+      // A stale/incomplete private catalog row must not mask a valid source
+      // already present on the authoritative TV/Radio appData channel record.
+      if (!source) {
+        const publicSourceValue = sourceFields
+          .map(key => publicMatch[key])
+          .find(value => typeof value === "string" && value.trim());
+        source = validateSource(publicSourceValue);
+      }
+      canonicalChannelId = channelSnap.id;
+    } else {
+      // publicMatch came directly from Firestore appData on the server, not from
+      // browser input. Keep its source URL private; only a signed ticket is returned.
+      channel = publicMatch;
+      if (channel.active === false || channel.enabled === false) {
+        return res.status(403).json({ error: "Premium channel is not enabled", errorCode: "PREMIUM_CHANNEL_INACTIVE", stage: "channel-list" });
+      }
+      const sourceValue = sourceFields.map(key => channel[key]).find(value => typeof value === "string" && value.trim());
+      source = validateSource(sourceValue);
+      canonicalChannelId = channelId;
     }
-    if (!channelSnap.exists) return res.status(404).json({ error: "Premium channel not found", errorCode: "PREMIUM_CHANNEL_NOT_FOUND", stage: "catalog", requestedChannelId: channelId });
-    const channel = channelSnap.data() || {};
-    if (channel.active !== true || String(channel.accessTier || "").toLowerCase() !== "premium") {
-      return res.status(403).json({ error: "Premium channel is not enabled", errorCode: channel.active !== true ? "PREMIUM_CHANNEL_INACTIVE" : "PREMIUM_CHANNEL_TIER_MISMATCH", stage: "catalog", catalogChannelId: channelSnap.id });
-    }
-    const source = validateSource(channel.sourceUrl);
-    if (!source) return res.status(503).json({ error: "Premium channel source is not configured safely", errorCode: "PREMIUM_SOURCE_INVALID_OR_HOST_BLOCKED", stage: "source", catalogChannelId: channelSnap.id });
+    if (!source) return res.status(503).json({ error: "Premium channel source is not configured safely", errorCode: "PREMIUM_SOURCE_INVALID_OR_HOST_BLOCKED", stage: "source", channelId: canonicalChannelId });
 
     const now = Date.now();
     const [uidSnap, emailSnap, profileSnap] = await Promise.all([
@@ -171,9 +161,6 @@ module.exports = async function handler(req, res) {
       return res.status(403).json({ error: "Premium subscription or active trial required", errorCode: "PREMIUM_ENTITLEMENT_REQUIRED", stage: "entitlement" });
     }
 
-    // Always bind the ticket and gateway URL to the actual private catalog document ID.
-    // The request may use a public alias, but api/hls.js resolves by document ID only.
-    const canonicalChannelId = channelSnap.id;
     const expiresAt = Math.floor(now / 1000) + TICKET_TTL_SECONDS;
     const ticket = sign({
       v: 1,
