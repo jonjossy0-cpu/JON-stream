@@ -1885,26 +1885,36 @@ const volume=document.getElementById("volume");
 
 let currentStation=null;
 let radioPremiumHls=null;
+let radioPlaybackUrl="";
 let reconnectTimer=null;
 let reconnectAttempts=0;
 let previousVolume=.8;
 
 let favorites=JSON.parse(localStorage.getItem("jonRadioFavorites")||"[]");
 
-function loadRadioCurrentSource(){
+async function loadRadioCurrentSource(){
  if(radioPremiumHls){try{radioPremiumHls.destroy()}catch(_){}radioPremiumHls=null}
  radioPlayer.pause();
  radioPlayer.removeAttribute("src");
  radioPlayer.load();
- if(!currentStation||!currentStation.url)return null;
- const url=currentStation.url;
- if(currentStation.premiumHls&&window.Hls&&Hls.isSupported()){
+ if(!currentStation)return null;
+ let url=currentStation.url||"";
+ let isHls=!!currentStation.premiumHls;
+ if(String(currentStation.accessTier||"free").toLowerCase()==="premium"){
+  try{
+   if(typeof window.jonGetPremiumPlaybackTicket!=="function")throw new Error("Premium playback authorization is not ready. Please retry.");
+   const ticket=await window.jonGetPremiumPlaybackTicket(currentStation);
+   url=ticket.playbackUrl;isHls=ticket.isHls===true;radioPlaybackUrl=url;
+  }catch(error){setRadioAdvancedStatus("🔒 "+String(error&&error.message||"Premium authorization failed"));return null}
+ }else{radioPlaybackUrl=url}
+ if(!url)return null;
+ if(isHls&&window.Hls&&Hls.isSupported()){
   try{
    const player=new Hls({enableWorker:true,lowLatencyMode:false,maxBufferLength:30,maxMaxBufferLength:60});
    radioPremiumHls=player;
    player.attachMedia(radioPlayer);
    player.on(Hls.Events.MEDIA_ATTACHED,()=>{
-    if(currentStation&&currentStation.url===url&&radioPremiumHls===player)player.loadSource(url);
+    if(currentStation&&radioPlaybackUrl===url&&radioPremiumHls===player)player.loadSource(url);
    });
    player.on(Hls.Events.MANIFEST_PARSED,()=>{
     if(!currentStation||currentStation.url!==url||radioPremiumHls!==player)return;
@@ -2001,6 +2011,7 @@ function stopRadio(){
  if(radioBox)radioBox.classList.remove("jon-radio-playing");
  radioPlayer.removeAttribute("src");
  radioPlayer.load();
+ radioPlaybackUrl="";
  nowPlaying.innerHTML="Radio stopped";
  renderRadioStationIdentity(null);
  radioStatus.innerHTML="⚪ Stopped";
@@ -3424,7 +3435,15 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  const resetTVMetrics=perfKey!==tvPerfChannelKey||sourceIndex!==tvSourceIndex||(resetRetry&&sourceIndex===0);
  if(resetTVMetrics)resetTVPerformance(perfKey);
  if(resetTVMetrics)resetTVFullscreenNetworkMeasurement();
- currentTV={...channel,url:jonNormalizeStreamUrl(url)};currentTVIndex=index;tvSourceList=buildTVSources(currentTV).map(jonNormalizeStreamUrl).filter(Boolean);
+ currentTV={...channel,url:jonNormalizeStreamUrl(url)};currentTVIndex=index;
+ if(isPremium){
+  try{
+   if(typeof window.jonGetPremiumPlaybackTicket!=="function")throw new Error("Premium playback authorization is not ready. Please retry.");
+   const ticket=await window.jonGetPremiumPlaybackTicket(channel);
+   currentTV={...channel,url:ticket.playbackUrl,premiumTicket:true,premiumHls:ticket.isHls===true};
+   tvSourceList=[ticket.playbackUrl];
+  }catch(error){tvSourceList=[];tvStatus("🔒 "+String(error&&error.message||"Premium authorization failed"));return}
+ }else{tvSourceList=buildTVSources(currentTV).map(jonNormalizeStreamUrl).filter(Boolean)}
  tvSourceIndex=Math.max(0,Math.min(sourceIndex,tvSourceList.length-1));
  document.getElementById("tvPlayerBox").style.display="block";
  document.getElementById("tvPlayerBox").classList.add("tv-display-persistent");
@@ -3435,8 +3454,8 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  tvDiag("diagSource",tvSourceIndex===0?"Primary":"Backup "+tvSourceIndex);if(resetRetry)tvRetryAttempt=0;clearTimeout(tvReconnectTimer);cleanupPreviousTV();
  let source=tvSourceList[tvSourceIndex]||currentTV.url;
  if(!source){tvStatus("⚠️ No stream source");return}
- let kind=jonStreamKind(source);
- const gateway=jonGatewayForChannel({...currentTV,url:source},kind);
+ let kind=currentTV.premiumTicket&&currentTV.premiumHls?"hls":jonStreamKind(source);
+ const gateway=currentTV.premiumTicket?"":jonGatewayForChannel({...currentTV,url:source},kind);
  if(gateway&&gateway!==source){
    const originalKind=kind;
    source=gateway;
