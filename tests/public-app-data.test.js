@@ -29,9 +29,9 @@ test("public app data includes the app's approved public configuration only", ()
   assert.equal(result.tv[0].url, source.tv[0].url);
   assert.equal(result.tv[1].id, "tv-premium");
   assert.equal(result.tv[1].logo, source.tv[1].logo);
-  assert.equal("url" in result.tv[1], false);
-  assert.equal("backupUrls" in result.tv[1], false);
-  assert.equal("streamUrl" in result.radio[1], false);
+  assert.equal(result.tv[1].url, source.tv[1].url);
+  assert.deepEqual(result.tv[1].backupUrls, source.tv[1].backupUrls);
+  assert.equal(result.radio[1].streamUrl, source.radio[1].streamUrl);
   assert.equal(result.radio[0].url, source.radio[0].url);
   assert.equal(result.settings.version, "1.0.0");
   assert.equal(result.backgrounds[0].url, source.backgrounds[0].url);
