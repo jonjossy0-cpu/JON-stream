@@ -86,14 +86,12 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Private catalog holds the server-trusted playback source, but it cannot add
-    // channels that are not present in the public TV/Radio Channel List.
+    // Prefer the private playback catalog when provisioned. If a channel has not
+    // yet been copied there, use the server-read TV/Radio appData record instead.
+    // This keeps the main channel list authoritative and avoids hiding channels or
+    // failing playback solely because a duplicate private catalog document is absent.
     const channelCollection = db.collection("premiumPlaybackChannels");
     let channelSnap = await channelCollection.doc(channelId).get();
-
-    // Public channel IDs can differ from the canonical private catalog document ID.
-    // Resolve only against explicit ID fields in the server-side catalog; never trust
-    // a source URL or access tier supplied by the browser.
     if (!channelSnap.exists) {
       const catalogSnap = await channelCollection.get();
       const aliases = new Set(["channelId", "id", "premiumChannelId", "playbackChannelId", "publicChannelId"]);
@@ -104,15 +102,28 @@ module.exports = async function handler(req, res) {
       if (match) channelSnap = match;
     }
 
-    // Never create or mutate the private playback catalog during playback authorization.
-    // Catalog entries must be provisioned through the trusted admin workflow.
-    if (!channelSnap.exists) return res.status(404).json({ error: "Premium channel not found", errorCode: "PREMIUM_CHANNEL_NOT_FOUND", stage: "catalog", requestedChannelId: channelId });
-    const channel = channelSnap.data() || {};
-    if (channel.active !== true || String(channel.accessTier || "").toLowerCase() !== "premium") {
-      return res.status(403).json({ error: "Premium channel is not enabled", errorCode: channel.active !== true ? "PREMIUM_CHANNEL_INACTIVE" : "PREMIUM_CHANNEL_TIER_MISMATCH", stage: "catalog", catalogChannelId: channelSnap.id });
+    let channel;
+    let canonicalChannelId;
+    let source;
+    if (channelSnap.exists) {
+      channel = channelSnap.data() || {};
+      if (channel.active !== true || String(channel.accessTier || "").toLowerCase() !== "premium") {
+        return res.status(403).json({ error: "Premium channel is not enabled", errorCode: channel.active !== true ? "PREMIUM_CHANNEL_INACTIVE" : "PREMIUM_CHANNEL_TIER_MISMATCH", stage: "catalog", catalogChannelId: channelSnap.id });
+      }
+      source = validateSource(channel.sourceUrl);
+      canonicalChannelId = channelSnap.id;
+    } else {
+      // publicMatch came directly from Firestore appData on the server, not from
+      // browser input. Keep its source URL private; only a signed ticket is returned.
+      channel = publicMatch;
+      if (channel.active === false || channel.enabled === false) {
+        return res.status(403).json({ error: "Premium channel is not enabled", errorCode: "PREMIUM_CHANNEL_INACTIVE", stage: "channel-list" });
+      }
+      const sourceValue = sourceFields.map(key => channel[key]).find(value => typeof value === "string" && value.trim());
+      source = validateSource(sourceValue);
+      canonicalChannelId = channelId;
     }
-    const source = validateSource(channel.sourceUrl);
-    if (!source) return res.status(503).json({ error: "Premium channel source is not configured safely", errorCode: "PREMIUM_SOURCE_INVALID_OR_HOST_BLOCKED", stage: "source", catalogChannelId: channelSnap.id });
+    if (!source) return res.status(503).json({ error: "Premium channel source is not configured safely", errorCode: "PREMIUM_SOURCE_INVALID_OR_HOST_BLOCKED", stage: "source", channelId: canonicalChannelId });
 
     const now = Date.now();
     const [uidSnap, emailSnap, profileSnap] = await Promise.all([
@@ -146,9 +157,6 @@ module.exports = async function handler(req, res) {
       return res.status(403).json({ error: "Premium subscription or active trial required", errorCode: "PREMIUM_ENTITLEMENT_REQUIRED", stage: "entitlement" });
     }
 
-    // Always bind the ticket and gateway URL to the actual private catalog document ID.
-    // The request may use a public alias, but api/hls.js resolves by document ID only.
-    const canonicalChannelId = channelSnap.id;
     const expiresAt = Math.floor(now / 1000) + TICKET_TTL_SECONDS;
     const ticket = sign({
       v: 1,
