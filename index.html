@@ -34,12 +34,11 @@
       const dispatchPublicData = () => {
         window.dispatchEvent(new CustomEvent("jon-firebase-data", { detail: payload.data }));
       };
-      // Telegram/TV browsers can finish this fetch before later page scripts
-      // register their listeners. Keep the API loader, but emit after parsing.
+      // Notify listeners already registered, then replay once after parsing so
+      // Telegram/TV browsers also reach listeners registered by later scripts.
+      dispatchPublicData();
       if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", dispatchPublicData, { once: true });
-      } else {
-        dispatchPublicData();
       }
       loadedAt = Date.now();
     })();
