@@ -3508,7 +3508,7 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigat
  /* JON_TV_NATIVE_PLAYER_BEGIN */
  // Android TV flavor only: route HLS playback to the native Media3 player.
  // Mobile APK build strips this marked block from its generated HTML.
- if(new URLSearchParams(window.location.search).get("jonNativeTv")==="1"&&new URLSearchParams(window.location.search).get("jonNativeFallback")!=="1"&&kind==="hls"){
+ if(new URLSearchParams(window.location.search).get("jonNativeTv")==="1"&&new URLSearchParams(window.location.search).get("jonNativeFallback")!=="1"&&kind==="hls"&&String(currentTV.accessTier||"free").toLowerCase()!=="premium"){
   const nativeCandidates=[source];
   const orderedCandidates=[...tvSourceList.slice(tvSourceIndex+1),...tvSourceList.slice(0,tvSourceIndex)];
   orderedCandidates.forEach(candidate=>{
