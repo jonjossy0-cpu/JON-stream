@@ -243,6 +243,12 @@ public final class NativePlayerActivity extends Activity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        if (player != null) player.play();
+    }
+
+    @Override
     protected void onStop() {
         if (player != null) player.pause();
         super.onStop();
