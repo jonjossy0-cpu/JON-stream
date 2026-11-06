@@ -35,7 +35,7 @@
 
             <meta-data
                 android:name="android.support.customtabs.trusted.DEFAULT_URL"
-                android:value="https://jonjossy0-cpu.github.io/JON-stream/" />
+                android:value="https://jonjossy0-cpu.github.io/JON-stream/?jonNativeTv=1" />
 
             <meta-data
                 android:name="asset_statements"
@@ -71,6 +71,19 @@
                     android:scheme="https"
                     android:host="jonjossy0-cpu.github.io"
                     android:pathPrefix="/JON-stream" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".NativePlayerActivity"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|uiMode">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="jonstream" android:host="play" />
             </intent-filter>
         </activity>
 
