@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - mainv
+      - feature/android-tv-native-media3
   pull_request:
     branches:
       - mainv
@@ -73,7 +74,7 @@ jobs:
 
   build-tv-release-preview:
     name: Build signed Android TV release APK (preview only)
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/android-tv-native-media3' && github.actor == 'jonjossy0-cpu'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/android-tv-native-media3' && github.actor == 'jonjossy0-cpu'
     needs: security-check
     runs-on: ubuntu-latest
     timeout-minutes: 30
