@@ -171,10 +171,16 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         if (html.count(nativeBegin) != 1 || html.count(nativeEnd) != 1) {
             throw new GradleException("Expected exactly one TV-only native player block to strip from Mobile APK.")
         }
-        def nativeStart = html.indexOf(nativeBegin)
-        def nativeFinish = html.indexOf(nativeEnd, nativeStart)
-        if (nativeFinish < nativeStart) throw new GradleException("Invalid TV-only native player block markers.")
-        html = html.substring(0, nativeStart) + html.substring(nativeFinish + nativeEnd.length())
+        def nativeMarkerStart = html.indexOf(nativeBegin)
+        def nativeStart = html.lastIndexOf('\\n', nativeMarkerStart)
+        def nativeFinish = html.indexOf(nativeEnd, nativeMarkerStart)
+        def nativeAfter = html.indexOf('\\n', nativeFinish)
+        if (nativeStart < 0 || nativeFinish < nativeMarkerStart || nativeAfter < 0) {
+            throw new GradleException("Invalid TV-only native player block markers.")
+        }
+        // Remove the marker lines and their surrounding blank lines so the Mobile HTML
+        // remains byte-for-byte identical to the pre-native-player source.
+        html = html.substring(0, nativeStart) + html.substring(nativeAfter + 1)
         if (html.contains("JON_TV_NATIVE_PLAYER_BEGIN") || html.contains("JON_TV_NATIVE_PLAYER_END")) {
             throw new GradleException("TV-only native player code leaked into Mobile APK HTML.")
         }
