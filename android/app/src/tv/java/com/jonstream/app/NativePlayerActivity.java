@@ -136,7 +136,6 @@ public final class NativePlayerActivity extends Activity {
                 // Modest live buffer for weak networks without allowing a large RAM build-up.
                 .setBufferDurationsMs(12000, 45000, 3000, 6000)
                 .setTargetBufferBytes(32 * 1024 * 1024)
-                .setPrioritizeTimeOverSizeThresholds(true)
                 .build();
 
         DefaultHttpDataSource.Factory httpFactory = new DefaultHttpDataSource.Factory()
