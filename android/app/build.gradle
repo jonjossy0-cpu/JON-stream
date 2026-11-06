@@ -69,6 +69,9 @@ dependencies {
     implementation 'androidx.webkit:webkit:1.14.0'
     tvImplementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
     tvImplementation 'androidx.browser:browser:1.8.0'
+    tvImplementation 'androidx.media3:media3-exoplayer:1.11.1'
+    tvImplementation 'androidx.media3:media3-exoplayer-hls:1.11.1'
+    tvImplementation 'androidx.media3:media3-ui:1.11.1'
 }
 
 /*
@@ -161,6 +164,20 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         }
         def tierCss = '\n<style id="jonMobileAccessTier">.jon-access-tier{display:inline-block;margin-top:4px;padding:3px 7px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.25px;line-height:1.2}.jon-access-tier.free{color:#86efac;background:#14532d;border:1px solid #166534}.jon-access-tier.premium{color:#fde68a;background:#78350f;border:1px solid #92400e}</style>\n'
         if (!html.contains('id="jonMobileAccessTier"')) html = html.replace("</head>", tierCss + "</head>")
+
+        /* Keep the TV-only native playback hook out of the Mobile APK HTML. */
+        def nativeBegin = ' /* JON_TV_NATIVE_PLAYER_BEGIN */'
+        def nativeEnd = ' /* JON_TV_NATIVE_PLAYER_END */'
+        if (html.count(nativeBegin) != 1 || html.count(nativeEnd) != 1) {
+            throw new GradleException("Expected exactly one TV-only native player block to strip from Mobile APK.")
+        }
+        def nativeStart = html.indexOf(nativeBegin)
+        def nativeFinish = html.indexOf(nativeEnd, nativeStart)
+        if (nativeFinish < nativeStart) throw new GradleException("Invalid TV-only native player block markers.")
+        html = html.substring(0, nativeStart) + html.substring(nativeFinish + nativeEnd.length())
+        if (html.contains("JON_TV_NATIVE_PLAYER_BEGIN") || html.contains("JON_TV_NATIVE_PLAYER_END")) {
+            throw new GradleException("TV-only native player code leaked into Mobile APK HTML.")
+        }
 
         def target = outputFile.get().asFile
         target.parentFile.mkdirs()
