@@ -5779,30 +5779,16 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
   unlockedParentalChannelId="";
   if(!Array.isArray(filteredTV)||!filteredTV.length)return;
   const total=filteredTV.length;
-  // Keep the selected list index as the source of truth while a lock gate is open.
+  // Advance exactly one channel. Premium restrictions are handled by attemptPlay,
+  // which displays the Premium gate instead of silently skipping the channel.
   let activeIndex=Number.isInteger(selectedChannelIndex)&&selectedChannelIndex>=0&&selectedChannelIndex<total
    ? selectedChannelIndex : (typeof currentTVIndex==="number"?currentTVIndex:-1);
   if(activeIndex<0||activeIndex>=total)activeIndex=direction>0?-1:0;
-  let firstPremiumIndex=-1;
-  for(let step=1;step<=total;step++){
-   const candidateIndex=(activeIndex+direction*step+total)%total;
-   const channel=filteredTV[candidateIndex];
-   if(!channel)continue;
-   if(isPremiumRestricted(channel)){
-    if(firstPremiumIndex<0)firstPremiumIndex=candidateIndex;
-    continue;
-   }
-   selectedChannelIndex=candidateIndex;
-   attemptPlay(channel.url,channel.name,candidateIndex);
-   return;
-  }
-  // If every remaining channel is Premium-locked, show the first Premium gate
-  // rather than leaving Next/Previous apparently unresponsive.
-  if(firstPremiumIndex>=0){
-   const channel=filteredTV[firstPremiumIndex];
-   selectedChannelIndex=firstPremiumIndex;
-   attemptPlay(channel.url,channel.name,firstPremiumIndex);
-  }
+  const candidateIndex=(activeIndex+direction+total)%total;
+  const channel=filteredTV[candidateIndex];
+  if(!channel)return;
+  selectedChannelIndex=candidateIndex;
+  attemptPlay(channel.url,channel.name,candidateIndex);
  }
  window.nextTV=function(){navigateUnlockedTV(1)};
  window.previousTV=function(){navigateUnlockedTV(-1)};
