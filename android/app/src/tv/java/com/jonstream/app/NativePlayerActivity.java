@@ -6,8 +6,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.Gravity;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -39,6 +41,7 @@ public final class NativePlayerActivity extends Activity {
     private ExoPlayer player;
     private PlayerView playerView;
     private TextView statusView;
+    private Button fallbackButton;
     private String channelName = "JON Stream";
     private int sourceIndex = 0;
     private int retryCount = 0;
@@ -93,6 +96,17 @@ public final class NativePlayerActivity extends Activity {
                 Gravity.BOTTOM | Gravity.START);
         statusParams.setMargins(dp(24), 0, dp(24), dp(22));
         root.addView(statusView, statusParams);
+
+        fallbackButton = new Button(this);
+        fallbackButton.setText("USE WEB PLAYER");
+        fallbackButton.setAllCaps(false);
+        fallbackButton.setVisibility(View.GONE);
+        FrameLayout.LayoutParams fallbackParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM | Gravity.END);
+        fallbackParams.setMargins(dp(24), 0, dp(24), dp(22));
+        root.addView(fallbackButton, fallbackParams);
+        fallbackButton.setOnClickListener(view -> openWebFallback());
 
         setContentView(root);
         initializePlayer();
@@ -157,6 +171,7 @@ public final class NativePlayerActivity extends Activity {
                     setStatus("Buffering live stream…");
                 } else if (playbackState == Player.STATE_READY) {
                     retryCount = 0;
+                    if (fallbackButton != null) fallbackButton.setVisibility(View.GONE);
                     setStatus("Connected • " + channelName);
                 } else if (playbackState == Player.STATE_ENDED) {
                     setStatus("Stream ended • reconnecting…");
@@ -201,7 +216,10 @@ public final class NativePlayerActivity extends Activity {
             retryCount = 0;
             sourceIndex = (sourceIndex + 1) % sources.size();
             delay = sourceIndex == 0 ? 15000L : 700L;
-            setStatus(sourceIndex == 0 ? "Sources unavailable • retrying…" : "Switching to backup source…");
+            if (sourceIndex == 0 && fallbackButton != null) {
+                fallbackButton.setVisibility(View.VISIBLE);
+            }
+            setStatus(sourceIndex == 0 ? "Sources unavailable • use Web Player or retrying…" : "Switching to backup source…");
         }
         recoveryTask = () -> {
             recoveryTask = null;
@@ -219,6 +237,18 @@ public final class NativePlayerActivity extends Activity {
 
     private void setStatus(String message) {
         if (statusView != null) statusView.setText(message);
+    }
+
+    private void openWebFallback() {
+        Uri fallback = Uri.parse("https://jonjossy0-cpu.github.io/JON-stream/?jonNativeTv=1&jonNativeFallback=1");
+        Intent intent = new Intent(Intent.ACTION_VIEW, fallback);
+        intent.setPackage(getPackageName());
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        try {
+            startActivity(intent);
+        } catch (Exception ignored) {
+        }
+        finish();
     }
 
     private void enterImmersive() {
