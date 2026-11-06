@@ -3592,39 +3592,17 @@ function setTVConnected(){
 }
 
 /* TV NEXT / PREVIOUS
-   Locked channels must not trap navigation. Parental-locked channels request
-   the PIN; Premium-only channels are skipped when access is unavailable. */
+   Always land on the immediately adjacent channel. The playback gate displays
+   the Premium or Parental Lock reason without skipping the channel. */
 function navigateTV(direction){
  if(!Array.isArray(filteredTV)||!filteredTV.length)return;
  const total=filteredTV.length;
  const hasCurrent=Number.isInteger(currentTVIndex)&&currentTVIndex>=0&&currentTVIndex<total;
  const start=hasCurrent?currentTVIndex:(direction>0?-1:0);
- let sawPremium=false,sawParental=false;
- for(let step=1;step<=total;step++){
-  const index=(start+(direction*step)+total)%total;
-  const channel=filteredTV[index];
-  if(!channel)continue;
-  if(isJonChannelLocked(channel)&&!jonAllowsChannel(channel)){
-   sawParental=true;
-   continue;
-  }
-  const premium=String(channel.accessTier||"free").toLowerCase()==="premium";
-  const premiumAllowed=!!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed);
-  if(premium&&!premiumAllowed){
-   sawPremium=true;
-   continue;
-  }
-  playTVStream(channel.url,channel.name,index);
-  return;
- }
- if(sawPremium){
-  if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
-  tvStatus("🔒 Premium channels require access");
- }else if(sawParental){
-  tvStatus("🔒 Locked channels skipped — enter your PIN to watch");
- }else{
-  tvStatus("⚠️ No playable TV channel found");
- }
+ const index=(start+direction+total)%total;
+ const channel=filteredTV[index];
+ if(!channel)return;
+ playTVStream(channel.url,channel.name,index,0,true,true);
 }
 function nextTV(){navigateTV(1)}
 function previousTV(){navigateTV(-1)}
