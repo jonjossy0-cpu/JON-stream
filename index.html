@@ -17,9 +17,12 @@
     (location.hostname.endsWith(".vercel.app") ? location.origin : "https://jon-stream.vercel.app");
   let request = null;
   let loadedAt = 0;
-  async function loadPublicAppData() {
+  async function loadPublicAppData(forceRefresh = false) {
     if (request) return request;
-    if (loadedAt && Date.now() - loadedAt < 60000) return;
+    // Re-check Admin-controlled settings when the user returns to JON Stream.
+    // Keep the 60-second cache for ordinary calls, but do not let it hide a
+    // recent Sponsored Logo Enable/Disable change after tab focus or reconnect.
+    if (!forceRefresh && loadedAt && Date.now() - loadedAt < 60000) return;
     request = (async function(){
       const response = await fetch(apiOrigin + "/api/public/app-data", {
         method: "GET",
@@ -52,10 +55,10 @@
     }
   }
   void loadPublicAppData();
-  window.addEventListener("focus", function(){ void loadPublicAppData(); });
-  window.addEventListener("online", function(){ void loadPublicAppData(); });
+  window.addEventListener("focus", function(){ void loadPublicAppData(true); });
+  window.addEventListener("online", function(){ void loadPublicAppData(true); });
   document.addEventListener("visibilitychange", function(){
-    if (!document.hidden) void loadPublicAppData();
+    if (!document.hidden) void loadPublicAppData(true);
   });
 })();
 </script>
