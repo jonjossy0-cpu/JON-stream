@@ -3424,16 +3424,47 @@ function jonGatewayForChannel(channel,kind){
  }
  return "";
 }
-async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
+function showTVAccessBlocked(channel,index,message){
+ clearTimeout(tvStartupTimer);
+ clearTimeout(tvRetryTimer);
+ clearTimeout(tvReconnectTimer);
+ tvRetryTimer=null;
+ tvReconnectTimer=null;
+ tvPlayAttemptId++;
+ cleanupPreviousTV();
+ currentTV={...channel,url:jonNormalizeStreamUrl(channel.url)};
+ currentTVIndex=index;
+ tvSourceList=[];
+ tvSourceIndex=0;
+ tvRetryAttempt=0;
+ resetTVPerformance(String(channel.name||"TV")+"|"+String(channel.url||""));
+ resetTVFullscreenNetworkMeasurement();
+ const displayBox=document.getElementById("tvPlayerBox");
+ if(typeof setMode==="function")setMode("tv");
+ if(displayBox){
+  displayBox.hidden=false;
+  displayBox.style.setProperty("display","block","important");
+  displayBox.classList.add("tv-display-persistent");
+ }
+ document.getElementById("tvPlayerTitle").innerHTML="📺 "+escapeHTML(channel.name||"TV Channel");
+ tvStatus(message);
+ tvDiag("diagSource","Access restricted");
+ tvDiag("diagBuffer","0s");
+}
+async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigationAttempt=false){
  // Prefer the exact visible-list index before URL lookup. Different channels
  // can legitimately share one stream URL (for example FIFA TV / FIFA+ English).
  const indexedChannel=Array.isArray(filteredTV)?filteredTV[index]:null;
  const indexedMatch=indexedChannel&&String(indexedChannel.url||"")===String(url||"")?indexedChannel:null;
  const requestedChannel=indexedMatch||tvChannels.find(c=>String(c.url||"")===String(url||""))||indexedChannel;
  const isPremium=!!requestedChannel&&String(requestedChannel.accessTier||"free").toLowerCase()==="premium";
+ if(navigationAttempt&&requestedChannel&&isJonChannelLocked(requestedChannel)){
+  showTVAccessBlocked(requestedChannel,index,"🔒 Parental Lock: this channel is locked. Enter your PIN from the channel list to watch.");
+  return;
+ }
  if(isPremium&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
-  if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
-  tvStatus("🔒 Premium access required");
+  showTVAccessBlocked(requestedChannel||{name,url},index,"🔒 Premium channel: sign in and activate Premium access to watch.");
+  if(!navigationAttempt&&typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
   return;
  }
  clearTimeout(tvStartupTimer);
@@ -3520,8 +3551,8 @@ function recoverTVStream(){
 }
 function reconnectTV(){recoverTVStream()}
 function setTVConnected(){clearTimeout(tvStartupTimer);clearTimeout(tvRetryTimer);tvRetryTimer=null;tvRetryAttempt=0;tvStatus("🟢 Connected")}
-function nextTV(){if(!filteredTV.length)return;let n=currentTVIndex<0?0:currentTVIndex+1;if(n>=filteredTV.length)n=0;const c=filteredTV[n];playTVStream(c.url,c.name,n)}
-function previousTV(){if(!filteredTV.length)return;let n=currentTVIndex<=0?filteredTV.length-1:currentTVIndex-1;const c=filteredTV[n];playTVStream(c.url,c.name,n)}
+function nextTV(){if(!filteredTV.length)return;let n=currentTVIndex<0?0:currentTVIndex+1;if(n>=filteredTV.length)n=0;const c=filteredTV[n];playTVStream(c.url,c.name,n,0,true,true)}
+function previousTV(){if(!filteredTV.length)return;let n=currentTVIndex<=0?filteredTV.length-1:currentTVIndex-1;const c=filteredTV[n];playTVStream(c.url,c.name,n,0,true,true)}
 function toggleTVMute(){tvPlayer.muted=!tvPlayer.muted}
 function stopTV(){clearTimeout(tvReconnectTimer);clearTimeout(tvStartupTimer);tvPlayAttemptId++;currentTV=null;tvSourceList=[];destroyTVEngine();tvPlayer.pause();tvPlayer.removeAttribute("src");tvPlayer.load();resetTVPerformance("");document.getElementById("tvPlayerTitle").innerHTML="📺 TV stopped";tvStatus("⚪ Stopped");tvDiag("diagSource","None");tvDiag("diagBuffer","0s")}
 async function fullscreenTV(){const target=document.getElementById("tvVideoFrame")||document.getElementById("tvPlayer");const fs=document.fullscreenElement||document.webkitFullscreenElement;if(!target)return;if(fs){try{if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)await document.webkitExitFullscreen()}catch(_){}}else{try{if(target.requestFullscreen)await target.requestFullscreen();else if(target.webkitRequestFullscreen)await target.webkitRequestFullscreen()}catch(_){}}}
