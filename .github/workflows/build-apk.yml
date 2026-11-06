@@ -73,7 +73,7 @@ jobs:
 
   build-tv-release-preview:
     name: Build signed Android TV release APK (preview only)
-    if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/mainv'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/android-tv-native-media3' && github.actor == 'jonjossy0-cpu'
     needs: security-check
     runs-on: ubuntu-latest
     timeout-minutes: 30
