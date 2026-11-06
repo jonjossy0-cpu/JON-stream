@@ -3428,7 +3428,7 @@ function jonGatewayForChannel(channel,kind){
  return "";
 }
 async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
- const requestedChannel=filteredTV[index]||tvChannels.find(c=>c.url===url);
+ const requestedChannel=tvChannels.find(c=>String(c.url||"")===String(url||""))||filteredTV[index];
  const isPremium=!!requestedChannel&&String(requestedChannel.accessTier||"free").toLowerCase()==="premium";
  if(isPremium&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
   if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
@@ -3440,7 +3440,7 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  clearTimeout(tvRetryTimer);
  tvRetryTimer=null;
  const startupAttemptId=++tvPlayAttemptId;
- const baseChannel=filteredTV[index]||tvChannels.find(c=>c.url===url)||{name,url};
+ const baseChannel=tvChannels.find(c=>String(c.url||"")===String(url||""))||filteredTV[index]||{name,url};
  const channel=baseChannel;
  const perfKey=String(channel.name||name||"TV")+"|"+String(baseChannel.url||url||"");
  const resetTVMetrics=perfKey!==tvPerfChannelKey||sourceIndex!==tvSourceIndex||(resetRetry&&sourceIndex===0);
@@ -5618,12 +5618,13 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
  let pendingChannel=null;
 
  function getChannel(url,name,index){
-  if(Array.isArray(filteredTV)&&Number.isInteger(index)&&index>=0&&filteredTV[index])return filteredTV[index];
   if(Array.isArray(tvChannels)){
-   const found=tvChannels.find(channel=>channel&&(
-    String(channel.url||"")===String(url||"")||
-    (name&&String(channel.name||"")===String(name))
-   ));
+   const found=tvChannels.find(channel=>channel&&String(channel.url||"")===String(url||""));
+   if(found)return found;
+  }
+  if(Array.isArray(filteredTV)&&Number.isInteger(index)&&index>=0&&filteredTV[index])return filteredTV[index];
+  if(Array.isArray(tvChannels)&&name){
+   const found=tvChannels.find(channel=>channel&&String(channel.name||"")===String(name));
    if(found)return found;
   }
   return url||name?{url,name,accessTier:"free"}:null;
@@ -5728,8 +5729,9 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
  function attemptPlay(url,name,index,sourceIndex,resetRetry){
   const channel=getChannel(url,name,index);
   if(!channel)return;
-  const resolvedIndex=Number.isInteger(index)&&index>=0?index:
-   (Array.isArray(tvChannels)?tvChannels.indexOf(channel):-1);
+  const matchedFilteredIndex=Array.isArray(filteredTV)?filteredTV.findIndex(item=>item&&String(item.url||"")===String(url||"")):-1;
+  const resolvedIndex=matchedFilteredIndex>=0?matchedFilteredIndex:
+   (Number.isInteger(index)&&index>=0?index:(Array.isArray(tvChannels)?tvChannels.indexOf(channel):-1));
   if(resolvedIndex>=0)selectedChannelIndex=resolvedIndex;
   if(unlockedParentalChannelId&&unlockedParentalChannelId!==channelLockId(channel))unlockedParentalChannelId="";
   if(isParentalRestricted(channel)){
@@ -5791,7 +5793,7 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
   if(typeof currentTV!=="undefined"&&currentTV)attemptPlay(currentTV.url,currentTV.name,index);
  };
  window.addEventListener("jon-premium-access-changed",()=>{
-  if(!pendingChannel||!gate.hidden)return;
+  if(!pendingChannel||gate.hidden)return;
   if(!isPremiumRestricted(pendingChannel.channel)){
    const target=pendingChannel;
    attemptPlay(target.channel.url,target.channel.name,target.index);
