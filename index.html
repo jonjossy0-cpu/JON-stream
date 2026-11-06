@@ -3513,7 +3513,7 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigat
   const orderedCandidates=[...tvSourceList.slice(tvSourceIndex+1),...tvSourceList.slice(0,tvSourceIndex)];
   orderedCandidates.forEach(candidate=>{
    if(jonStreamKind(candidate)!=="hls")return;
-   const candidateGateway=jonGatewayForChannel({...currentTV,url:candidate},"hls");
+   const candidateGateway=jonGatewayForChannel({url:candidate},"hls");
    const resolved=candidateGateway||candidate;
    if(resolved&&!nativeCandidates.includes(resolved))nativeCandidates.push(resolved);
   });
