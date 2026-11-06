@@ -33,13 +33,11 @@ module.exports = async function handler(req, res) {
 
     const data = selectPublicAppData(snapshot.data());
 
-    // Browsers revalidate on a later visit; Vercel's CDN shares successful
-    // responses for 60 seconds and refreshes stale responses in the background.
-    res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
-    res.setHeader(
-      "Vercel-CDN-Cache-Control",
-      "public, s-maxage=60, stale-while-revalidate=300"
-    );
+    // Public app settings (including the Admin-controlled News Ticker speed)
+    // must reflect the latest Firestore value instead of a stale shared CDN copy.
+    // The client already keeps a short in-memory cache to avoid repeated reads.
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Vercel-CDN-Cache-Control", "no-store");
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     return res.status(200).json({ data });
   } catch (error) {
