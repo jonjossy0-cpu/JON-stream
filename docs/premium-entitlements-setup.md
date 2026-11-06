@@ -56,9 +56,9 @@ The current ticket lifetime is four hours. Radio Premium ticket integration and 
 
 ## Ticket revocation and rollout safety
 
-A signed playback ticket is a bearer credential. The API checks the user's entitlement when issuing the ticket, but the HLS gateway validates the signature and expiry on subsequent playlist/segment requests; it does not re-query the user's entitlement for every segment. Therefore, revoking a user's entitlement does **not** invalidate an already-issued ticket immediately. With the current four-hour TTL, an issued ticket may remain usable until expiry, unless the channel is disabled or the ticket secret is rotated (which invalidates tickets signed with the old secret).
+On branch `fix/premium-entitlement-check-every-request`, the Vercel HLS gateway re-reads the current UID/email entitlement and trial expiry from Firestore on every ticketed playlist and media-segment request. A still-unexpired signed ticket alone is therefore not enough: after the paid entitlement and any trial have expired, subsequent gateway requests are denied. If Firestore cannot be checked, the gateway fails closed with HTTP 503. The ticket's four-hour expiry remains a secondary limit, not the entitlement enforcement window.
 
-Treat this as a known revocation window, not immediate revocation. Before production rollout, choose and document an acceptable window or implement a tested revocation strategy. Secret rotation affects all active tickets, and should be planned accordingly. Never claim immediate per-user revocation unless it is implemented and verified end-to-end.
+This change is **not production-active until reviewed, merged, configured, and deployed**. It does not protect direct upstream URLs that remain exposed in public channel metadata; those must be migrated/restricted before claiming complete Premium security. Test real TV, radio, Free, Premium, expiry, and network-failure scenarios before rollout.
 
 ## Environment check (2026-10-24)
 The Vercel project has `FIREBASE_SERVICE_ACCOUNT_JSON` and `JON_ADMIN_UIDS` configured for Preview/Production. `PREMIUM_PLAYBACK_TICKET_SECRET` was not found in the project environment-variable names. The ticket API intentionally responds with HTTP 503 until a strong secret is configured. Secret values were not read or changed during this check.
