@@ -3510,7 +3510,8 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigat
  // Mobile APK build strips this marked block from its generated HTML.
  if(new URLSearchParams(window.location.search).get("jonNativeTv")==="1"&&kind==="hls"){
   const nativeCandidates=[source];
-  tvSourceList.slice(tvSourceIndex+1,tvSourceIndex+4).forEach(candidate=>{
+  const orderedCandidates=[...tvSourceList.slice(tvSourceIndex+1),...tvSourceList.slice(0,tvSourceIndex)];
+  orderedCandidates.forEach(candidate=>{
    if(jonStreamKind(candidate)!=="hls")return;
    const candidateGateway=jonGatewayForChannel({...currentTV,url:candidate},"hls");
    const resolved=candidateGateway||candidate;
