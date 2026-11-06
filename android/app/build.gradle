@@ -69,9 +69,9 @@ dependencies {
     implementation 'androidx.webkit:webkit:1.14.0'
     tvImplementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
     tvImplementation 'androidx.browser:browser:1.8.0'
-    tvImplementation 'androidx.media3:media3-exoplayer:1.10.1'
-    tvImplementation 'androidx.media3:media3-exoplayer-hls:1.10.1'
-    tvImplementation 'androidx.media3:media3-ui:1.10.1'
+    tvImplementation 'androidx.media3:media3-exoplayer:1.9.4'
+    tvImplementation 'androidx.media3:media3-exoplayer-hls:1.9.4'
+    tvImplementation 'androidx.media3:media3-ui:1.9.4'
 }
 
 /*
