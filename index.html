@@ -2714,13 +2714,7 @@ window.addEventListener("keydown",e=>{
     Arrow keys remain unchanged; Page Up/Page Down act only as channel controls. */
  if(k==="PageUp" || k==="PageDown"){
   e.preventDefault();
-  const direction=k==="PageUp"?1:-1;
-  if(!Array.isArray(tvChannels)||!tvChannels.length)return;
-  let currentIndex=(typeof currentTVIndex==="number"&&currentTVIndex>=0)?currentTVIndex:0;
-  const nextIndex=(currentIndex+direction+tvChannels.length)%tvChannels.length;
-  const channel=tvChannels[nextIndex];
-  if(!channel||!jonAllowsChannel(channel))return;
-  playTVStream(channel.url,channel.name,nextIndex);
+  if(k==="PageUp")nextTV();else previousTV();
   return;
  }
  if(!/^\d$/.test(k))return;
@@ -3428,7 +3422,11 @@ function jonGatewayForChannel(channel,kind){
  return "";
 }
 async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
- const requestedChannel=tvChannels.find(c=>String(c.url||"")===String(url||""))||filteredTV[index];
+ // Prefer the exact visible-list index before URL lookup. Different channels
+ // can legitimately share one stream URL (for example FIFA TV / FIFA+ English).
+ const indexedChannel=Array.isArray(filteredTV)?filteredTV[index]:null;
+ const indexedMatch=indexedChannel&&String(indexedChannel.url||"")===String(url||"")?indexedChannel:null;
+ const requestedChannel=indexedMatch||tvChannels.find(c=>String(c.url||"")===String(url||""))||indexedChannel;
  const isPremium=!!requestedChannel&&String(requestedChannel.accessTier||"free").toLowerCase()==="premium";
  if(isPremium&&!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed)){
   if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
@@ -3440,7 +3438,7 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true){
  clearTimeout(tvRetryTimer);
  tvRetryTimer=null;
  const startupAttemptId=++tvPlayAttemptId;
- const baseChannel=tvChannels.find(c=>String(c.url||"")===String(url||""))||filteredTV[index]||{name,url};
+ const baseChannel=indexedMatch||tvChannels.find(c=>String(c.url||"")===String(url||""))||filteredTV[index]||{name,url};
  const channel=baseChannel;
  const perfKey=String(channel.name||name||"TV")+"|"+String(baseChannel.url||url||"");
  const resetTVMetrics=perfKey!==tvPerfChannelKey||sourceIndex!==tvSourceIndex||(resetRetry&&sourceIndex===0);
@@ -3559,40 +3557,43 @@ function setTVConnected(){
  }
 }
 
-/* TV NEXT */
-function nextTV(){
- if(!filteredTV.length)return;
-
- let next;
-
- if(currentTVIndex<0){
-  next=0;
- }else{
-  next=currentTVIndex+1;
-  if(next>=filteredTV.length)next=0;
+/* TV NEXT / PREVIOUS
+   Locked channels must not trap navigation. Parental-locked channels request
+   the PIN; Premium-only channels are skipped when access is unavailable. */
+function navigateTV(direction){
+ if(!Array.isArray(filteredTV)||!filteredTV.length)return;
+ const total=filteredTV.length;
+ const hasCurrent=Number.isInteger(currentTVIndex)&&currentTVIndex>=0&&currentTVIndex<total;
+ const start=hasCurrent?currentTVIndex:(direction>0?-1:0);
+ let sawPremium=false,sawParental=false;
+ for(let step=1;step<=total;step++){
+  const index=(start+(direction*step)+total)%total;
+  const channel=filteredTV[index];
+  if(!channel)continue;
+  if(isJonChannelLocked(channel)&&!jonAllowsChannel(channel)){
+   sawParental=true;
+   continue;
+  }
+  const premium=String(channel.accessTier||"free").toLowerCase()==="premium";
+  const premiumAllowed=!!(window.jonPremiumAccess&&window.jonPremiumAccess.ready&&window.jonPremiumAccess.allowed);
+  if(premium&&!premiumAllowed){
+   sawPremium=true;
+   continue;
+  }
+  playTVStream(channel.url,channel.name,index);
+  return;
  }
-
- const channel=filteredTV[next];
- if(!jonAllowsChannel(channel))return;
- playTVStream(channel.url,channel.name,next);
-}
-
-/* TV PREVIOUS */
-function previousTV(){
- if(!filteredTV.length)return;
-
- let previous;
-
- if(currentTVIndex<=0){
-  previous=filteredTV.length-1;
+ if(sawPremium){
+  if(typeof window.jonShowPremiumUpgrade==="function")window.jonShowPremiumUpgrade();
+  tvStatus("🔒 Premium channels require access");
+ }else if(sawParental){
+  tvStatus("🔒 Locked channels skipped — enter your PIN to watch");
  }else{
-  previous=currentTVIndex-1;
+  tvStatus("⚠️ No playable TV channel found");
  }
-
- const channel=filteredTV[previous];
- if(!jonAllowsChannel(channel))return;
- playTVStream(channel.url,channel.name,previous);
 }
+function nextTV(){navigateTV(1)}
+function previousTV(){navigateTV(-1)}
 
 /* TV MUTE */
 function toggleTVMute(){
@@ -5205,16 +5206,23 @@ if(authPanel){
  function update(data){
   const next=data&&data.settings&&data.settings.sponsorLogoCarousel||{};
   const raw=Array.isArray(next.photos)?next.photos:(typeof next.photos==="string"?next.photos.split(/\r?\n/):[]);
-  // Admin stores per-logo states alongside the legacy photos array. Keep old
-  // configurations working, but never display a logo explicitly disabled in Admin.
+  // Admin persists one enabled/disabled state per canonical logo URL.
+  // Normalize both sides identically so URL formatting cannot revive a disabled logo.
+  const normalizeLogoUrl=value=>{
+   const text=String(value||"").trim();
+   try{const parsed=new URL(text);return (parsed.protocol==="https:"||parsed.protocol==="http:")?parsed.href:""}catch(_){return ""}
+  };
   const states=Array.isArray(next.photoStates)?next.photoStates:[];
-  const disabled=new Set(states.filter(item=>item&&item.enabled===false).map(item=>{
-   try{return new URL(String(item.url||"").trim()).href}catch(_){return String(item.url||"").trim()}
-  }));
-  const photos=cleanPhotos(raw).filter(url=>!disabled.has(url));
-  const fresh={enabled:next.enabled===true,photos};
-  const changed=fresh.enabled!==settings.enabled||fresh.photos.join("\n")!==settings.photos.join("\n");
+  const disabled=new Set(states.filter(item=>item&&item.enabled===false).map(item=>normalizeLogoUrl(item.url)).filter(Boolean));
+  const photos=cleanPhotos(raw).filter(url=>!disabled.has(normalizeLogoUrl(url)));
+  const stateSignature=states.map(item=>normalizeLogoUrl(item&&item.url)+"="+(item&&item.enabled===false?"0":"1")).sort().join("\n");
+  const fresh={enabled:next.enabled===true,photos,stateSignature};
+  const changed=fresh.enabled!==settings.enabled||
+   fresh.photos.join("\n")!==settings.photos.join("\n")||
+   fresh.stateSignature!==(settings.stateSignature||"");
   settings=fresh;
+  // Stop and clear the currently displayed image immediately when Admin disables
+  // the carousel or its last enabled logo; never leave a stale logo on screen.
   if(!settings.enabled||!settings.photos.length){stop();return}
   if(isFullscreen()&&(changed||!active))startCycle();else if(!isFullscreen())stop();
  }
@@ -5618,13 +5626,17 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
  let pendingChannel=null;
 
  function getChannel(url,name,index){
+  // The visible-list index is authoritative: different channels may share a stream URL.
+  if(Array.isArray(filteredTV)&&Number.isInteger(index)&&index>=0){
+   const indexed=filteredTV[index];
+   if(indexed&&String(indexed.url||"")===String(url||""))return indexed;
+  }
+  if(Array.isArray(tvChannels)&&name){
+   const named=tvChannels.find(channel=>channel&&String(channel.name||"")===String(name)&&String(channel.url||"")===String(url||""));
+   if(named)return named;
+  }
   if(Array.isArray(tvChannels)){
    const found=tvChannels.find(channel=>channel&&String(channel.url||"")===String(url||""));
-   if(found)return found;
-  }
-  if(Array.isArray(filteredTV)&&Number.isInteger(index)&&index>=0&&filteredTV[index])return filteredTV[index];
-  if(Array.isArray(tvChannels)&&name){
-   const found=tvChannels.find(channel=>channel&&String(channel.name||"")===String(name));
    if(found)return found;
   }
   return url||name?{url,name,accessTier:"free"}:null;
@@ -5729,7 +5741,10 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
  function attemptPlay(url,name,index,sourceIndex,resetRetry){
   const channel=getChannel(url,name,index);
   if(!channel)return;
-  const matchedFilteredIndex=Array.isArray(filteredTV)?filteredTV.findIndex(item=>item&&String(item.url||"")===String(url||"")):-1;
+  const indexedMatch=Array.isArray(filteredTV)&&Number.isInteger(index)&&index>=0&&filteredTV[index]&&
+   String(filteredTV[index].url||"")===String(url||"")?index:-1;
+  const matchedFilteredIndex=indexedMatch>=0?indexedMatch:
+   (Array.isArray(filteredTV)?filteredTV.findIndex(item=>item&&String(item.url||"")===String(url||"")&&String(item.name||"")===String(name||"")):-1);
   const resolvedIndex=matchedFilteredIndex>=0?matchedFilteredIndex:
    (Number.isInteger(index)&&index>=0?index:(Array.isArray(tvChannels)?tvChannels.indexOf(channel):-1));
   if(resolvedIndex>=0)selectedChannelIndex=resolvedIndex;
@@ -5748,34 +5763,37 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
  }
 
  window.playTVStream=attemptPlay;
- window.nextTV=function(){
-  // A channel-navigation action always ends the previous channel's PIN session,
-  // even when the navigation later returns to that same locked channel.
+ function navigateUnlockedTV(direction){
   unlockedParentalChannelId="";
   if(!Array.isArray(filteredTV)||!filteredTV.length)return;
-  const activeUrl=String((typeof currentTV!=="undefined"&&currentTV&&currentTV.url)||"");
-  let activeIndex=filteredTV.findIndex(channel=>channel&&String(channel.url||"")===activeUrl);
-  if(activeIndex<0)activeIndex=selectedChannelIndex;
-  let next=activeIndex<0?0:activeIndex+1;
-  if(next>=filteredTV.length)next=0;
-  const channel=filteredTV[next];
-  if(!channel)return;
-  selectedChannelIndex=next;
-  attemptPlay(channel.url,channel.name,next);
- };
- window.previousTV=function(){
-  // Do not retain a PIN grant across Previous/Next navigation.
-  unlockedParentalChannelId="";
-  if(!Array.isArray(filteredTV)||!filteredTV.length)return;
-  const activeUrl=String((typeof currentTV!=="undefined"&&currentTV&&currentTV.url)||"");
-  let activeIndex=filteredTV.findIndex(channel=>channel&&String(channel.url||"")===activeUrl);
-  if(activeIndex<0)activeIndex=selectedChannelIndex;
-  let previous=activeIndex<=0?filteredTV.length-1:activeIndex-1;
-  const channel=filteredTV[previous];
-  if(!channel)return;
-  selectedChannelIndex=previous;
-  attemptPlay(channel.url,channel.name,previous);
- };
+  const total=filteredTV.length;
+  // Keep the selected list index as the source of truth while a lock gate is open.
+  let activeIndex=Number.isInteger(selectedChannelIndex)&&selectedChannelIndex>=0&&selectedChannelIndex<total
+   ? selectedChannelIndex : (typeof currentTVIndex==="number"?currentTVIndex:-1);
+  if(activeIndex<0||activeIndex>=total)activeIndex=direction>0?-1:0;
+  let firstPremiumIndex=-1;
+  for(let step=1;step<=total;step++){
+   const candidateIndex=(activeIndex+direction*step+total)%total;
+   const channel=filteredTV[candidateIndex];
+   if(!channel)continue;
+   if(isPremiumRestricted(channel)){
+    if(firstPremiumIndex<0)firstPremiumIndex=candidateIndex;
+    continue;
+   }
+   selectedChannelIndex=candidateIndex;
+   attemptPlay(channel.url,channel.name,candidateIndex);
+   return;
+  }
+  // If every remaining channel is Premium-locked, show the first Premium gate
+  // rather than leaving Next/Previous apparently unresponsive.
+  if(firstPremiumIndex>=0){
+   const channel=filteredTV[firstPremiumIndex];
+   selectedChannelIndex=firstPremiumIndex;
+   attemptPlay(channel.url,channel.name,firstPremiumIndex);
+  }
+ }
+ window.nextTV=function(){navigateUnlockedTV(1)};
+ window.previousTV=function(){navigateUnlockedTV(-1)};
  const originalStopTV=typeof window.stopTV==="function"?window.stopTV.bind(window):null;
  window.stopTV=function(){
   unlockedParentalChannelId="";
