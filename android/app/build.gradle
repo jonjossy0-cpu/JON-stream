@@ -26,8 +26,8 @@ android {
         tv {
             dimension "device"
             applicationId "com.jonstream.tv"
-            versionCode 8
-            versionName "8.0"
+            versionCode 9
+            versionName "8.1"
         }
     }
 
