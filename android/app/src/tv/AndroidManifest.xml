@@ -70,7 +70,7 @@
                 <data
                     android:scheme="https"
                     android:host="jon-stream.vercel.app"
-                    android:pathPrefix="/JON-stream" />
+                    android:pathPrefix="/" />
             </intent-filter>
         </activity>
 
