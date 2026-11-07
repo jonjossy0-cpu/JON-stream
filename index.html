@@ -5840,5 +5840,34 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 })();
 </script>
 
+
+<script id="jonTvRemoteMenuBlock">
+/* TV TWA only: prevent the remote MENU/SETTINGS key from opening Chrome UI. */
+(function(){
+ if(new URLSearchParams(window.location.search).get("jonNativeTv")!=="1")return;
+ function blockBrowserMenu(event){
+  const key=String(event.key||"").toLowerCase();
+  const code=String(event.code||"").toLowerCase();
+  const keyCode=Number(event.keyCode||event.which||0);
+  if(key==="menu"||key==="contextmenu"||key==="settings"||
+     code==="contextmenu"||code==="menubutton"||
+     keyCode===82||keyCode===176){
+   event.preventDefault();
+   event.stopPropagation();
+   if(typeof event.stopImmediatePropagation==="function")event.stopImmediatePropagation();
+   return false;
+  }
+ }
+ window.addEventListener("keydown",blockBrowserMenu,true);
+ window.addEventListener("keyup",blockBrowserMenu,true);
+ window.addEventListener("contextmenu",function(event){
+  event.preventDefault();
+  event.stopPropagation();
+  if(typeof event.stopImmediatePropagation==="function")event.stopImmediatePropagation();
+  return false;
+ },true);
+})();
+</script>
+
 </body>
 </html>
