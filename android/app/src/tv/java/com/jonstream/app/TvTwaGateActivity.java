@@ -157,7 +157,17 @@ public class TvTwaGateActivity extends Activity {
         retryButton = new Button(this);
         retryButton.setText("RETRY");
         retryButton.setVisibility(View.GONE);
-        retryButton.setOnClickListener(v -> {\n            retryButton.setVisibility(View.GONE);\n            statusText.setText("JON Stream Loading…");\n            loadingStartedAt = SystemClock.elapsedRealtime();\n            relationshipValidated = false;\n            if (!hasInternetConnection()) {\n                showFailure("NO INTERNET");\n            } else {\n                beginTrustValidation();\n            }\n        });
+        retryButton.setOnClickListener(v -> {
+            retryButton.setVisibility(View.GONE);
+            statusText.setText("JON Stream Loading…");
+            loadingStartedAt = SystemClock.elapsedRealtime();
+            relationshipValidated = false;
+            if (!hasInternetConnection()) {
+                showFailure("NO INTERNET");
+            } else {
+                beginTrustValidation();
+            }
+        });
         layout.addView(retryButton);
 
         setContentView(layout);
