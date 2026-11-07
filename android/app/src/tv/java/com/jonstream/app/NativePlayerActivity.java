@@ -241,7 +241,7 @@ public final class NativePlayerActivity extends Activity {
     }
 
     private void openWebFallback() {
-        Uri fallback = Uri.parse("https://jon-stream.vercel.app/?jonNativeTv=1&jonNativeFallback=1");
+        Uri fallback = Uri.parse("https://jonjossy0-cpu.github.io/JON-stream/?jonNativeTv=1&jonNativeFallback=1");
         Intent intent = new Intent(Intent.ACTION_VIEW, fallback);
         intent.setPackage(getPackageName());
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
