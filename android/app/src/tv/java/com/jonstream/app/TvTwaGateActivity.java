@@ -3,6 +3,9 @@ package com.jonstream.app;
 import android.app.Activity;
 import android.graphics.Color;
 import android.net.Uri;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.Gravity;
@@ -36,8 +39,17 @@ public class TvTwaGateActivity extends Activity {
     private Button retryButton;
 
     private final Runnable validationTimeout = () -> showFailure(
-        "የWebsite ደህንነት ማረጋገጫው ጊዜ ወስዷል። እባክዎ Retry ይጫኑ።"
+        "የWebsite ማረጋገጫው ጊዜ ወስዷል። RETRY ይጫኑ።"
     );
+
+    private final Runnable startupCheck = () -> {
+        if (isFinishing() || launchStarted) return;
+        if (!hasInternetConnection()) {
+            showFailure("NO INTERNET");
+            return;
+        }
+        beginTrustValidation();
+    };
 
     private final CustomTabsCallback tabsCallback = new CustomTabsCallback() {
         @Override
@@ -75,7 +87,7 @@ public class TvTwaGateActivity extends Activity {
                 showFailure("Chrome የWebsite ማረጋገጫ ጥያቄውን አልተቀበለም። Retry ይጫኑ።");
                 return;
             }
-            statusText.setText("JON Stream Website ደህንነቱ እየተረጋገጠ ነው…");
+            statusText.setText("JON Stream Loading…");
             handler.removeCallbacks(validationTimeout);
             handler.postDelayed(validationTimeout, 15000L);
         }
@@ -141,7 +153,7 @@ public class TvTwaGateActivity extends Activity {
         retryButton = new Button(this);
         retryButton.setText("RETRY");
         retryButton.setVisibility(View.GONE);
-        retryButton.setOnClickListener(v -> beginTrustValidation());
+        retryButton.setOnClickListener(v -> {\n            retryButton.setVisibility(View.GONE);\n            statusText.setText("JON Stream Loading…");\n            handler.removeCallbacks(startupCheck);\n            handler.postDelayed(startupCheck, 10000L);\n        });
         layout.addView(retryButton);
 
         setContentView(layout);
