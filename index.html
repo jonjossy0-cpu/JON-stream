@@ -2993,7 +2993,7 @@ function renderTV(list){
    </button>
   `;
 
-  card.querySelector(".tv-play").onclick=()=>{
+  card.querySelector(".tv-play").onclick=async()=>{
    if(!await jonAllowsChannel(channel)) return;
    /* Reveal the TV display synchronously on the channel-button gesture.
       This keeps Telegram Mini App and TV-browser WebViews from missing the
@@ -3008,7 +3008,7 @@ function renderTV(list){
    playTVStream(channel.url,channel.name,index);
   };
 
-  card.querySelector(".tv-channel-lock").onclick=(event)=>{
+  card.querySelector(".tv-channel-lock").onclick=async(event)=>{
    event.stopPropagation();
    toggleJonChannelLock(channel);
   };
@@ -4240,7 +4240,7 @@ q('#jonSubtitles')?.addEventListener('click',()=>{const v=video();const tracks=v
 q('#jonLanguage')?.addEventListener('click',()=>{const cur=localStorage.getItem(langKey)||'en';const next=cur==='en'?'am':'en';localStorage.setItem(langKey,next);alert(next==='am'?'Amharic mode selected.':'English mode selected. Reload/refresh the page to apply it where translations are available.')});
 q('#jonDataSaver')?.addEventListener('click',()=>{const on=localStorage.getItem('jonDataSaver')!=='1';localStorage.setItem('jonDataSaver',on?'1':'0');alert(on?'Network Saver enabled.':'Network Saver disabled.')});
 q('#jonTvRemote')?.addEventListener('click',()=>window.jonAdvancedInfoDialog({title:"TV REMOTE & KEYBOARD",eyebrow:"JON STREAM • CONTROL GUIDE",message:"Use your TV remote or computer keyboard to control JON Stream.",items:[["D-PAD / ARROW KEYS","Navigate between buttons, channel cards and controls."],["OK / ENTER","Select the focused item or confirm an action."],["PAGE UP / PAGE DOWN","Move to the next or previous TV channel."],["NUMBER KEYS 0–9","Enter a channel number for direct tuning."],["SPACE","Play or pause the current stream."],["M","Mute or unmute audio."],["F","Enter fullscreen playback."],["LEFT / RIGHT","Seek backward or forward by 10 seconds."]]}));
-window.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;const v=video();if(e.key==='ArrowLeft')seek(-10);else if(e.key==='ArrowRight')seek(10);else if(e.code==='Space'&&v){e.preventDefault();v.paused?v.play():v.pause()}else if(e.key.toLowerCase()==='m'&&v)v.muted=!v.muted;else if(e.key.toLowerCase()==='f'&&v&&!document.fullscreenElement)(document.getElementById('tvVideoFrame')||v).requestFullscreen?.()});
+window.addEventListener('keydown',e=>{if(document.getElementById('jonAdvancedDialogRoot')&&!document.getElementById('jonAdvancedDialogRoot').hidden)return;if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;const v=video();if(e.key==='ArrowLeft')seek(-10);else if(e.key==='ArrowRight')seek(10);else if(e.code==='Space'&&v){e.preventDefault();v.paused?v.play():v.pause()}else if(e.key.toLowerCase()==='m'&&v)v.muted=!v.muted;else if(e.key.toLowerCase()==='f'&&v&&!document.fullscreenElement)(document.getElementById('tvVideoFrame')||v).requestFullscreen?.()});
 const parentalModal=q('#jonParentalModal'),parentalForm=q('#jonParentalForm'),parentalStatus=q('#jonParentalStatus');
 const parentalLockKey='jonStreamParentalLocked',parentalLocked=()=>localStorage.getItem(parentalLockKey)==='1',parentalPin=()=>localStorage.getItem(pinKey)||'';
 function closeParentalModal(){if(parentalModal)parentalModal.hidden=true}
@@ -4485,7 +4485,8 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
   let jonOKLongPress=false;
   window.addEventListener("keydown",function(e){
     if(e.key!=="Enter" || e.repeat)return;
-    if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName))return;
+    if(document.getElementById("jonAdvancedDialogRoot")&&!document.getElementById("jonAdvancedDialogRoot").hidden)return;
+  if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName))return;
     jonOKLongPress=false;
     clearTimeout(jonOKTimer);
     jonOKTimer=setTimeout(function(){
