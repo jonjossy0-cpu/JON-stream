@@ -98,8 +98,7 @@ public class MainActivity extends Activity {
         android.widget.ImageView bootLogo = new android.widget.ImageView(this);
         bootLogo.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
         bootLogo.setAdjustViewBounds(true);
-        try { bootLogo.setImageDrawable(getDrawable(getApplicationInfo().icon)); }
-        catch (Exception ignored) { }
+        bootLogo.setImageResource(R.drawable.jon_stream_boot_logo);
         int logoWidth = (int) (360 * getResources().getDisplayMetrics().density);
         int logoHeight = (int) (220 * getResources().getDisplayMetrics().density);
         android.widget.LinearLayout.LayoutParams logoParams =
