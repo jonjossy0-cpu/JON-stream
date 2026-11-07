@@ -123,6 +123,23 @@ public class TvTwaGateActivity extends Activity {
         }
     }
 
+    /** Returns true only when Android reports a validated internet connection. */
+    private boolean hasInternetConnection() {
+        try {
+            ConnectivityManager manager =
+                    (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            if (manager == null) return false;
+            Network active = manager.getActiveNetwork();
+            if (active == null) return false;
+            NetworkCapabilities capabilities = manager.getNetworkCapabilities(active);
+            return capabilities != null
+                    && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
     private void buildGateScreen() {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -213,6 +230,12 @@ public class TvTwaGateActivity extends Activity {
 
     private void launchTrustedWebsite() {
         if (!relationshipValidated || launchStarted || isFinishing()) return;
+        // Re-check immediately before handing off to Chrome: never reveal the website
+        // when the device has lost validated internet during the boot sequence.
+        if (!hasInternetConnection()) {
+            showFailure("NO INTERNET");
+            return;
+        }
         if (tabsSession == null) {
             showFailure("የWebsite ማረጋገጫ ተሳክቷል ግን Chrome Session የለም። Retry ይጫኑ።");
             return;
