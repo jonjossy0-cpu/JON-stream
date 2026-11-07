@@ -160,8 +160,8 @@ public class MainActivity extends Activity {
 
             @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
-                if (loadingOverlay != null) {
-                    loadingOverlay.setText("JON STREAM LOADING...");
+                if (!bootMinimumElapsed && loadingOverlay != null) {
+                    loadingOverlay.setText("JON STREAM IS LOADING...");
                     loadingOverlay.setVisibility(View.VISIBLE);
                 }
                 enterImmersive();
@@ -282,14 +282,18 @@ public class MainActivity extends Activity {
     }
 
     private void hideBootLogoWhenReady() {
-        if (bootMinimumElapsed && homePageLoaded && loadingOverlay != null) {
+        // The boot layer is a fixed seven-second intro, independent of how
+        // quickly the page finishes. WebView keeps loading underneath it.
+        // Keep a real main-frame error visible instead of hiding the error.
+        if (bootMinimumElapsed && loadingOverlay != null
+                && "JON STREAM IS LOADING...".contentEquals(loadingOverlay.getText())) {
             loadingOverlay.setVisibility(View.GONE);
         }
     }
 
     private void loadHome() {
         if (loadingOverlay != null) {
-            loadingOverlay.setText("JON STREAM LOADING...");
+            loadingOverlay.setText("JON STREAM IS LOADING...");
             loadingOverlay.setVisibility(View.VISIBLE);
         }
         webView.loadUrl(HOME);
