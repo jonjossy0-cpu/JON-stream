@@ -3010,7 +3010,7 @@ function renderTV(list){
 
   card.querySelector(".tv-channel-lock").onclick=async(event)=>{
    event.stopPropagation();
-   toggleJonChannelLock(channel);
+   await toggleJonChannelLock(channel);
   };
 
   card.querySelector(".tv-move").onclick=(event)=>{
