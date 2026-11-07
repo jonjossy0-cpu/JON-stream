@@ -30,12 +30,10 @@ import java.net.URL;
 public class MainActivity extends Activity {
     private WebView webView;
     private FrameLayout root;
-    private View offlineOverlay;
-    private ConnectivityManager.NetworkCallback networkCallback;
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
     private WebChromeClient chromeClient;
-    private static final String HOME = "https://jon-stream.vercel.app/?jonNativeTv=1";
+    private static final String HOME = "https://appassets.androidplatform.net/assets/index.html";
     private WebViewAssetLoader assetLoader;
     private static final int CURRENT_VERSION_CODE = 7;
     private static final String UPDATE_URL = "https://raw.githubusercontent.com/jonjossy0-cpu/JON-stream/mainv/android/update.json";
@@ -154,30 +152,29 @@ public class MainActivity extends Activity {
 
             @Override public void onReceivedError(WebView view, WebResourceRequest request, android.webkit.WebResourceError error) {
                 super.onReceivedError(view, request, error);
-                if (request.isForMainFrame()) {
-                    if (!isOnline()) runOnUiThread(() -> showOffline());
-                    else handler.postDelayed(() -> view.reload(), 1200);
+                if (request.isForMainFrame() && isOnline()) {
+                    handler.postDelayed(() -> view.reload(), 1200);
                 }
             }
 
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri=request.getUrl();
                 String url=uri.toString();
-                if(isTrustedUrl(uri) || url.startsWith("https://appassets.androidplatform.net/")) return false;
-                // Keep external links inside the app boundary; do not launch Chrome.
-                return true;
+                if(url.startsWith(HOME) || url.startsWith("https://appassets.androidplatform.net/")) return false;
+                if(url.contains("github.com") || url.contains("raw.githubusercontent.com") || url.contains("githubusercontent.com")) return true;
+                try { startActivity(new Intent(Intent.ACTION_VIEW,uri)); return true; }
+                catch(Exception ignored) { return true; }
             }
         });
 
         setContentView(root);
+        // Keep Android TV fully immersive: hide the system navigation/status bars
+        // from the initial launch, not only while HTML5 video fullscreen is active.
         enterImmersive();
-        registerNetworkMonitor();
-        if (savedInstanceState != null && savedInstanceState.getBundle("webview_state") != null && isOnline()) {
+        if (savedInstanceState != null && savedInstanceState.getBundle("webview_state") != null) {
             webView.restoreState(savedInstanceState.getBundle("webview_state"));
-        } else if (isOnline()) {
-            loadHome();
         } else {
-            showOffline();
+            loadHome();
         }
         checkForUpdate();
     }
@@ -242,78 +239,7 @@ public class MainActivity extends Activity {
         enterImmersive();
     }
 
-    private boolean isTrustedUrl(Uri uri) {
-        return uri != null && "https".equalsIgnoreCase(uri.getScheme())
-                && "jon-stream.vercel.app".equalsIgnoreCase(uri.getHost());
-    }
-
-    private void showOffline() {
-        if (root == null || isFinishing()) return;
-        webView.setVisibility(View.GONE);
-        if (offlineOverlay == null) {
-            android.widget.LinearLayout panel = new android.widget.LinearLayout(this);
-            panel.setOrientation(android.widget.LinearLayout.VERTICAL);
-            panel.setGravity(android.view.Gravity.CENTER);
-            panel.setBackgroundColor(android.graphics.Color.rgb(7, 17, 31));
-            panel.setPadding(40, 30, 40, 30);
-            android.widget.TextView message = new android.widget.TextView(this);
-            message.setText("NO INTERNET");
-            message.setTextColor(android.graphics.Color.WHITE);
-            message.setTextSize(30);
-            message.setTypeface(null, android.graphics.Typeface.BOLD);
-            message.setGravity(android.view.Gravity.CENTER);
-            panel.addView(message);
-            android.widget.Button retry = new android.widget.Button(this);
-            retry.setText("RETRY");
-            retry.setOnClickListener(v -> {
-                if (isOnline()) hideOfflineAndLoad();
-                else message.setText("NO INTERNET");
-            });
-            android.widget.LinearLayout.LayoutParams params = new android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-            params.topMargin = 24;
-            panel.addView(retry, params);
-            offlineOverlay = panel;
-        }
-        if (offlineOverlay.getParent() == null) root.addView(offlineOverlay, new FrameLayout.LayoutParams(-1, -1));
-        offlineOverlay.setVisibility(View.VISIBLE);
-        offlineOverlay.requestFocus();
-    }
-
-    private void hideOfflineAndLoad() {
-        if (!isOnline() || root == null) return;
-        if (offlineOverlay != null) {
-            root.removeView(offlineOverlay);
-            offlineOverlay.setVisibility(View.GONE);
-        }
-        webView.setVisibility(View.VISIBLE);
-        loadHome();
-    }
-
-    private void registerNetworkMonitor() {
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.N) return;
-        ConnectivityManager manager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-        if (manager == null) return;
-        networkCallback = new ConnectivityManager.NetworkCallback() {
-            @Override public void onLost(Network network) {
-                runOnUiThread(() -> showOffline());
-            }
-            @Override public void onCapabilitiesChanged(Network network, NetworkCapabilities caps) {
-                boolean validated = caps != null
-                        && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                        && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
-                if (validated) runOnUiThread(() -> {
-                    if (offlineOverlay != null && offlineOverlay.getParent() != null) hideOfflineAndLoad();
-                });
-            }
-        };
-        try { manager.registerDefaultNetworkCallback(networkCallback); }
-        catch (Exception ignored) { networkCallback = null; }
-    }
-
     private void loadHome() {
-        if (!isOnline()) { showOffline(); return; }
         webView.loadUrl(HOME);
     }
 
@@ -327,8 +253,6 @@ public class MainActivity extends Activity {
     }
 
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
-        int keyCode = event.getKeyCode();
-        if (keyCode == KeyEvent.KEYCODE_MENU || keyCode == KeyEvent.KEYCODE_SETTINGS) return true;
         if(event.getAction()==KeyEvent.ACTION_DOWN && event.getRepeatCount()==0) {
             int k=event.getKeyCode();
 
@@ -431,8 +355,6 @@ public class MainActivity extends Activity {
         super.onResume();
         keepScreenAwake();
         enterImmersive();
-        if (!isOnline()) showOffline();
-        else if (offlineOverlay != null && offlineOverlay.getParent() != null) hideOfflineAndLoad();
     }
 
     @Override
@@ -469,11 +391,6 @@ public class MainActivity extends Activity {
 
     @Override protected void onDestroy() {
         handler.removeCallbacksAndMessages(null);
-        if (networkCallback != null) {
-            try { ((ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE)).unregisterNetworkCallback(networkCallback); }
-            catch (Exception ignored) {}
-            networkCallback = null;
-        }
         if(webView!=null){webView.stopLoading();webView.destroy();}
         super.onDestroy();
     }
