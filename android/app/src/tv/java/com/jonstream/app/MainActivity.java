@@ -325,6 +325,18 @@ public class MainActivity extends Activity {
         return c!=null && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
     }
 
+    // Consume MENU at the Activity level so the TV remote cannot open
+    // an Android or WebView menu through either key-down or key-up dispatch.
+    @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_MENU) return true;
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_MENU) return true;
+        return super.onKeyUp(keyCode, event);
+    }
+
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
         int keyCode = event.getKeyCode();
         // Ignore the remote MENU key and common refresh/reload shortcuts.
