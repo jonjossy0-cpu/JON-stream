@@ -89,11 +89,16 @@ public class MainActivity extends Activity {
         // Keep a branded native loading screen above the WebView until the
         // first page navigation has completed.
         loadingOverlay = new TextView(this);
-        loadingOverlay.setText("JON STREAM LOADING...");
+        loadingOverlay.setText("JON STREAM IS LOADING...");
         loadingOverlay.setTextColor(Color.WHITE);
         loadingOverlay.setTextSize(25);
         loadingOverlay.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         loadingOverlay.setGravity(Gravity.CENTER);
+        loadingOverlay.setCompoundDrawablePadding(24);
+        try {
+            loadingOverlay.setCompoundDrawablesWithIntrinsicBounds(null,
+                getResources().getDrawable(getApplicationInfo().icon), null, null);
+        } catch (Exception ignored) { }
         loadingOverlay.setBackgroundColor(Color.rgb(7, 17, 31));
         loadingOverlay.setFocusable(false);
         root.addView(loadingOverlay, new FrameLayout.LayoutParams(-1, -1));
