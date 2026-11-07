@@ -311,7 +311,16 @@ public class MainActivity extends Activity {
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
         int keyCode = event.getKeyCode();
         // Ignore the remote MENU key and common refresh/reload shortcuts.
+        // Some Android TV remotes report their physical MENU key using
+        // different Android key codes. Consume the MENU family at the Activity
+        // level (both key-down and key-up) so it never reaches the WebView/page.
         if (keyCode == KeyEvent.KEYCODE_MENU
+                || keyCode == KeyEvent.KEYCODE_SETTINGS
+                || keyCode == KeyEvent.KEYCODE_GUIDE
+                || keyCode == KeyEvent.KEYCODE_INFO
+                || keyCode == KeyEvent.KEYCODE_TV_INPUT
+                || keyCode == KeyEvent.KEYCODE_STB_INPUT
+                || keyCode == KeyEvent.KEYCODE_BUTTON_MODE
                 || keyCode == KeyEvent.KEYCODE_REFRESH
                 || keyCode == KeyEvent.KEYCODE_F5
                 || (keyCode == KeyEvent.KEYCODE_R && event.isCtrlPressed())) {
