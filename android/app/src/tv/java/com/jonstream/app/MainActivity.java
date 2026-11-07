@@ -168,6 +168,9 @@ public class MainActivity extends Activity {
         });
 
         setContentView(root);
+        // Keep Android TV fully immersive: hide the system navigation/status bars
+        // from the initial launch, not only while HTML5 video fullscreen is active.
+        enterImmersive();
         if (savedInstanceState != null && savedInstanceState.getBundle("webview_state") != null) {
             webView.restoreState(savedInstanceState.getBundle("webview_state"));
         } else {
@@ -232,7 +235,8 @@ public class MainActivity extends Activity {
     }
 
     private void exitImmersive() {
-        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
+        // JON Stream TV stays immersive after exiting an in-page video fullscreen view.
+        enterImmersive();
     }
 
     private void loadHome() {
@@ -350,12 +354,16 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         keepScreenAwake();
+        enterImmersive();
     }
 
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) keepScreenAwake();
+        if (hasFocus) {
+            keepScreenAwake();
+            enterImmersive();
+        }
     }
 
     private void keepScreenAwake() {

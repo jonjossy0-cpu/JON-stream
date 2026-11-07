@@ -2,6 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <queries>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService" />
+        </intent>
+    </queries>
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -24,9 +30,9 @@
             tools:node="remove" />
 
         <activity
-            android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
+            android:name=".TvTwaGateActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:theme="@style/AppTheme"
             android:screenOrientation="landscape"
             android:launchMode="singleTask"
             android:alwaysRetainTaskState="true"
@@ -35,7 +41,7 @@
 
             <meta-data
                 android:name="android.support.customtabs.trusted.DEFAULT_URL"
-                android:value="https://jonjossy0-cpu.github.io/JON-stream/" />
+                android:value="https://jon-stream.vercel.app/?jonNativeTv=1" />
 
             <meta-data
                 android:name="asset_statements"
@@ -69,8 +75,21 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="jonjossy0-cpu.github.io"
-                    android:pathPrefix="/JON-stream" />
+                    android:host="jon-stream.vercel.app"
+                    android:pathPrefix="/" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".NativePlayerActivity"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|uiMode">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="jonstream" android:host="play" />
             </intent-filter>
         </activity>
 
