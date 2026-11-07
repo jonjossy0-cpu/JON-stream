@@ -34,7 +34,8 @@ import java.net.URL;
 public class MainActivity extends Activity {
     private WebView webView;
     private FrameLayout root;
-    private TextView loadingOverlay;
+    private FrameLayout loadingOverlay;
+    private TextView loadingMessage;
     private boolean bootMinimumElapsed = false;
     private boolean homePageLoaded = false;
     private static final long BOOT_LOGO_DURATION_MS = 10000L;
@@ -86,25 +87,38 @@ public class MainActivity extends Activity {
         webView.requestFocus(View.FOCUS_DOWN);
         root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
 
-        // Keep a branded native loading screen above the WebView until the
-        // first page navigation has completed.
-        loadingOverlay = new TextView(this);
-        loadingOverlay.setText("JON STREAM IS LOADING...");
-        loadingOverlay.setTextColor(Color.WHITE);
-        loadingOverlay.setTextSize(25);
-        loadingOverlay.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        loadingOverlay.setGravity(Gravity.CENTER);
-        loadingOverlay.setCompoundDrawablePadding(30);
-        loadingOverlay.setPadding(24, 36, 24, 36);
-        loadingOverlay.setLineSpacing(8f, 1.0f);
-        try {
-            android.graphics.drawable.Drawable appLogo = getDrawable(getApplicationInfo().icon);
-            int logoSize = (int) (220 * getResources().getDisplayMetrics().density);
-            appLogo.setBounds(0, 0, logoSize, logoSize);
-            loadingOverlay.setCompoundDrawables(null, appLogo, null, null);
-        } catch (Exception ignored) { }
+        // TV boot screen: a dedicated ImageView prevents launcher-logo clipping.
+        loadingOverlay = new FrameLayout(this);
         loadingOverlay.setBackgroundColor(Color.rgb(7, 17, 31));
         loadingOverlay.setFocusable(false);
+        android.widget.LinearLayout bootContent = new android.widget.LinearLayout(this);
+        bootContent.setOrientation(android.widget.LinearLayout.VERTICAL);
+        bootContent.setGravity(Gravity.CENTER);
+        bootContent.setPadding(48, 24, 48, 24);
+        android.widget.ImageView bootLogo = new android.widget.ImageView(this);
+        bootLogo.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+        bootLogo.setAdjustViewBounds(true);
+        try { bootLogo.setImageDrawable(getDrawable(getApplicationInfo().icon)); }
+        catch (Exception ignored) { }
+        int logoWidth = (int) (360 * getResources().getDisplayMetrics().density);
+        int logoHeight = (int) (220 * getResources().getDisplayMetrics().density);
+        android.widget.LinearLayout.LayoutParams logoParams =
+            new android.widget.LinearLayout.LayoutParams(logoWidth, logoHeight);
+        logoParams.gravity = Gravity.CENTER_HORIZONTAL;
+        logoParams.bottomMargin = (int) (22 * getResources().getDisplayMetrics().density);
+        bootContent.addView(bootLogo, logoParams);
+        loadingMessage = new TextView(this);
+        loadingMessage.setText("JON STREAM IS LOADING...");
+        loadingMessage.setTextColor(Color.WHITE);
+        loadingMessage.setTextSize(25);
+        loadingMessage.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        loadingMessage.setGravity(Gravity.CENTER);
+        loadingMessage.setIncludeFontPadding(true);
+        bootContent.addView(loadingMessage, new android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
+        loadingOverlay.addView(bootContent, new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.CENTER));
         root.addView(loadingOverlay, new FrameLayout.LayoutParams(-1, -1));
 
         WebView.setWebContentsDebuggingEnabled(false);
@@ -165,7 +179,7 @@ public class MainActivity extends Activity {
             @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
                 if (!bootMinimumElapsed && loadingOverlay != null) {
-                    loadingOverlay.setText("JON STREAM IS LOADING...");
+                    loadingMessage.setText("JON STREAM IS LOADING...");
                     loadingOverlay.setVisibility(View.VISIBLE);
                 }
                 enterImmersive();
@@ -194,7 +208,7 @@ public class MainActivity extends Activity {
             @Override public void onReceivedError(WebView view, WebResourceRequest request, android.webkit.WebResourceError error) {
                 super.onReceivedError(view, request, error);
                 if (request.isForMainFrame() && loadingOverlay != null) {
-                    loadingOverlay.setText("JON STREAM COULDN'T LOAD\nCHECK INTERNET CONNECTION");
+                    loadingMessage.setText("JON STREAM COULDN'T LOAD\nCHECK INTERNET CONNECTION");
                     loadingOverlay.setVisibility(View.VISIBLE);
                 }
             }
@@ -211,7 +225,7 @@ public class MainActivity extends Activity {
 
         setContentView(root);
         enterImmersive();
-        // Keep the landscape boot screen visible for exactly seven seconds
+        // Keep the landscape boot screen visible for at least ten seconds
         // while the WebView loads the website underneath it.
         handler.postDelayed(() -> {
             bootMinimumElapsed = true;
@@ -286,18 +300,18 @@ public class MainActivity extends Activity {
     }
 
     private void hideBootLogoWhenReady() {
-        // The boot layer is a fixed seven-second intro, independent of how
+        // The boot layer is a minimum ten-second intro, independent of how
         // quickly the page finishes. WebView keeps loading underneath it.
         // Keep a real main-frame error visible instead of hiding the error.
         if (bootMinimumElapsed && homePageLoaded && loadingOverlay != null
-                && "JON STREAM IS LOADING...".contentEquals(loadingOverlay.getText())) {
+                && "JON STREAM IS LOADING...".contentEquals(loadingMessage.getText())) {
             loadingOverlay.setVisibility(View.GONE);
         }
     }
 
     private void loadHome() {
         if (loadingOverlay != null) {
-            loadingOverlay.setText("JON STREAM IS LOADING...");
+            loadingMessage.setText("JON STREAM IS LOADING...");
             loadingOverlay.setVisibility(View.VISIBLE);
         }
         webView.loadUrl(HOME);
