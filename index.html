@@ -3504,6 +3504,28 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigat
    if(gateway&&gateway!==source){/* gateway already applied */}
    else{tvStatus("⚠️ "+kind.toUpperCase()+" needs an HLS/HTTP gateway on Android/WebView");tvDiag("diagSource",kind.toUpperCase()+" — gateway required");return}
  }
+
+ /* JON_TV_NATIVE_PLAYER_BEGIN */
+ // Android TV flavor only: route HLS playback to the native Media3 player.
+ // Mobile APK build strips this marked block from its generated HTML.
+ if(new URLSearchParams(window.location.search).get("jonNativeTv")==="1"&&new URLSearchParams(window.location.search).get("jonNativeFallback")!=="1"&&kind==="hls"&&String(currentTV.accessTier||"free").toLowerCase()!=="premium"){
+  const nativeCandidates=[source];
+  const orderedCandidates=[...tvSourceList.slice(tvSourceIndex+1),...tvSourceList.slice(0,tvSourceIndex)];
+  orderedCandidates.forEach(candidate=>{
+   if(jonStreamKind(candidate)!=="hls")return;
+   const candidateGateway=jonGatewayForChannel({url:candidate},"hls");
+   const resolved=candidateGateway||candidate;
+   if(resolved&&!nativeCandidates.includes(resolved))nativeCandidates.push(resolved);
+  });
+  const nativeIntent="intent://play?name="+encodeURIComponent(String(name||"JON Stream"))+
+   "&sources="+encodeURIComponent(JSON.stringify(nativeCandidates))+
+   "#Intent;scheme=jonstream;package=com.jonstream.tv;S.browser_fallback_url="+
+   encodeURIComponent("https://jonjossy0-cpu.github.io/JON-stream/")+";end";
+  tvStatus("▶ Opening native TV player...");
+  window.location.href=nativeIntent;
+  return;
+ }
+ /* JON_TV_NATIVE_PLAYER_END */
  tvStartupTimer=setTimeout(()=>{
   if(!currentTV||startupAttemptId!==tvPlayAttemptId)return;
   if(tvPlayer.paused&&tvPlayer.readyState>=2){tvNeedTapToPlay();return}
