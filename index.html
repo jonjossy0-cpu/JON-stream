@@ -2994,7 +2994,7 @@ function renderTV(list){
   `;
 
   card.querySelector(".tv-play").onclick=()=>{
-   if(!jonAllowsChannel(channel)) return;
+   if(!await jonAllowsChannel(channel)) return;
    /* Reveal the TV display synchronously on the channel-button gesture.
       This keeps Telegram Mini App and TV-browser WebViews from missing the
       player reveal while the playback/access handler initializes. */
@@ -4247,21 +4247,24 @@ function closeParentalModal(){if(parentalModal)parentalModal.hidden=true}
 q('#jonParentalClose')?.addEventListener('click',closeParentalModal);
 parentalModal?.addEventListener('click',e=>{if(e.target===parentalModal)closeParentalModal()});
 function renderParentalPanel(){
- if(!parentalForm)return; const pin=parentalPin(),locked=parentalLocked();
- if(!pin){
-  parentalStatus.textContent='Create a 4-digit PIN to protect TV playback.';
-  parentalForm.innerHTML='<input id="jonPinInput" class="jon-parental-input" inputmode="numeric" maxlength="4" type="password" placeholder="••••"><div class="jon-parental-actions"><button type="button" id="jonSavePin">Create PIN</button><button type="button" class="jon-parental-danger" id="jonParentalCancel">Cancel</button></div>';
-  q('#jonSavePin')?.addEventListener('click',()=>{const v=q('#jonPinInput')?.value||'';if(!/^\d{4}$/.test(v)){parentalStatus.textContent='PIN must be exactly 4 digits.';return}localStorage.setItem(pinKey,v);localStorage.setItem(parentalLockKey,'1');renderParentalPanel()});
-  q('#jonParentalCancel')?.addEventListener('click',closeParentalModal);
- }else{
-  parentalStatus.textContent='Enter the PIN to change the TV lock.';
-  parentalForm.innerHTML='<div class="jon-parental-lock-state">'+(locked?'🔒 TV Parental Lock: ON':'🔓 TV Parental Lock: OFF')+'</div><input id="jonPinInput" class="jon-parental-input" inputmode="numeric" maxlength="4" type="password" placeholder="••••"><div class="jon-parental-actions"><button type="button" id="jonToggleLock">'+(locked?'Unlock TV':'Lock TV')+'</button><button type="button" class="jon-parental-danger" id="jonResetPin">Change PIN</button></div>';
-  q('#jonToggleLock')?.addEventListener('click',()=>{const v=q('#jonPinInput')?.value||'';if(v!==pin){parentalStatus.textContent='Incorrect PIN.';return}localStorage.setItem(parentalLockKey,locked?'0':'1');renderParentalPanel()});
-  q('#jonResetPin')?.addEventListener('click',()=>{const v=q('#jonPinInput')?.value||'';if(v!==pin){parentalStatus.textContent='Enter the current PIN first.';return}localStorage.removeItem(pinKey);localStorage.removeItem(parentalLockKey);renderParentalPanel()});
+  if(!parentalForm)return;const pin=parentalPin(),locked=parentalLocked();
+  if(!pin){
+   parentalStatus.textContent='Create a secure 4-digit password to protect TV playback.';
+   parentalForm.innerHTML='<div class="jon-parental-lock-state">🔐 No password has been created yet.</div><button type="button" id="jonCreateAdvancedPin">CREATE PASSWORD</button><button type="button" class="jon-parental-danger" id="jonParentalCancel">CANCEL</button>';
+   q('#jonCreateAdvancedPin')?.addEventListener('click',async()=>{
+    const values=await window.jonAdvancedDialog({title:"CREATE PARENTAL PASSWORD",eyebrow:"JON STREAM • FAMILY SAFETY",message:"Create and confirm a 4-digit password for your TV parental lock.",fields:[{label:"CREATE PASSWORD",name:"pin",type:"password",placeholder:"Enter 4 digits",maxLength:4,inputMode:"numeric"},{label:"CONFIRM PASSWORD",name:"confirm",type:"password",placeholder:"Re-enter 4 digits",maxLength:4,inputMode:"numeric"}],confirmText:"CREATE PASSWORD",validate:v=>!/^\\d{4}$/.test(v.pin||"")?"Password must contain exactly 4 digits.":v.pin!==v.confirm?"The passwords do not match.":""});
+    if(values){localStorage.setItem(pinKey,values.pin);localStorage.setItem(parentalLockKey,'1');renderParentalPanel()}
+   });
+   q('#jonParentalCancel')?.addEventListener('click',closeParentalModal);
+  }else{
+   parentalStatus.textContent='Enter your current password to manage the TV lock.';
+   parentalForm.innerHTML='<div class="jon-parental-lock-state">'+(locked?'🔒 TV Parental Lock: ON':'🔓 TV Parental Lock: OFF')+'</div><input id="jonPinInput" class="jon-parental-input" inputmode="numeric" maxlength="4" type="password" placeholder="Enter current password"><div class="jon-parental-actions"><button type="button" id="jonToggleLock">'+(locked?'Unlock TV':'Lock TV')+'</button><button type="button" class="jon-parental-danger" id="jonResetPin">Change Password</button></div>';
+   q('#jonToggleLock')?.addEventListener('click',()=>{const v=q('#jonPinInput')?.value||'';if(v!==pin){parentalStatus.textContent='Incorrect password.';return}localStorage.setItem(parentalLockKey,locked?'0':'1');renderParentalPanel()});
+   q('#jonResetPin')?.addEventListener('click',()=>{const v=q('#jonPinInput')?.value||'';if(v!==pin){parentalStatus.textContent='Enter the current password first.';return}localStorage.removeItem(pinKey);localStorage.removeItem(parentalLockKey);renderParentalPanel()});
+  }
+  parentalModal.hidden=false;setTimeout(()=>q('#jonPinInput')?.focus()||q('#jonCreateAdvancedPin')?.focus(),50);
  }
- parentalModal.hidden=false;setTimeout(()=>q('#jonPinInput')?.focus(),50);
-}
-q('#jonParental')?.addEventListener('click',renderParentalPanel);
+ q('#jonParental')?.addEventListener('click',renderParentalPanel);
 function parentalAllowsTV(){if(!parentalLocked())return true;const entered=prompt('🔒 Parental Lock\nEnter 4-digit PIN to play this TV channel:');if(entered===parentalPin())return true;alert('Incorrect parental PIN.');return false;}
 function collectText(el){return (el?.textContent||el?.getAttribute?.('aria-label')||el?.getAttribute?.('title')||'').toLowerCase()}
 q('#jonAdvancedSearch')?.addEventListener('input',e=>{const term=e.target.value.trim().toLowerCase();qa('button,a,[role="button"]').forEach(el=>{if(el.closest('#jonAdvancedBar')||el.closest('#jonFeaturePanel'))return;const text=collectText(el);el.classList.toggle('jonHidden',!!term&&!text.includes(term))})});
