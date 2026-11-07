@@ -285,7 +285,7 @@ public class MainActivity extends Activity {
         // The boot layer is a fixed seven-second intro, independent of how
         // quickly the page finishes. WebView keeps loading underneath it.
         // Keep a real main-frame error visible instead of hiding the error.
-        if (bootMinimumElapsed && loadingOverlay != null
+        if (bootMinimumElapsed && homePageLoaded && loadingOverlay != null
                 && "JON STREAM IS LOADING...".contentEquals(loadingOverlay.getText())) {
             loadingOverlay.setVisibility(View.GONE);
         }
