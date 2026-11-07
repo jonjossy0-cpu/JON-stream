@@ -35,6 +35,9 @@ public class MainActivity extends Activity {
     private WebView webView;
     private FrameLayout root;
     private TextView loadingOverlay;
+    private boolean bootMinimumElapsed = false;
+    private boolean homePageLoaded = false;
+    private static final long BOOT_LOGO_DURATION_MS = 7000L;
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
     private WebChromeClient chromeClient;
@@ -174,7 +177,8 @@ public class MainActivity extends Activity {
                     "if(a)a.textContent=et;if(b)b.textContent=ut;if(d)d.textContent=et;}" +
                     "c();if(!window.__jonNativeClock)window.__jonNativeClock=setInterval(c,1000);" +
                     "}catch(e){}})();", null);
-                if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
+                homePageLoaded = true;
+                hideBootLogoWhenReady();
                 enterImmersive();
             }
 
@@ -198,6 +202,12 @@ public class MainActivity extends Activity {
 
         setContentView(root);
         enterImmersive();
+        // Keep the landscape boot screen visible for exactly seven seconds
+        // while the WebView loads the website underneath it.
+        handler.postDelayed(() -> {
+            bootMinimumElapsed = true;
+            hideBootLogoWhenReady();
+        }, BOOT_LOGO_DURATION_MS);
         if (savedInstanceState != null && savedInstanceState.getBundle("webview_state") != null) {
             webView.restoreState(savedInstanceState.getBundle("webview_state"));
         } else {
@@ -264,6 +274,12 @@ public class MainActivity extends Activity {
     private void exitImmersive() {
         // Keep Android TV system navigation controls hidden after video playback.
         enterImmersive();
+    }
+
+    private void hideBootLogoWhenReady() {
+        if (bootMinimumElapsed && homePageLoaded && loadingOverlay != null) {
+            loadingOverlay.setVisibility(View.GONE);
+        }
     }
 
     private void loadHome() {
