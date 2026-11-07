@@ -1,6 +1,7 @@
 package com.jonstream.app;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.net.ConnectivityManager;
@@ -42,9 +43,15 @@ public class TvTwaGateActivity extends Activity {
     private TextView statusText;
     private Button retryButton;
 
-    private final Runnable validationTimeout = () -> showFailure(
-        "የWebsite ማረጋገጫው ጊዜ ወስዷል። RETRY ይጫኑ።"
-    );
+    private final Runnable validationTimeout = () -> continueWithTwaFallback();
+    private final Runnable networkPoll = () -> {
+        if (isFinishing() || launchStarted) return;
+        if (hasInternetConnection()) beginTrustValidation();
+        else {
+            statusText.setText("NO INTERNET");
+            handler.postDelayed(networkPoll, 2500L);
+        }
+    };
 
     private final CustomTabsCallback tabsCallback = new CustomTabsCallback() {
         @Override
@@ -60,7 +67,10 @@ public class TvTwaGateActivity extends Activity {
                 relationshipValidated = true;
                 launchWhenReady();
             } else {
-                showFailure("Website ገና አልተረጋገጠም። ስለዚህ Website-ን አልከፍትም። Retry ይጫኑ።");
+                // Let Chrome make the final TWA/Digital Asset Links decision. If it
+                // cannot establish trust, Chrome retains its normal browser UI rather
+                // than leaving the TV app stuck on a RETRY screen.
+                continueWithTwaFallback();
             }
         }
     };
@@ -73,7 +83,7 @@ public class TvTwaGateActivity extends Activity {
             client.warmup(0L);
             tabsSession = client.newSession(tabsCallback);
             if (tabsSession == null) {
-                showFailure("Chrome የደህንነት ማረጋገጫ ክፍለ-ጊዜ መፍጠር አልቻለም። Retry ይጫኑ።");
+                launchChromeBrowserFallback();
                 return;
             }
             // Preload the page in Chrome while this native loading screen stays visible.
@@ -83,7 +93,7 @@ public class TvTwaGateActivity extends Activity {
                 CustomTabsService.RELATION_HANDLE_ALL_URLS, TRUSTED_ORIGIN, null);
             if (!accepted) {
                 handler.removeCallbacks(validationTimeout);
-                showFailure("Chrome የWebsite ማረጋገጫ ጥያቄውን አልተቀበለም። Retry ይጫኑ።");
+                continueWithTwaFallback();
                 return;
             }
             statusText.setText("JON Stream Loading…");
@@ -95,7 +105,7 @@ public class TvTwaGateActivity extends Activity {
         public void onServiceDisconnected(android.content.ComponentName name) {
             tabsClient = null;
             tabsSession = null;
-            if (!launchStarted) showFailure("Chrome ግንኙነት ተቋርጧል። Retry ይጫኑ።");
+            if (!launchStarted) launchChromeBrowserFallback();
         }
     };
 
@@ -117,13 +127,19 @@ public class TvTwaGateActivity extends Activity {
         buildGateScreen();
         loadingStartedAt = SystemClock.elapsedRealtime();
         if (!hasInternetConnection()) {
-            showFailure("NO INTERNET");
+            statusText.setText("NO INTERNET");
+            retryButton.setVisibility(View.GONE);
+            handler.postDelayed(networkPoll, 2500L);
         } else {
             beginTrustValidation();
         }
     }
 
-    /** Returns true only when Android reports a validated internet connection. */
+    /**
+     * Android TV devices can have working internet while Google's connectivity
+     * validation probe is blocked. INTERNET is the first-stage signal; Chrome/TWA
+     * performs the actual HTTPS navigation.
+     */
     private boolean hasInternetConnection() {
         try {
             ConnectivityManager manager =
@@ -133,8 +149,7 @@ public class TvTwaGateActivity extends Activity {
             if (active == null) return false;
             NetworkCapabilities capabilities = manager.getNetworkCapabilities(active);
             return capabilities != null
-                    && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+                    && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
         } catch (Exception ignored) {
             return false;
         }
@@ -207,11 +222,49 @@ public class TvTwaGateActivity extends Activity {
         boolean bound = CustomTabsClient.bindCustomTabsService(
                 this, CHROME_PACKAGE, tabsConnection);
         if (!bound) {
-            showFailure("Chrome Custom Tabs አልተገኘም። Chrome-ን ያዘምኑ ወይም Retry ይጫኑ።");
+            launchChromeBrowserFallback();
             return;
         }
         serviceBound = true;
         handler.postDelayed(validationTimeout, 15000L);
+    }
+
+    /**
+     * Avoid trapping the TV on a native RETRY screen when Chrome's asynchronous
+     * trust probe is unavailable or times out. The TWA intent still targets Chrome;
+     * Chrome decides whether the origin qualifies for fullscreen TWA mode.
+     */
+    private void continueWithTwaFallback() {
+        if (launchStarted || isFinishing()) return;
+        handler.removeCallbacks(validationTimeout);
+        if (tabsSession == null) {
+            launchChromeBrowserFallback();
+            return;
+        }
+        relationshipValidated = true;
+        statusText.setText("JON Stream Loading…");
+        launchWhenReady();
+    }
+
+    /** Last-resort Chrome-only handoff; never substitutes an embedded WebView. */
+    private void launchChromeBrowserFallback() {
+        if (launchStarted || isFinishing()) return;
+        if (!hasInternetConnection()) {
+            statusText.setText("NO INTERNET");
+            retryButton.setVisibility(View.GONE);
+            handler.postDelayed(networkPoll, 2500L);
+            return;
+        }
+        try {
+            launchStarted = true;
+            Intent intent = new Intent(Intent.ACTION_VIEW, START_URI);
+            intent.setPackage(CHROME_PACKAGE);
+            startActivity(intent);
+            finish();
+        } catch (Exception error) {
+            launchStarted = false;
+            showFailure("Chrome አልተገኘም። እባክዎ Chrome-ን ያንቁ ወይም ይጫኑ።");
+        }
     }
 
     private void launchWhenReady() {
@@ -258,8 +311,7 @@ public class TvTwaGateActivity extends Activity {
         handler.removeCallbacks(validationTimeout);
         handler.removeCallbacks(launchAfterMinimumLoading);
         statusText.setText(message);
-        retryButton.setVisibility(View.VISIBLE);
-        retryButton.requestFocus();
+        retryButton.setVisibility(View.GONE);
     }
 
     @Override
