@@ -7,9 +7,12 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.KeyEvent;
+import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -20,6 +23,7 @@ import android.webkit.WebViewClient;
 import android.webkit.WebSettings;
 import androidx.webkit.WebViewAssetLoader;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.os.AsyncTask;
 import org.json.JSONObject;
 import java.io.BufferedReader;
@@ -30,6 +34,7 @@ import java.net.URL;
 public class MainActivity extends Activity {
     private WebView webView;
     private FrameLayout root;
+    private TextView loadingOverlay;
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
     private WebChromeClient chromeClient;
@@ -77,6 +82,18 @@ public class MainActivity extends Activity {
         webView.setFocusableInTouchMode(true);
         webView.requestFocus(View.FOCUS_DOWN);
         root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
+
+        // Keep a branded native loading screen above the WebView until the
+        // first page navigation has completed.
+        loadingOverlay = new TextView(this);
+        loadingOverlay.setText("JON STREAM LOADING...");
+        loadingOverlay.setTextColor(Color.WHITE);
+        loadingOverlay.setTextSize(25);
+        loadingOverlay.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        loadingOverlay.setGravity(Gravity.CENTER);
+        loadingOverlay.setBackgroundColor(Color.rgb(7, 17, 31));
+        loadingOverlay.setFocusable(false);
+        root.addView(loadingOverlay, new FrameLayout.LayoutParams(-1, -1));
 
         WebView.setWebContentsDebuggingEnabled(false);
         WebSettings settings = webView.getSettings();
@@ -133,6 +150,15 @@ public class MainActivity extends Activity {
                 return assetLoader.shouldInterceptRequest(request.getUrl());
             }
 
+            @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+                if (loadingOverlay != null) {
+                    loadingOverlay.setText("JON STREAM LOADING...");
+                    loadingOverlay.setVisibility(View.VISIBLE);
+                }
+                enterImmersive();
+            }
+
             @Override public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 view.evaluateJavascript(
@@ -148,12 +174,15 @@ public class MainActivity extends Activity {
                     "if(a)a.textContent=et;if(b)b.textContent=ut;if(d)d.textContent=et;}" +
                     "c();if(!window.__jonNativeClock)window.__jonNativeClock=setInterval(c,1000);" +
                     "}catch(e){}})();", null);
+                if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
+                enterImmersive();
             }
 
             @Override public void onReceivedError(WebView view, WebResourceRequest request, android.webkit.WebResourceError error) {
                 super.onReceivedError(view, request, error);
-                if (request.isForMainFrame() && isOnline()) {
-                    handler.postDelayed(() -> view.reload(), 1200);
+                if (request.isForMainFrame() && loadingOverlay != null) {
+                    loadingOverlay.setText("JON STREAM COULDN'T LOAD\nCHECK INTERNET CONNECTION");
+                    loadingOverlay.setVisibility(View.VISIBLE);
                 }
             }
 
@@ -168,6 +197,7 @@ public class MainActivity extends Activity {
         });
 
         setContentView(root);
+        enterImmersive();
         if (savedInstanceState != null && savedInstanceState.getBundle("webview_state") != null) {
             webView.restoreState(savedInstanceState.getBundle("webview_state"));
         } else {
@@ -232,10 +262,15 @@ public class MainActivity extends Activity {
     }
 
     private void exitImmersive() {
-        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
+        // Keep Android TV system navigation controls hidden after video playback.
+        enterImmersive();
     }
 
     private void loadHome() {
+        if (loadingOverlay != null) {
+            loadingOverlay.setText("JON STREAM LOADING...");
+            loadingOverlay.setVisibility(View.VISIBLE);
+        }
         webView.loadUrl(HOME);
     }
 
@@ -249,6 +284,14 @@ public class MainActivity extends Activity {
     }
 
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        int keyCode = event.getKeyCode();
+        // Ignore the remote MENU key and common refresh/reload shortcuts.
+        if (keyCode == KeyEvent.KEYCODE_MENU
+                || keyCode == KeyEvent.KEYCODE_REFRESH
+                || keyCode == KeyEvent.KEYCODE_F5
+                || (keyCode == KeyEvent.KEYCODE_R && event.isCtrlPressed())) {
+            return true;
+        }
         if(event.getAction()==KeyEvent.ACTION_DOWN && event.getRepeatCount()==0) {
             int k=event.getKeyCode();
 
@@ -350,12 +393,16 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         keepScreenAwake();
+        enterImmersive();
     }
 
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) keepScreenAwake();
+        if (hasFocus) {
+            keepScreenAwake();
+            enterImmersive();
+        }
     }
 
     private void keepScreenAwake() {
