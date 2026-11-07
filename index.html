@@ -2691,14 +2691,11 @@ function moveTVChannelToNumber(channel,targetNumber){
  showTVSavedMessage(saveTVOrder());
 }
 
-function promptMoveTVChannel(channel){
- let current=tvChannels.indexOf(channel);
- if(current<0)current=tvChannels.findIndex(ch=>getTVChannelOrderId(ch)===getTVChannelOrderId(channel));
- current+=1;
- const target=prompt("Move "+channel.name+" to channel number (1-"+tvChannels.length+"):",String(current));
- if(target!==null)moveTVChannelToNumber(channel,target);
+async function promptMoveTVChannel(channel){
+ let current=tvChannels.indexOf(channel);if(current<0)current=tvChannels.findIndex(ch=>getTVChannelOrderId(ch)===getTVChannelOrderId(channel));current+=1;
+ const v=await window.jonAdvancedDialog({title:"MOVE CHANNEL",eyebrow:"JON STREAM • CHANNEL MANAGER",message:"Choose the new position for this channel in your TV list.",fields:[{label:"CHANNEL NAME",name:"channel",value:String(channel.name||"TV Channel"),readOnly:true},{label:"NEW CHANNEL NUMBER",name:"position",value:String(current),type:"number",min:1,max:tvChannels.length,inputMode:"numeric"}],confirmText:"MOVE CHANNEL",validate:x=>{const n=Number(x.position);return !Number.isInteger(n)||n<1||n>tvChannels.length?"Enter a position from 1 to "+tvChannels.length+".":""}});
+ if(v)moveTVChannelToNumber(channel,v.position);
 }
-
 /* TV REMOTE NUMBER KEYS: 1, 15, 153 ... */
 let jonTVRemoteNumberBuffer="",jonTVRemoteNumberTimer=null,jonTVRemoteDisplayTimer=null;
 function updateTVRemoteDisplay(value){
@@ -2724,12 +2721,12 @@ window.addEventListener("keydown",e=>{
  jonTVRemoteNumberBuffer+=k;
  updateTVRemoteDisplay(jonTVRemoteNumberBuffer);
  clearTimeout(jonTVRemoteNumberTimer);
- jonTVRemoteNumberTimer=setTimeout(()=>{
+ jonTVRemoteNumberTimer=setTimeout(async()=>{
   const number=parseInt(jonTVRemoteNumberBuffer,10);
   jonTVRemoteNumberBuffer="";
   if(!Number.isInteger(number)||number<1||number>tvChannels.length)return;
   const channel=tvChannels[number-1];
-  if(!channel||!jonAllowsChannel(channel))return;
+  if(!channel||!await jonAllowsChannel(channel))return;
   /* Numeric selection behaves like a satellite receiver and ignores the
      current search/country filter. */
   const oldFiltered=filteredTV;
@@ -2929,40 +2926,22 @@ function getJonChannelLocks(){
 function saveJonChannelLocks(list){localStorage.setItem(JON_CHANNEL_LOCKS_KEY,JSON.stringify([...new Set(list)]))}
 function jonChannelLockId(channel){return String((channel&&channel.url)||"").trim()}function isJonChannelLocked(channel){const id=jonChannelLockId(channel);return !!id&&getJonChannelLocks().includes(id)}
 function getJonParentalPin(){return localStorage.getItem(JON_PARENTAL_PIN_KEY)||""}
-function ensureJonParentalPin(){
- let pin=getJonParentalPin();
- if(pin)return pin;
- const created=prompt("🔐 Create a 4-digit PIN for TV channel locks:");
- if(created===null)return "";
- if(!/^\d{4}$/.test(created)){alert("PIN must be exactly 4 digits.");return ""}
- localStorage.setItem(JON_PARENTAL_PIN_KEY,created);
- return created;
+async function ensureJonParentalPin(){
+ let pin=getJonParentalPin();if(pin)return pin;
+ const v=await window.jonAdvancedDialog({title:"CREATE PARENTAL PASSWORD",eyebrow:"JON STREAM • FAMILY SAFETY",message:"Create a private 4-digit password to protect locked TV channels.",fields:[{label:"CREATE PASSWORD",name:"pin",type:"password",placeholder:"Enter 4 digits",maxLength:4,inputMode:"numeric"},{label:"CONFIRM PASSWORD",name:"confirm",type:"password",placeholder:"Re-enter 4 digits",maxLength:4,inputMode:"numeric"}],confirmText:"CREATE PASSWORD",validate:x=>!/^\d{4}$/.test(x.pin||"")?"Password must contain exactly 4 digits.":x.pin!==x.confirm?"The passwords do not match.":""});
+ if(!v)return "";localStorage.setItem(JON_PARENTAL_PIN_KEY,v.pin);return v.pin;
 }
-function verifyJonParentalPin(message){
- const pin=getJonParentalPin();
- if(!pin)return false;
- const entered=prompt(message||"🔒 Enter 4-digit PIN:");
- if(entered===pin)return true;
- if(entered!==null)alert("Incorrect parental PIN.");
- return false;
+async function verifyJonParentalPin(message){
+ const pin=getJonParentalPin();if(!pin)return false;
+ const v=await window.jonAdvancedDialog({title:"PARENTAL LOCK",eyebrow:"JON STREAM • SECURE ACCESS",message:message||"Enter your 4-digit password to continue.",fields:[{label:"PASSWORD",name:"pin",type:"password",placeholder:"Enter your 4-digit password",maxLength:4,inputMode:"numeric"}],confirmText:"VERIFY",validate:x=>x.pin===pin?"":"Incorrect password. Please try again."});
+ return !!v;
 }
-function jonAllowsChannel(channel){
- if(!isJonChannelLocked(channel))return true;
- return verifyJonParentalPin("🔒 This TV channel is locked.\nEnter 4-digit PIN to watch:");
-}
-function toggleJonChannelLock(channel){
- const id=jonChannelLockId(channel);if(!id)return;
- let locks=getJonChannelLocks();
- if(locks.includes(id)){
-  if(!verifyJonParentalPin("🔓 Enter 4-digit PIN to unlock this channel:"))return;
-  locks=locks.filter(x=>x!==id);
- }else{
-  const pin=ensureJonParentalPin();if(!pin)return;
-  if(getJonParentalPin()!==pin)return;
-  locks.push(id);
- }
- saveJonChannelLocks(locks);
- renderTV(filteredTV);
+async function jonAllowsChannel(channel){if(!isJonChannelLocked(channel))return true;return await verifyJonParentalPin("This channel is protected. Enter your password to watch.");}
+async function toggleJonChannelLock(channel){
+ const id=jonChannelLockId(channel);if(!id)return;let locks=getJonChannelLocks();
+ if(locks.includes(id)){if(!await verifyJonParentalPin("Enter your password to unlock "+String(channel.name||"this channel")+". "))return;locks=locks.filter(x=>x!==id);}
+ else{const pin=await ensureJonParentalPin();if(!pin)return;locks.push(id);}
+ saveJonChannelLocks(locks);renderTV(filteredTV);
 }
 function renderTV(list){
  const box=document.getElementById("tvChannels");
@@ -3014,8 +2993,8 @@ function renderTV(list){
    </button>
   `;
 
-  card.querySelector(".tv-play").onclick=()=>{
-   if(!jonAllowsChannel(channel)) return;
+  card.querySelector(".tv-play").onclick=async()=>{
+   if(!await jonAllowsChannel(channel)) return;
    /* Reveal the TV display synchronously on the channel-button gesture.
       This keeps Telegram Mini App and TV-browser WebViews from missing the
       player reveal while the playback/access handler initializes. */
@@ -3029,9 +3008,9 @@ function renderTV(list){
    playTVStream(channel.url,channel.name,index);
   };
 
-  card.querySelector(".tv-channel-lock").onclick=(event)=>{
+  card.querySelector(".tv-channel-lock").onclick=async(event)=>{
    event.stopPropagation();
-   toggleJonChannelLock(channel);
+   await toggleJonChannelLock(channel);
   };
 
   card.querySelector(".tv-move").onclick=(event)=>{
@@ -4254,40 +4233,43 @@ const video=()=>document.querySelector('video');
 function seek(n){const v=video();if(v&&Number.isFinite(v.currentTime))v.currentTime=Math.max(0,v.currentTime+n)}
 q('#jonFeaturesBtn')?.addEventListener('click',()=>q('#jonFeaturePanel')?.classList.toggle('open'));q('#jonCloseFeatures')?.addEventListener('click',()=>q('#jonFeaturePanel')?.classList.remove('open'));
 q('#jonBack10')?.addEventListener('click',()=>seek(-10));q('#jonForward10')?.addEventListener('click',()=>seek(10));
-q('#jonPip')?.addEventListener('click',async()=>{const v=video();try{if(!document.pictureInPictureEnabled||!v)return alert('Picture-in-Picture is not available for this player/browser.');if(document.pictureInPictureElement)await document.exitPictureInPicture();else await v.requestPictureInPicture()}catch(e){alert('Picture-in-Picture could not be started.')}});
-q('#jonCast')?.addEventListener('click',async()=>{const v=video();try{if(navigator.presentation?.requestStart)await navigator.presentation.requestStart();else if(v?.remote?.prompt)await v.remote.prompt();else alert('Cast is available only when this browser/player supports Chromecast or Remote Playback.')}catch(e){alert('Cast/Remote Playback is not available here.')}});
-q('#jonAudioTracks')?.addEventListener('click',()=>{const v=video();const tracks=v?.audioTracks;if(tracks&&tracks.length){const names=[...tracks].map((t,i)=>`${i+1}. ${t.label||t.language||'Track '+(i+1)}`).join('\n');alert('Available audio tracks:\n'+names)}else alert('No alternate audio tracks are exposed by the current stream.')});
-q('#jonSubtitles')?.addEventListener('click',()=>{const v=video();const tracks=v?.textTracks;if(tracks?.length){const names=[...tracks].map((t,i)=>`${i+1}. ${t.label||t.language||'Subtitle '+(i+1)}`).join('\n');alert('Available subtitles:\n'+names)}else alert('No SRT/WebVTT subtitle track is attached to the current stream. Add a subtitle track to the media source to use this feature.')});
-q('#jonLanguage')?.addEventListener('click',()=>{const cur=localStorage.getItem(langKey)||'en';const next=cur==='en'?'am':'en';localStorage.setItem(langKey,next);alert(next==='am'?'Amharic mode selected.':'English mode selected. Reload/refresh the page to apply it where translations are available.')});
-q('#jonDataSaver')?.addEventListener('click',()=>{const on=localStorage.getItem('jonDataSaver')!=='1';localStorage.setItem('jonDataSaver',on?'1':'0');alert(on?'Network Saver enabled.':'Network Saver disabled.')});
-q('#jonTvRemote')?.addEventListener('click',()=>alert('TV remote/keyboard shortcuts: Arrow Up/Down = navigate, Enter = select, Space = play/pause, M = mute, F = fullscreen, ←/→ = seek 10 seconds.'));
-window.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;const v=video();if(e.key==='ArrowLeft')seek(-10);else if(e.key==='ArrowRight')seek(10);else if(e.code==='Space'&&v){e.preventDefault();v.paused?v.play():v.pause()}else if(e.key.toLowerCase()==='m'&&v)v.muted=!v.muted;else if(e.key.toLowerCase()==='f'&&v&&!document.fullscreenElement)(document.getElementById('tvVideoFrame')||v).requestFullscreen?.()});
+q('#jonPip')?.addEventListener('click',async()=>{const v=video();try{if(!document.pictureInPictureEnabled||!v){window.jonAdvancedInfoDialog({title:"PICTURE-IN-PICTURE",eyebrow:"JON STREAM • PLAYER TOOLS",message:"Picture-in-Picture is not available in this browser or for the current player."});return}if(document.pictureInPictureElement)await document.exitPictureInPicture();else await v.requestPictureInPicture()}catch(e){window.jonAdvancedInfoDialog({title:"PICTURE-IN-PICTURE",message:"The current browser or stream could not start Picture-in-Picture."})}});
+q('#jonCast')?.addEventListener('click',async()=>{const v=video();try{if(navigator.presentation?.requestStart)await navigator.presentation.requestStart();else if(v?.remote?.prompt)await v.remote.prompt();else window.jonAdvancedInfoDialog({title:"CAST / SHARE SCREEN",eyebrow:"JON STREAM • CONNECTIVITY",message:"Casting is available only when this browser and player support Chromecast or Remote Playback."})}catch(e){window.jonAdvancedInfoDialog({title:"CAST / SHARE SCREEN",message:"Cast or Remote Playback is not available on this device right now."})}});
+q('#jonAudioTracks')?.addEventListener('click',()=>{const tracks=video()?.audioTracks;if(tracks&&tracks.length)window.jonAdvancedInfoDialog({title:"AUDIO TRACKS",eyebrow:"JON STREAM • MEDIA OPTIONS",message:"Audio tracks available in the current stream.",items:[...tracks].map((t,i)=>[(i+1)+". "+(t.label||t.language||"Audio track"),t.language||"Available audio track"])});else window.jonAdvancedInfoDialog({title:"AUDIO TRACKS",message:"No alternate audio tracks are exposed by the current stream."})});
+q('#jonSubtitles')?.addEventListener('click',()=>{const tracks=video()?.textTracks;if(tracks?.length)window.jonAdvancedInfoDialog({title:"SUBTITLES",eyebrow:"JON STREAM • ACCESSIBILITY",message:"Subtitle tracks available in the current stream.",items:[...tracks].map((t,i)=>[(i+1)+". "+(t.label||t.language||"Subtitle"),t.language||"Available subtitle track"])});else window.jonAdvancedInfoDialog({title:"SUBTITLES",message:"No SRT/WebVTT subtitle track is attached to the current stream."})});
+q('#jonLanguage')?.addEventListener('click',()=>{const cur=localStorage.getItem(langKey)||'en';const next=cur==='en'?'am':'en';localStorage.setItem(langKey,next);window.jonAdvancedInfoDialog({title:"LANGUAGE SETTINGS",eyebrow:"JON STREAM • PREFERENCES",message:(next==='am'?'Amharic':'English')+" mode selected. Refresh the page to apply it where translations are available."})});
+q('#jonDataSaver')?.addEventListener('click',()=>{const on=localStorage.getItem('jonDataSaver')!=='1';localStorage.setItem('jonDataSaver',on?'1':'0');window.jonAdvancedInfoDialog({title:"NETWORK SAVER",eyebrow:"JON STREAM • DATA CONTROL",message:on?'Network Saver has been enabled.':'Network Saver has been disabled.'})});
+q('#jonTvRemote')?.addEventListener('click',()=>window.jonAdvancedInfoDialog({title:"TV REMOTE & KEYBOARD",eyebrow:"JON STREAM • CONTROL GUIDE",message:"Use your TV remote or computer keyboard to control JON Stream.",items:[["D-PAD / ARROW KEYS","Navigate between buttons, channel cards and controls."],["OK / ENTER","Select the focused item or confirm an action."],["PAGE UP / PAGE DOWN","Move to the next or previous TV channel."],["NUMBER KEYS 0–9","Enter a channel number for direct tuning."],["SPACE","Play or pause the current stream."],["M","Mute or unmute audio."],["F","Enter fullscreen playback."],["LEFT / RIGHT","Seek backward or forward by 10 seconds."]]}));
+window.addEventListener('keydown',e=>{if(document.getElementById('jonAdvancedDialogRoot')&&!document.getElementById('jonAdvancedDialogRoot').hidden)return;if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;const v=video();if(e.key==='ArrowLeft')seek(-10);else if(e.key==='ArrowRight')seek(10);else if(e.code==='Space'&&v){e.preventDefault();v.paused?v.play():v.pause()}else if(e.key.toLowerCase()==='m'&&v)v.muted=!v.muted;else if(e.key.toLowerCase()==='f'&&v&&!document.fullscreenElement)(document.getElementById('tvVideoFrame')||v).requestFullscreen?.()});
 const parentalModal=q('#jonParentalModal'),parentalForm=q('#jonParentalForm'),parentalStatus=q('#jonParentalStatus');
 const parentalLockKey='jonStreamParentalLocked',parentalLocked=()=>localStorage.getItem(parentalLockKey)==='1',parentalPin=()=>localStorage.getItem(pinKey)||'';
 function closeParentalModal(){if(parentalModal)parentalModal.hidden=true}
 q('#jonParentalClose')?.addEventListener('click',closeParentalModal);
 parentalModal?.addEventListener('click',e=>{if(e.target===parentalModal)closeParentalModal()});
 function renderParentalPanel(){
- if(!parentalForm)return; const pin=parentalPin(),locked=parentalLocked();
- if(!pin){
-  parentalStatus.textContent='Create a 4-digit PIN to protect TV playback.';
-  parentalForm.innerHTML='<input id="jonPinInput" class="jon-parental-input" inputmode="numeric" maxlength="4" type="password" placeholder="••••"><div class="jon-parental-actions"><button type="button" id="jonSavePin">Create PIN</button><button type="button" class="jon-parental-danger" id="jonParentalCancel">Cancel</button></div>';
-  q('#jonSavePin')?.addEventListener('click',()=>{const v=q('#jonPinInput')?.value||'';if(!/^\d{4}$/.test(v)){parentalStatus.textContent='PIN must be exactly 4 digits.';return}localStorage.setItem(pinKey,v);localStorage.setItem(parentalLockKey,'1');renderParentalPanel()});
-  q('#jonParentalCancel')?.addEventListener('click',closeParentalModal);
- }else{
-  parentalStatus.textContent='Enter the PIN to change the TV lock.';
-  parentalForm.innerHTML='<div class="jon-parental-lock-state">'+(locked?'🔒 TV Parental Lock: ON':'🔓 TV Parental Lock: OFF')+'</div><input id="jonPinInput" class="jon-parental-input" inputmode="numeric" maxlength="4" type="password" placeholder="••••"><div class="jon-parental-actions"><button type="button" id="jonToggleLock">'+(locked?'Unlock TV':'Lock TV')+'</button><button type="button" class="jon-parental-danger" id="jonResetPin">Change PIN</button></div>';
-  q('#jonToggleLock')?.addEventListener('click',()=>{const v=q('#jonPinInput')?.value||'';if(v!==pin){parentalStatus.textContent='Incorrect PIN.';return}localStorage.setItem(parentalLockKey,locked?'0':'1');renderParentalPanel()});
-  q('#jonResetPin')?.addEventListener('click',()=>{const v=q('#jonPinInput')?.value||'';if(v!==pin){parentalStatus.textContent='Enter the current PIN first.';return}localStorage.removeItem(pinKey);localStorage.removeItem(parentalLockKey);renderParentalPanel()});
+  if(!parentalForm)return;const pin=parentalPin(),locked=parentalLocked();
+  if(!pin){
+   parentalStatus.textContent='Create a secure 4-digit password to protect TV playback.';
+   parentalForm.innerHTML='<div class="jon-parental-lock-state">🔐 No password has been created yet.</div><button type="button" id="jonCreateAdvancedPin">CREATE PASSWORD</button><button type="button" class="jon-parental-danger" id="jonParentalCancel">CANCEL</button>';
+   q('#jonCreateAdvancedPin')?.addEventListener('click',async()=>{
+    const values=await window.jonAdvancedDialog({title:"CREATE PARENTAL PASSWORD",eyebrow:"JON STREAM • FAMILY SAFETY",message:"Create and confirm a 4-digit password for your TV parental lock.",fields:[{label:"CREATE PASSWORD",name:"pin",type:"password",placeholder:"Enter 4 digits",maxLength:4,inputMode:"numeric"},{label:"CONFIRM PASSWORD",name:"confirm",type:"password",placeholder:"Re-enter 4 digits",maxLength:4,inputMode:"numeric"}],confirmText:"CREATE PASSWORD",validate:v=>!/^\d{4}$/.test(v.pin||"")?"Password must contain exactly 4 digits.":v.pin!==v.confirm?"The passwords do not match.":""});
+    if(values){localStorage.setItem(pinKey,values.pin);localStorage.setItem(parentalLockKey,'1');renderParentalPanel()}
+   });
+   q('#jonParentalCancel')?.addEventListener('click',closeParentalModal);
+  }else{
+   parentalStatus.textContent='Enter your current password to manage the TV lock.';
+   parentalForm.innerHTML='<div class="jon-parental-lock-state">'+(locked?'🔒 TV Parental Lock: ON':'🔓 TV Parental Lock: OFF')+'</div><input id="jonPinInput" class="jon-parental-input" inputmode="numeric" maxlength="4" type="password" placeholder="Enter current password"><div class="jon-parental-actions"><button type="button" id="jonToggleLock">'+(locked?'Unlock TV':'Lock TV')+'</button><button type="button" class="jon-parental-danger" id="jonResetPin">Change Password</button></div>';
+   q('#jonToggleLock')?.addEventListener('click',()=>{const v=q('#jonPinInput')?.value||'';if(v!==pin){parentalStatus.textContent='Incorrect password.';return}localStorage.setItem(parentalLockKey,locked?'0':'1');renderParentalPanel()});
+   q('#jonResetPin')?.addEventListener('click',()=>{const v=q('#jonPinInput')?.value||'';if(v!==pin){parentalStatus.textContent='Enter the current password first.';return}localStorage.removeItem(pinKey);localStorage.removeItem(parentalLockKey);renderParentalPanel()});
+  }
+  parentalModal.hidden=false;setTimeout(()=>q('#jonPinInput')?.focus()||q('#jonCreateAdvancedPin')?.focus(),50);
  }
- parentalModal.hidden=false;setTimeout(()=>q('#jonPinInput')?.focus(),50);
-}
-q('#jonParental')?.addEventListener('click',renderParentalPanel);
-function parentalAllowsTV(){if(!parentalLocked())return true;const entered=prompt('🔒 Parental Lock\nEnter 4-digit PIN to play this TV channel:');if(entered===parentalPin())return true;alert('Incorrect parental PIN.');return false;}
+ q('#jonParental')?.addEventListener('click',renderParentalPanel);
+async function parentalAllowsTV(){if(!parentalLocked())return true;const v=await window.jonAdvancedDialog({title:"PARENTAL LOCK",eyebrow:"JON STREAM • SECURE ACCESS",message:"Enter your 4-digit password to play this TV channel.",fields:[{label:"PASSWORD",name:"pin",type:"password",placeholder:"Enter 4 digits",maxLength:4,inputMode:"numeric"}],confirmText:"UNLOCK",validate:x=>x.pin===parentalPin()?"":"Incorrect password. Please try again."});return !!v;}
 function collectText(el){return (el?.textContent||el?.getAttribute?.('aria-label')||el?.getAttribute?.('title')||'').toLowerCase()}
 q('#jonAdvancedSearch')?.addEventListener('input',e=>{const term=e.target.value.trim().toLowerCase();qa('button,a,[role="button"]').forEach(el=>{if(el.closest('#jonAdvancedBar')||el.closest('#jonFeaturePanel'))return;const text=collectText(el);el.classList.toggle('jonHidden',!!term&&!text.includes(term))})});
-q('#jonMyListBtn')?.addEventListener('click',()=>{const a=get(listKey,[]);alert(a.length?'My List:\n'+a.join('\n'):'My List is empty. Use the existing channel favorite controls to add channels.')});
-q('#jonRecentBtn')?.addEventListener('click',()=>{const a=get(recentKey,[]);alert(a.length?'Recently Watched:\n'+a.slice(0,20).join('\n'):'No recently watched channels yet.')});
+q('#jonMyListBtn')?.addEventListener('click',()=>{const a=get(listKey,[]);window.jonAdvancedInfoDialog({title:"MY LIST",eyebrow:"JON STREAM • YOUR COLLECTION",message:a.length?'Your saved items are listed below.':'My List is empty. Use the channel favorite controls to add channels.',items:a.slice(0,30).map((x,i)=>[(i+1)+". "+String(x),"Saved item"])})});
+q('#jonRecentBtn')?.addEventListener('click',()=>{const a=get(recentKey,[]);window.jonAdvancedInfoDialog({title:"RECENTLY WATCHED",eyebrow:"JON STREAM • WATCH HISTORY",message:a.length?'Your recently watched channels.':'No recently watched channels yet.',items:a.slice(0,20).map((x,i)=>[(i+1)+". "+String(x),"Recently watched"])})});
 window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).filter(x=>x!==name);a.unshift(name);set(recentKey,a.slice(0,30))};
 })();</script>
 
@@ -4400,7 +4382,7 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
  document.getElementById("jonTVFavoriteClose")?.addEventListener("click",()=>panel.hidden=true);
  items.onclick=e=>{
   const p=e.target.closest("[data-p]"),r=e.target.closest("[data-r]");
-  if(p&&typeof playTVStream==="function"){let i=+p.dataset.p;const channel=tvChannels[i];if(!channel||!jonAllowsChannel(channel))return;const visibleIndex=Array.isArray(filteredTV)?filteredTV.findIndex(x=>x?.url===channel.url):-1;playTVStream(channel.url,channel.name,visibleIndex);panel.hidden=true}
+  if(p&&typeof playTVStream==="function"){void (async()=>{let i=+p.dataset.p;const channel=tvChannels[i];if(!channel||!await jonAllowsChannel(channel))return;const visibleIndex=Array.isArray(filteredTV)?filteredTV.findIndex(x=>x?.url===channel.url):-1;playTVStream(channel.url,channel.name,visibleIndex);panel.hidden=true})();}
   if(r){save(get().filter(x=>x!==decodeURIComponent(r.dataset.r)));render();if(typeof renderTV==="function"&&typeof filteredTV!=="undefined")renderTV(filteredTV)}
  };
  window.addEventListener("jon-firebase-data",render); setTimeout(render,300);
@@ -4503,7 +4485,8 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
   let jonOKLongPress=false;
   window.addEventListener("keydown",function(e){
     if(e.key!=="Enter" || e.repeat)return;
-    if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName))return;
+    if(document.getElementById("jonAdvancedDialogRoot")&&!document.getElementById("jonAdvancedDialogRoot").hidden)return;
+  if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName))return;
     jonOKLongPress=false;
     clearTimeout(jonOKTimer);
     jonOKTimer=setTimeout(function(){
@@ -5818,5 +5801,45 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 })();
 </script>
 
+
+<style id="jonAdvancedControlDialogsCSS">
+#jonAdvancedDialogRoot{position:fixed;inset:0;z-index:200000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(2,7,16,.84);backdrop-filter:blur(13px)}#jonAdvancedDialogRoot[hidden]{display:none!important}
+.jon-adv-dialog-card{position:relative;width:min(460px,calc(100vw - 28px));max-height:88vh;overflow:auto;padding:24px;border-radius:24px;color:#f7fbff;background:linear-gradient(145deg,#0d1f35,#050c18 68%,#180c16);border:1px solid rgba(67,181,255,.48);box-shadow:0 24px 80px #0009,0 0 34px #0099ff29,inset 0 1px 0 #ffffff14;font-family:Arial,Helvetica,sans-serif}
+.jon-adv-dialog-card:before{content:"";position:absolute;inset:0 18% auto;height:2px;background:linear-gradient(90deg,transparent,#16baff,#e31b23,transparent)}
+.jon-adv-dialog-kicker{text-align:center;margin:0 0 9px;color:#80d9ff;font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase}.jon-adv-dialog-icon{width:58px;height:58px;margin:0 auto 12px;display:grid;place-items:center;border-radius:18px;font-size:27px;background:linear-gradient(145deg,#00b0ff33,#e31b2324);border:1px solid #5bc3ff6b;box-shadow:0 0 25px #00a0ff29}
+.jon-adv-dialog-card h2{text-align:center;margin:0 0 8px;font-size:clamp(19px,4vw,24px);font-weight:900;letter-spacing:.7px;color:#fff;text-shadow:0 0 18px #00aeff47}.jon-adv-dialog-message{margin:0 auto 18px;max-width:360px;text-align:center;color:#aebfd2;font-size:13px;line-height:1.55}
+.jon-adv-dialog-field{display:block;margin:12px 0;text-align:left}.jon-adv-dialog-field>span{display:block;margin:0 0 7px;color:#8ecfff;font-size:10px;font-weight:900;letter-spacing:1.2px}.jon-adv-dialog-inputwrap{display:flex;align-items:center;gap:7px;padding:0 11px;border:1px solid #294c6b;border-radius:13px;background:linear-gradient(180deg,#071629,#0a1c30)}.jon-adv-dialog-inputwrap:focus-within{border-color:#28baff;box-shadow:0 0 0 3px #28baff22}
+.jon-adv-dialog-input{width:100%;min-width:0;height:50px;padding:0 3px;border:0!important;outline:0!important;background:transparent!important;color:#fff!important;font-size:17px!important;font-weight:700;letter-spacing:1.2px;box-shadow:none!important}.jon-adv-dialog-input[readonly]{color:#b8d8ed!important}.jon-adv-dialog-eye{flex:0 0 38px;width:38px;height:36px;padding:0;border:1px solid #69b1dc33;border-radius:9px;background:#132b43;color:#a8ddff;font-size:16px}
+.jon-adv-dialog-error{min-height:18px;margin:8px 0 2px;color:#ff9b9b;text-align:center;font-size:12px;font-weight:700}.jon-adv-dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}.jon-adv-dialog-actions button{min-height:46px;border-radius:12px;font-size:11px;font-weight:900;letter-spacing:.5px}.jon-adv-dialog-primary{background:linear-gradient(110deg,#087fc7,#1455b7)!important;border:1px solid #70d1ff6b!important}.jon-adv-dialog-secondary{background:linear-gradient(110deg,#202f43,#172333)!important;border:1px solid #344b64!important;color:#c9d8e8!important}
+.jon-adv-dialog-items{display:grid;gap:8px;margin:14px 0}.jon-adv-dialog-item{padding:11px 12px;border:1px solid #5b99c633;border-radius:12px;background:linear-gradient(110deg,#112b43cc,#0d1828cc)}.jon-adv-dialog-item b{display:block;margin-bottom:4px;color:#83d5ff;font-size:10px;letter-spacing:.9px}.jon-adv-dialog-item span{display:block;color:#d0dce8;font-size:12px;line-height:1.45}
+@media(max-width:520px){#jonAdvancedDialogRoot{padding:10px}.jon-adv-dialog-card{padding:19px;border-radius:20px}.jon-adv-dialog-input{height:47px}.jon-adv-dialog-actions button{min-height:44px}}
+@media(prefers-reduced-motion:no-preference){.jon-adv-dialog-card{animation:jonDialogEnter .22s ease-out}@keyframes jonDialogEnter{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}}
+</style>
+<div id="jonAdvancedDialogRoot" hidden><section class="jon-adv-dialog-card" role="dialog" aria-modal="true" aria-labelledby="jonAdvancedDialogTitle"><div class="jon-adv-dialog-icon" id="jonAdvancedDialogIcon">✦</div><div class="jon-adv-dialog-kicker" id="jonAdvancedDialogKicker">JON STREAM • ADVANCED CONTROL</div><h2 id="jonAdvancedDialogTitle">JON STREAM</h2><p class="jon-adv-dialog-message" id="jonAdvancedDialogMessage"></p><div id="jonAdvancedDialogFields"></div><div class="jon-adv-dialog-items" id="jonAdvancedDialogItems" hidden></div><div class="jon-adv-dialog-error" id="jonAdvancedDialogError" aria-live="polite"></div><div class="jon-adv-dialog-actions"><button type="button" class="jon-adv-dialog-secondary" id="jonAdvancedDialogCancel">CANCEL</button><button type="button" class="jon-adv-dialog-primary" id="jonAdvancedDialogSubmit">CONFIRM</button></div></section></div>
+<script id="jonAdvancedControlDialogsJS">
+(function(){
+ "use strict";const root=document.getElementById("jonAdvancedDialogRoot");if(!root)return;const $=id=>document.getElementById(id);let activeResolve=null;
+ function close(value){root.hidden=true;activeResolve?.(value);activeResolve=null}
+ function show(config){
+  if(activeResolve)close(null);config=config||{};$("jonAdvancedDialogKicker").textContent=config.eyebrow||"JON STREAM • ADVANCED CONTROL";$("jonAdvancedDialogTitle").textContent=config.title||"JON STREAM";$("jonAdvancedDialogMessage").textContent=config.message||"";$("jonAdvancedDialogIcon").textContent=config.icon||"✦";$("jonAdvancedDialogError").textContent="";
+  const fields=$("jonAdvancedDialogFields"),items=$("jonAdvancedDialogItems");fields.innerHTML="";items.innerHTML="";
+  (config.items||[]).forEach(item=>{const row=document.createElement("div");row.className="jon-adv-dialog-item";const b=document.createElement("b"),s=document.createElement("span");b.textContent=item[0];s.textContent=item[1];row.append(b,s);items.appendChild(row)});items.hidden=!(config.items&&config.items.length);
+  (config.fields||[]).forEach(field=>{const label=document.createElement("label");label.className="jon-adv-dialog-field";const caption=document.createElement("span");caption.textContent=field.label||"";const wrap=document.createElement("div");wrap.className="jon-adv-dialog-inputwrap";const input=document.createElement("input");input.className="jon-adv-dialog-input";input.name=field.name;input.type=field.type||"text";input.value=field.value||"";input.placeholder=field.placeholder||"";input.maxLength=field.maxLength||120;input.readOnly=!!field.readOnly;input.inputMode=field.inputMode||"text";if(field.min!=null)input.min=field.min;if(field.max!=null)input.max=field.max;wrap.appendChild(input);if(field.type==="password"){const eye=document.createElement("button");eye.type="button";eye.className="jon-adv-dialog-eye";eye.textContent="◉";eye.setAttribute("aria-label","Show or hide password");eye.onclick=()=>{input.type=input.type==="password"?"text":"password";eye.textContent=input.type==="password"?"◉":"◎"};wrap.appendChild(eye)}label.append(caption,wrap);fields.appendChild(label)});
+  const submit=$("jonAdvancedDialogSubmit"),cancel=$("jonAdvancedDialogCancel");submit.textContent=config.confirmText||"CONFIRM";cancel.textContent=config.cancelText||"CANCEL";submit.hidden=false;cancel.hidden=!!config.infoOnly;
+  return new Promise(resolve=>{activeResolve=resolve;root.hidden=false;const finish=()=>{const values={};fields.querySelectorAll("input").forEach(i=>values[i.name]=i.value.trim());const error=typeof config.validate==="function"?config.validate(values):"";if(error){$("jonAdvancedDialogError").textContent=error;fields.querySelector("input")?.focus();return}close(config.infoOnly?true:values)};submit.onclick=finish;cancel.onclick=()=>close(null);root.onclick=e=>{if(e.target===root)close(null)};root.onkeydown=e=>{if(e.key==="Escape"){e.preventDefault();close(null)}else if(e.key==="Enter"&&!e.repeat&&fields.contains(document.activeElement)){e.preventDefault();finish()}};setTimeout(()=>{(fields.querySelector("input")||(config.infoOnly?submit:cancel)).focus()},60)});
+ }
+ window.jonAdvancedDialog=show;window.jonAdvancedInfoDialog=config=>show({...config,infoOnly:true,confirmText:"CLOSE",cancelText:"",fields:[]});
+})();
+</script>
+
+<style id="jonAdvancedPopupVisualUpgrade">
+.jon-parental-modal{background:rgba(2,7,16,.84)!important;backdrop-filter:blur(13px)!important}
+.jon-parental-card{background:linear-gradient(145deg,#0d1f35,#050c18 68%,#180c16)!important;color:#f7fbff!important;border:1px solid rgba(67,181,255,.48)!important;border-radius:24px!important;box-shadow:0 24px 80px rgba(0,0,0,.62),0 0 34px rgba(0,153,255,.16),inset 0 1px 0 rgba(255,255,255,.08)!important}
+.jon-parental-card h2{color:#fff!important;text-shadow:0 0 18px rgba(0,174,255,.28)}.jon-parental-card p{color:#aebfd2!important}
+.jon-parental-input{background:linear-gradient(180deg,#071629,#0a1c30)!important;color:#fff!important;border:1px solid #294c6b!important;border-radius:13px!important;letter-spacing:4px!important}.jon-parental-input:focus{border-color:#28baff!important;box-shadow:0 0 0 3px rgba(40,186,255,.13)!important}
+.jon-parental-actions button,.jon-parental-card #jonCreateAdvancedPin{background:linear-gradient(110deg,#087fc7,#1455b7)!important;border:1px solid rgba(112,209,255,.42)!important;color:#fff!important}.jon-parental-actions button.jon-parental-danger,.jon-parental-card .jon-parental-danger{background:linear-gradient(110deg,#202f43,#172333)!important;border:1px solid #344b64!important;color:#c9d8e8!important}
+#jonFeaturePanel{background:linear-gradient(145deg,#0d1f35,#050c18 68%,#180c16)!important;border:1px solid rgba(67,181,255,.4)!important;box-shadow:0 20px 65px rgba(0,0,0,.58),0 0 25px rgba(0,153,255,.12)!important;backdrop-filter:blur(13px)}
+.jonFeatureGrid button{background:linear-gradient(145deg,#122a43,#0b1728)!important;border:1px solid rgba(91,181,235,.28)!important;color:#f7fbff!important}.jonFeatureGrid button:focus,.jonFeatureGrid button:active{outline:2px solid #36baff;box-shadow:0 0 16px rgba(0,174,255,.35)}
+</style>
 </body>
 </html>
