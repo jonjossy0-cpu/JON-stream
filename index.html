@@ -2928,7 +2928,7 @@ function jonChannelLockId(channel){return String((channel&&channel.url)||"").tri
 function getJonParentalPin(){return localStorage.getItem(JON_PARENTAL_PIN_KEY)||""}
 async function ensureJonParentalPin(){
  let pin=getJonParentalPin();if(pin)return pin;
- const v=await window.jonAdvancedDialog({title:"CREATE PARENTAL PASSWORD",eyebrow:"JON STREAM • FAMILY SAFETY",message:"Create a private 4-digit password to protect locked TV channels.",fields:[{label:"CREATE PASSWORD",name:"pin",type:"password",placeholder:"Enter 4 digits",maxLength:4,inputMode:"numeric"},{label:"CONFIRM PASSWORD",name:"confirm",type:"password",placeholder:"Re-enter 4 digits",maxLength:4,inputMode:"numeric"}],confirmText:"CREATE PASSWORD",validate:x=>!/^\\d{4}$/.test(x.pin||"")?"Password must contain exactly 4 digits.":x.pin!==x.confirm?"The passwords do not match.":""});
+ const v=await window.jonAdvancedDialog({title:"CREATE PARENTAL PASSWORD",eyebrow:"JON STREAM • FAMILY SAFETY",message:"Create a private 4-digit password to protect locked TV channels.",fields:[{label:"CREATE PASSWORD",name:"pin",type:"password",placeholder:"Enter 4 digits",maxLength:4,inputMode:"numeric"},{label:"CONFIRM PASSWORD",name:"confirm",type:"password",placeholder:"Re-enter 4 digits",maxLength:4,inputMode:"numeric"}],confirmText:"CREATE PASSWORD",validate:x=>!/^\d{4}$/.test(x.pin||"")?"Password must contain exactly 4 digits.":x.pin!==x.confirm?"The passwords do not match.":""});
  if(!v)return "";localStorage.setItem(JON_PARENTAL_PIN_KEY,v.pin);return v.pin;
 }
 async function verifyJonParentalPin(message){
@@ -4252,7 +4252,7 @@ function renderParentalPanel(){
    parentalStatus.textContent='Create a secure 4-digit password to protect TV playback.';
    parentalForm.innerHTML='<div class="jon-parental-lock-state">🔐 No password has been created yet.</div><button type="button" id="jonCreateAdvancedPin">CREATE PASSWORD</button><button type="button" class="jon-parental-danger" id="jonParentalCancel">CANCEL</button>';
    q('#jonCreateAdvancedPin')?.addEventListener('click',async()=>{
-    const values=await window.jonAdvancedDialog({title:"CREATE PARENTAL PASSWORD",eyebrow:"JON STREAM • FAMILY SAFETY",message:"Create and confirm a 4-digit password for your TV parental lock.",fields:[{label:"CREATE PASSWORD",name:"pin",type:"password",placeholder:"Enter 4 digits",maxLength:4,inputMode:"numeric"},{label:"CONFIRM PASSWORD",name:"confirm",type:"password",placeholder:"Re-enter 4 digits",maxLength:4,inputMode:"numeric"}],confirmText:"CREATE PASSWORD",validate:v=>!/^\\d{4}$/.test(v.pin||"")?"Password must contain exactly 4 digits.":v.pin!==v.confirm?"The passwords do not match.":""});
+    const values=await window.jonAdvancedDialog({title:"CREATE PARENTAL PASSWORD",eyebrow:"JON STREAM • FAMILY SAFETY",message:"Create and confirm a 4-digit password for your TV parental lock.",fields:[{label:"CREATE PASSWORD",name:"pin",type:"password",placeholder:"Enter 4 digits",maxLength:4,inputMode:"numeric"},{label:"CONFIRM PASSWORD",name:"confirm",type:"password",placeholder:"Re-enter 4 digits",maxLength:4,inputMode:"numeric"}],confirmText:"CREATE PASSWORD",validate:v=>!/^\d{4}$/.test(v.pin||"")?"Password must contain exactly 4 digits.":v.pin!==v.confirm?"The passwords do not match.":""});
     if(values){localStorage.setItem(pinKey,values.pin);localStorage.setItem(parentalLockKey,'1');renderParentalPanel()}
    });
    q('#jonParentalCancel')?.addEventListener('click',closeParentalModal);
