@@ -55,16 +55,15 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build debug APKs
-        working-directory: android
-        run: gradle :app:assembleMobileDebug :app:assembleTvDebug
+      - name: Prepare Android TV boot logo resource
+        run: |
+          set -euo pipefail
+          mkdir -p android/app/src/tv/res/drawable-nodpi
+          cp Logo.png android/app/src/tv/res/drawable-nodpi/jon_stream_boot_logo.png
 
-      - name: Upload Mobile debug APK
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: JON-Stream-Mobile-Debug-APK
-          path: android/app/build/outputs/apk/mobile/debug/*.apk
-          if-no-files-found: error
+      - name: Build Android TV debug APK only
+        working-directory: android
+        run: gradle :app:assembleTvDebug
 
       - name: Upload Android TV debug APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -112,6 +111,12 @@ jobs:
           umask 077
           printf '%s%s%s%s' "${JON_RELEASE_KEYSTORE_B64_PART1}" "${JON_RELEASE_KEYSTORE_B64_PART2}" "${JON_RELEASE_KEYSTORE_B64_PART3}" "${JON_RELEASE_KEYSTORE_B64_PART4}" | base64 --decode > "${RUNNER_TEMP}/jon-stream-release.jks"
           test -s "${RUNNER_TEMP}/jon-stream-release.jks"
+
+      - name: Prepare Android TV boot logo resource
+        run: |
+          set -euo pipefail
+          mkdir -p android/app/src/tv/res/drawable-nodpi
+          cp Logo.png android/app/src/tv/res/drawable-nodpi/jon_stream_boot_logo.png
 
       - name: Build signed Android TV Release APK only
         working-directory: android
