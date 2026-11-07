@@ -6,6 +6,7 @@ on:
     branches:
       - mainv
       - feature/android-tv-native-media3
+      - feature/android-tv-934-four-fixes
   pull_request:
     branches:
       - mainv
@@ -74,7 +75,7 @@ jobs:
 
   build-tv-release-preview:
     name: Build signed Android TV release APK (preview only)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/android-tv-native-media3' && github.actor == 'jonjossy0-cpu'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/feature/android-tv-native-media3' || github.ref == 'refs/heads/feature/android-tv-934-four-fixes') && github.actor == 'jonjossy0-cpu'
     needs: security-check
     runs-on: ubuntu-latest
     timeout-minutes: 30
