@@ -37,7 +37,7 @@ public class MainActivity extends Activity {
     private TextView loadingOverlay;
     private boolean bootMinimumElapsed = false;
     private boolean homePageLoaded = false;
-    private static final long BOOT_LOGO_DURATION_MS = 7000L;
+    private static final long BOOT_LOGO_DURATION_MS = 10000L;
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
     private WebChromeClient chromeClient;
@@ -94,10 +94,14 @@ public class MainActivity extends Activity {
         loadingOverlay.setTextSize(25);
         loadingOverlay.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         loadingOverlay.setGravity(Gravity.CENTER);
-        loadingOverlay.setCompoundDrawablePadding(24);
+        loadingOverlay.setCompoundDrawablePadding(30);
+        loadingOverlay.setPadding(24, 36, 24, 36);
+        loadingOverlay.setLineSpacing(8f, 1.0f);
         try {
-            loadingOverlay.setCompoundDrawablesWithIntrinsicBounds(null,
-                getResources().getDrawable(getApplicationInfo().icon), null, null);
+            android.graphics.drawable.Drawable appLogo = getDrawable(getApplicationInfo().icon);
+            int logoSize = (int) (220 * getResources().getDisplayMetrics().density);
+            appLogo.setBounds(0, 0, logoSize, logoSize);
+            loadingOverlay.setCompoundDrawables(null, appLogo, null, null);
         } catch (Exception ignored) { }
         loadingOverlay.setBackgroundColor(Color.rgb(7, 17, 31));
         loadingOverlay.setFocusable(false);
