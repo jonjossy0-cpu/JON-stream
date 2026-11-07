@@ -8,6 +8,7 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
@@ -30,7 +31,10 @@ public class TvTwaGateActivity extends Activity {
     private static final Uri START_URI = Uri.parse("https://jon-stream.vercel.app/?jonNativeTv=1");
     private static final Uri TRUSTED_ORIGIN = Uri.parse("https://jon-stream.vercel.app/");
 
+    private static final long MIN_LOADING_MS = 10000L;
     private final Handler handler = new Handler();
+    private long loadingStartedAt;
+    private boolean relationshipValidated = false;
     private CustomTabsClient tabsClient;
     private CustomTabsSession tabsSession;
     private boolean serviceBound = false;
@@ -41,15 +45,6 @@ public class TvTwaGateActivity extends Activity {
     private final Runnable validationTimeout = () -> showFailure(
         "የWebsite ማረጋገጫው ጊዜ ወስዷል። RETRY ይጫኑ።"
     );
-
-    private final Runnable startupCheck = () -> {
-        if (isFinishing() || launchStarted) return;
-        if (!hasInternetConnection()) {
-            showFailure("NO INTERNET");
-            return;
-        }
-        beginTrustValidation();
-    };
 
     private final CustomTabsCallback tabsCallback = new CustomTabsCallback() {
         @Override
@@ -62,7 +57,8 @@ public class TvTwaGateActivity extends Activity {
             }
             handler.removeCallbacks(validationTimeout);
             if (result) {
-                launchTrustedWebsite();
+                relationshipValidated = true;
+                launchWhenReady();
             } else {
                 showFailure("Website ገና አልተረጋገጠም። ስለዚህ Website-ን አልከፍትም። Retry ይጫኑ።");
             }
@@ -80,6 +76,9 @@ public class TvTwaGateActivity extends Activity {
                 showFailure("Chrome የደህንነት ማረጋገጫ ክፍለ-ጊዜ መፍጠር አልቻለም። Retry ይጫኑ።");
                 return;
             }
+            // Preload the page in Chrome while this native loading screen stays visible.
+            // The configured TWA splash continues the branded hand-off until navigation completes.
+            tabsSession.mayLaunchUrl(START_URI, null, null);
             boolean accepted = tabsSession.validateRelationship(
                 CustomTabsService.RELATION_HANDLE_ALL_URLS, TRUSTED_ORIGIN, null);
             if (!accepted) {
@@ -116,7 +115,12 @@ public class TvTwaGateActivity extends Activity {
                 | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
 
         buildGateScreen();
-        beginTrustValidation();
+        loadingStartedAt = SystemClock.elapsedRealtime();
+        if (!hasInternetConnection()) {
+            showFailure("NO INTERNET");
+        } else {
+            beginTrustValidation();
+        }
     }
 
     private void buildGateScreen() {
@@ -153,7 +157,7 @@ public class TvTwaGateActivity extends Activity {
         retryButton = new Button(this);
         retryButton.setText("RETRY");
         retryButton.setVisibility(View.GONE);
-        retryButton.setOnClickListener(v -> {\n            retryButton.setVisibility(View.GONE);\n            statusText.setText("JON Stream Loading…");\n            handler.removeCallbacks(startupCheck);\n            handler.postDelayed(startupCheck, 10000L);\n        });
+        retryButton.setOnClickListener(v -> {\n            retryButton.setVisibility(View.GONE);\n            statusText.setText("JON Stream Loading…");\n            loadingStartedAt = SystemClock.elapsedRealtime();\n            relationshipValidated = false;\n            if (!hasInternetConnection()) {\n                showFailure("NO INTERNET");\n            } else {\n                beginTrustValidation();\n            }\n        });
         layout.addView(retryButton);
 
         setContentView(layout);
@@ -162,6 +166,7 @@ public class TvTwaGateActivity extends Activity {
     private void beginTrustValidation() {
         if (launchStarted) return;
         handler.removeCallbacks(validationTimeout);
+        relationshipValidated = false;
         retryButton.setVisibility(View.GONE);
         statusText.setText("JON Stream Website ደህንነቱ እየተረጋገጠ ነው…");
 
@@ -182,8 +187,22 @@ public class TvTwaGateActivity extends Activity {
         handler.postDelayed(validationTimeout, 15000L);
     }
 
+    private void launchWhenReady() {
+        if (!relationshipValidated || launchStarted || isFinishing()) return;
+        long elapsed = SystemClock.elapsedRealtime() - loadingStartedAt;
+        long remaining = MIN_LOADING_MS - elapsed;
+        if (remaining > 0L) {
+            handler.removeCallbacks(launchAfterMinimumLoading);
+            handler.postDelayed(launchAfterMinimumLoading, remaining);
+        } else {
+            launchTrustedWebsite();
+        }
+    }
+
+    private final Runnable launchAfterMinimumLoading = this::launchTrustedWebsite;
+
     private void launchTrustedWebsite() {
-        if (launchStarted || isFinishing()) return;
+        if (!relationshipValidated || launchStarted || isFinishing()) return;
         if (tabsSession == null) {
             showFailure("የWebsite ማረጋገጫ ተሳክቷል ግን Chrome Session የለም። Retry ይጫኑ።");
             return;
@@ -204,6 +223,7 @@ public class TvTwaGateActivity extends Activity {
     private void showFailure(String message) {
         if (isFinishing() || launchStarted) return;
         handler.removeCallbacks(validationTimeout);
+        handler.removeCallbacks(launchAfterMinimumLoading);
         statusText.setText(message);
         retryButton.setVisibility(View.VISIBLE);
         retryButton.requestFocus();
