@@ -56,14 +56,7 @@ jobs:
 
       - name: Build debug APKs
         working-directory: android
-        run: gradle :app:assembleMobileDebug :app:assembleTvDebug
-
-      - name: Upload Mobile debug APK
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: JON-Stream-Mobile-Debug-APK
-          path: android/app/build/outputs/apk/mobile/debug/*.apk
-          if-no-files-found: error
+        run: gradle :app:assembleTvDebug
 
       - name: Upload Android TV debug APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -74,7 +67,7 @@ jobs:
 
   build-tv-release-preview:
     name: Build signed Android TV release APK (preview only)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/android-tv-native-media3' && github.actor == 'jonjossy0-cpu'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/feature/android-tv-native-media3' && github.actor == 'jonjossy0-cpu'
     needs: security-check
     runs-on: ubuntu-latest
     timeout-minutes: 30
