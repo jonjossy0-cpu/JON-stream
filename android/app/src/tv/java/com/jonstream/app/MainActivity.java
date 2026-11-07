@@ -42,9 +42,9 @@ public class MainActivity extends Activity {
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
     private WebChromeClient chromeClient;
-    private static final String HOME = "https://appassets.androidplatform.net/assets/index.html";
+    private static final String HOME = "https://jonjossy0-cpu.github.io/JON-stream/?jonNativeTv=1";
     private WebViewAssetLoader assetLoader;
-    private static final int CURRENT_VERSION_CODE = 7;
+    private static final int CURRENT_VERSION_CODE = 9;
     private static final String UPDATE_URL = "https://raw.githubusercontent.com/jonjossy0-cpu/JON-stream/mainv/android/update.json";
     private final StringBuilder numberBuffer = new StringBuilder();
     private final Handler handler = new Handler();
