@@ -35,7 +35,7 @@
 
             <meta-data
                 android:name="android.support.customtabs.trusted.DEFAULT_URL"
-                android:value="https://jon-stream.vercel.app/?jonNativeTv=1" />
+                android:value="https://jonjossy0-cpu.github.io/JON-stream/?jonNativeTv=1" />
 
             <meta-data
                 android:name="asset_statements"
@@ -69,8 +69,8 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="jon-stream.vercel.app"
-                    android:pathPrefix="/" />
+                    android:host="jonjossy0-cpu.github.io"
+                    android:pathPrefix="/JON-stream" />
             </intent-filter>
         </activity>
 
