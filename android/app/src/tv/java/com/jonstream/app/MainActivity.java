@@ -94,17 +94,23 @@ public class MainActivity extends Activity {
         android.widget.LinearLayout bootContent = new android.widget.LinearLayout(this);
         bootContent.setOrientation(android.widget.LinearLayout.VERTICAL);
         bootContent.setGravity(Gravity.CENTER);
-        bootContent.setPadding(48, 24, 48, 24);
+        float density = getResources().getDisplayMetrics().density;
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int screenHeight = getResources().getDisplayMetrics().heightPixels;
+        bootContent.setPadding((int)(24 * density), (int)(16 * density),
+            (int)(24 * density), (int)(16 * density));
         android.widget.ImageView bootLogo = new android.widget.ImageView(this);
+        // Fit the complete source image inside a generous TV-sized area; never crop.
         bootLogo.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
         bootLogo.setAdjustViewBounds(true);
+        bootLogo.setCropToPadding(false);
         bootLogo.setImageResource(R.drawable.jon_stream_boot_logo);
-        int logoWidth = (int) (360 * getResources().getDisplayMetrics().density);
-        int logoHeight = (int) (220 * getResources().getDisplayMetrics().density);
+        int logoWidth = (int) (screenWidth * 0.78f);
+        int logoHeight = (int) (screenHeight * 0.58f);
         android.widget.LinearLayout.LayoutParams logoParams =
             new android.widget.LinearLayout.LayoutParams(logoWidth, logoHeight);
         logoParams.gravity = Gravity.CENTER_HORIZONTAL;
-        logoParams.bottomMargin = (int) (22 * getResources().getDisplayMetrics().density);
+        logoParams.bottomMargin = (int) (18 * density);
         bootContent.addView(bootLogo, logoParams);
         loadingMessage = new TextView(this);
         loadingMessage.setText("JON STREAM IS LOADING...");
@@ -328,12 +334,12 @@ public class MainActivity extends Activity {
     // Consume MENU at the Activity level so the TV remote cannot open
     // an Android or WebView menu through either key-down or key-up dispatch.
     @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_MENU) return true;
+        if (keyCode == KeyEvent.KEYCODE_MENU || keyCode == KeyEvent.KEYCODE_SETTINGS) return true;
         return super.onKeyDown(keyCode, event);
     }
 
     @Override public boolean onKeyUp(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_MENU) return true;
+        if (keyCode == KeyEvent.KEYCODE_MENU || keyCode == KeyEvent.KEYCODE_SETTINGS) return true;
         return super.onKeyUp(keyCode, event);
     }
 
@@ -341,6 +347,7 @@ public class MainActivity extends Activity {
         int keyCode = event.getKeyCode();
         // Ignore the remote MENU key and common refresh/reload shortcuts.
         if (keyCode == KeyEvent.KEYCODE_MENU
+                || keyCode == KeyEvent.KEYCODE_SETTINGS
                 || keyCode == KeyEvent.KEYCODE_REFRESH
                 || keyCode == KeyEvent.KEYCODE_F5
                 || (keyCode == KeyEvent.KEYCODE_R && event.isCtrlPressed())) {
