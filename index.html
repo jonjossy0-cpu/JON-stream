@@ -969,17 +969,23 @@ audio,video{
 @media(max-width:600px){
  #jonTVDisplayShortcut{right:12px;bottom:12px;min-width:125px;min-height:46px;padding:10px 14px;font-size:13px}
 }
-/* JON TV satellite-style numeric remote display */
+/* JON TV remote channel overlay: compact, centered slightly above screen midpoint */
 #jonTVRemoteDisplay{
- position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:10020;
- min-width:150px;padding:10px 18px;border-radius:12px;text-align:center;
- background:rgba(0,0,0,.88);color:#fff;border:2px solid rgba(255,255,255,.2);
- box-shadow:0 10px 28px rgba(0,0,0,.4);font-size:22px;font-weight:900;
- letter-spacing:2px;opacity:0;pointer-events:none;transition:opacity .15s ease;
+ position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);z-index:10020;
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ width:max-content;max-width:min(240px,80%);min-width:104px;padding:7px 12px;
+ border-radius:10px;text-align:center;box-sizing:border-box;
+ background:linear-gradient(135deg,rgba(7,24,43,.9),rgba(7,11,23,.9));
+ color:#fff;border:1px solid rgba(65,183,255,.48);
+ box-shadow:0 0 14px rgba(0,160,255,.2),0 5px 16px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.08);
+ backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .15s ease;
 }
 #jonTVRemoteDisplay.show{opacity:1}
-#jonTVRemoteDisplay small{display:block;font-size:10px;letter-spacing:1px;opacity:.72;margin-bottom:2px}
-@media(max-width:600px){#jonTVRemoteDisplay{top:10px;min-width:120px;padding:8px 14px;font-size:19px}}
+#jonTVRemoteDisplay small{display:block;font-size:8px;letter-spacing:1px;opacity:.7;margin-bottom:2px}
+#jonTVRemoteNumber{font-size:19px;line-height:1.1;font-weight:900;letter-spacing:1.5px;color:#fff;text-shadow:0 0 9px rgba(0,174,255,.55)}
+#jonTVRemoteChannelName{display:block;max-width:100%;margin-top:4px;color:#ff777d;font-size:10px;line-height:1.2;font-weight:800;letter-spacing:.25px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#jonTVRemoteChannelName[hidden]{display:none}
+@media(max-width:600px){#jonTVRemoteDisplay{min-width:92px;padding:6px 10px}#jonTVRemoteNumber{font-size:16px}#jonTVRemoteChannelName{font-size:9px}}
 </style>
 
 <!-- JON STREAM GATEWAY ADD-ON: GitHub-safe browser gateway helpers.
@@ -2701,11 +2707,18 @@ let jonTVRemoteNumberBuffer="",jonTVRemoteNumberTimer=null,jonTVRemoteDisplayTim
 function updateTVRemoteDisplay(value){
  const box=document.getElementById("jonTVRemoteDisplay");
  const num=document.getElementById("jonTVRemoteNumber");
+ const label=document.getElementById("jonTVRemoteChannelName");
  if(!box||!num)return;
+ /* Keep the overlay inside the video frame so it remains visible in fullscreen. */
+ const frame=document.getElementById("tvVideoFrame");
+ if(frame&&box.parentElement!==frame)frame.appendChild(box);
  num.textContent=value||"--";
+ const entered=Number.parseInt(value,10);
+ const channel=Number.isInteger(entered)&&entered>0&&Array.isArray(tvChannels)?tvChannels[entered-1]:null;
+ if(label){label.textContent=channel?String(channel.name||"TV Channel"):"";label.hidden=!channel;}
  box.classList.add("show");
  clearTimeout(jonTVRemoteDisplayTimer);
- jonTVRemoteDisplayTimer=setTimeout(()=>box.classList.remove("show"),1350);
+ jonTVRemoteDisplayTimer=setTimeout(()=>box.classList.remove("show"),1800);
 }
 window.addEventListener("keydown",e=>{
  if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName))return;
@@ -4389,7 +4402,7 @@ window.jonStreamRecordWatched=name=>{if(!name)return;const a=get(recentKey,[]).f
 })();
 </script>
 <button type="button" id="jonTVDisplayShortcut" aria-label="Go to TV display">📺 DISPLAY</button>
-<div id="jonTVRemoteDisplay" aria-live="polite"><small>TV CHANNEL</small><span id="jonTVRemoteNumber">--</span></div>
+<div id="jonTVRemoteDisplay" aria-live="polite"><small>TV CHANNEL</small><span id="jonTVRemoteNumber">--</span><strong id="jonTVRemoteChannelName" hidden></strong></div>
 
 <script id="jonTVDisplayShortcutJS">
 (function(){
