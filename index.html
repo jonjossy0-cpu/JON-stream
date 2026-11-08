@@ -971,9 +971,9 @@ audio,video{
 }
 /* JON TV remote channel overlay: compact, centered slightly above screen midpoint */
 #jonTVRemoteDisplay{
- position:absolute;top:34%;left:50%;transform:translate(-50%,-50%);z-index:10020;
+ position:absolute;top:27%;left:50%;transform:translate(-50%,-50%);z-index:10020;
  display:flex;flex-direction:column;align-items:center;justify-content:center;
- width:max-content;max-width:min(240px,80%);min-width:112px;padding:8px 14px;
+ width:max-content;max-width:min(260px,84%);min-width:128px;padding:10px 16px;
  border-radius:10px;text-align:center;box-sizing:border-box;
  background:linear-gradient(135deg,rgba(7,24,43,.9),rgba(7,11,23,.9));
  color:#fff;border:1px solid rgba(65,183,255,.48);
@@ -982,10 +982,10 @@ audio,video{
 }
 #jonTVRemoteDisplay.show{opacity:1}
 #jonTVRemoteDisplay small{display:block;font-size:8px;letter-spacing:1px;opacity:.7;margin-bottom:2px}
-#jonTVRemoteNumber{font-size:19px;line-height:1.1;font-weight:900;letter-spacing:1.5px;color:#fff;text-shadow:0 0 9px rgba(0,174,255,.55)}
+#jonTVRemoteNumber{font-size:22px;line-height:1.1;font-weight:900;letter-spacing:1.5px;color:#fff;text-shadow:0 0 9px rgba(0,174,255,.55)}
 #jonTVRemoteChannelName{display:block;max-width:100%;margin-top:4px;color:#ff777d;font-size:10px;line-height:1.2;font-weight:800;letter-spacing:.25px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #jonTVRemoteChannelName[hidden]{display:none}
-@media(max-width:600px){#jonTVRemoteDisplay{min-width:98px;padding:7px 11px}#jonTVRemoteNumber{font-size:16px}#jonTVRemoteChannelName{font-size:9px}}
+@media(max-width:600px){#jonTVRemoteDisplay{min-width:112px;padding:9px 13px}#jonTVRemoteNumber{font-size:19px}#jonTVRemoteChannelName{font-size:10px}}
 </style>
 
 <!-- JON STREAM GATEWAY ADD-ON: GitHub-safe browser gateway helpers.
