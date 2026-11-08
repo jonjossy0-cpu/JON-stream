@@ -2,6 +2,8 @@ plugins {
     id 'com.android.application' version '8.7.3'
 }
 
+def tvStartUrl = project.findProperty("jonTvStartUrl") ?: "https://jonjossy0-cpu.github.io/JON-stream/?jonTvApp=1"
+
 android {
     namespace 'com.jonstream.app'
     compileSdk 35
@@ -28,6 +30,7 @@ android {
             applicationId "com.jonstream.tv"
             versionCode 9
             versionName "8.1"
+            manifestPlaceholders = [twaStartUrl: tvStartUrl]
         }
     }
 
