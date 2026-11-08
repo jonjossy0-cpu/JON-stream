@@ -198,6 +198,6 @@ jobs:
       - name: Upload signed Android TV preview APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: JON-Stream-Android-TV-Chrome-Preview-8.1
+          name: JON-Stream-Android-TV-Chrome-Preview-8.1.1
           path: android/app/build/outputs/apk/tv/release/*.apk
           if-no-files-found: error
