@@ -2,7 +2,7 @@ plugins {
     id 'com.android.application' version '8.7.3'
 }
 
-def tvStartUrl = project.findProperty("jonTvStartUrl") ?: "https://jonjossy0-cpu.github.io/JON-stream/?jonTvApp=1"
+def tvStartUrl = project.findProperty("jonTvStartUrl") ?: "https://jon-stream.vercel.app/?jonTvApp=1"
 
 android {
     namespace 'com.jonstream.app'
