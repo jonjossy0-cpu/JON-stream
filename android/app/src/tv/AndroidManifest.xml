@@ -35,7 +35,7 @@
 
             <meta-data
                 android:name="android.support.customtabs.trusted.DEFAULT_URL"
-                android:value="https://jonjossy0-cpu.github.io/JON-stream/?jonTvApp=1" />
+                android:value="${twaStartUrl}" />
 
             <meta-data
                 android:name="android.support.customtabs.trusted.DISPLAY_MODE"
