@@ -24,7 +24,7 @@
             tools:node="remove" />
 
         <activity
-            android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
+            android:name=".TvLauncherActivity"
             android:exported="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:screenOrientation="landscape"
@@ -35,7 +35,11 @@
 
             <meta-data
                 android:name="android.support.customtabs.trusted.DEFAULT_URL"
-                android:value="https://jonjossy0-cpu.github.io/JON-stream/" />
+                android:value="https://jonjossy0-cpu.github.io/JON-stream/?jonTvApp=1" />
+
+            <meta-data
+                android:name="android.support.customtabs.trusted.DISPLAY_MODE"
+                android:value="sticky-immersive" />
 
             <meta-data
                 android:name="asset_statements"
