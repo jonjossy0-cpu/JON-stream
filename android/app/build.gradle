@@ -28,8 +28,8 @@ android {
         tv {
             dimension "device"
             applicationId "com.jonstream.tv"
-            versionCode 9
-            versionName "8.1"
+            versionCode 10
+            versionName "8.1.1"
             manifestPlaceholders = [twaStartUrl: tvStartUrl]
         }
     }
