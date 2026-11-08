@@ -2,6 +2,8 @@ plugins {
     id 'com.android.application' version '8.7.3'
 }
 
+def tvStartUrl = project.findProperty("jonTvStartUrl") ?: "https://jon-stream.vercel.app/?jonTvApp=1"
+
 android {
     namespace 'com.jonstream.app'
     compileSdk 35
@@ -26,8 +28,9 @@ android {
         tv {
             dimension "device"
             applicationId "com.jonstream.tv"
-            versionCode 8
-            versionName "8.0"
+            versionCode 10
+            versionName "8.1.1"
+            manifestPlaceholders = [twaStartUrl: tvStartUrl]
         }
     }
 
@@ -89,6 +92,20 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
 
     doLast {
         def html = sourceFile.asFile.getText("UTF-8")
+
+        /* Keep Android TV Chrome remote-key handling out of the Mobile APK asset. */
+        def tvGuardBegin = '<!-- JON_TV_APP_REMOTE_GUARD_BEGIN -->'
+        def tvGuardEnd = '<!-- JON_TV_APP_REMOTE_GUARD_END -->'
+        if (html.count(tvGuardBegin) != 1 || html.count(tvGuardEnd) != 1) {
+            throw new GradleException("Expected exactly one Android TV-only remote guard block.")
+        }
+        def tvGuardStart = html.indexOf(tvGuardBegin)
+        def tvGuardFinish = html.indexOf(tvGuardEnd, tvGuardStart)
+        def tvGuardAfter = html.indexOf("\n", tvGuardFinish + tvGuardEnd.length())
+        if (tvGuardStart < 0 || tvGuardFinish < tvGuardStart || tvGuardAfter < 0) {
+            throw new GradleException("Invalid Android TV-only remote guard markers.")
+        }
+        html = html.substring(0, tvGuardStart) + html.substring(tvGuardAfter + 1)
         if (!sponsorCssFile.asFile.isFile() || !sponsorJsFile.asFile.isFile()) {
             throw new GradleException("Missing Mobile APK sponsor carousel assets.")
         }
