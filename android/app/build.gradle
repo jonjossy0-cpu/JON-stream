@@ -98,7 +98,7 @@ def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenCon
         }
         def tvGuardStart = html.indexOf(tvGuardBegin)
         def tvGuardFinish = html.indexOf(tvGuardEnd, tvGuardStart)
-        def tvGuardAfter = html.indexOf("\\n", tvGuardFinish + tvGuardEnd.length())
+        def tvGuardAfter = html.indexOf("\n", tvGuardFinish + tvGuardEnd.length())
         if (tvGuardStart < 0 || tvGuardFinish < tvGuardStart || tvGuardAfter < 0) {
             throw new GradleException("Invalid Android TV-only remote guard markers.")
         }
