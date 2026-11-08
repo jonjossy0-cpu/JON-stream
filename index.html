@@ -5852,8 +5852,10 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
   function blockUnwantedRemoteKeys(event) {
     var key = String(event.key || "").toLowerCase();
     var code = Number(event.keyCode || event.which || 0);
+    var ambiguousAndroidMenu = (!key || key === "unidentified");
     var menu = key === "menu" || key === "contextmenu" || key === "browsermenu"
-      || key === "settings" || code === 82 || code === 93 || code === 176;
+      || key === "settings" || (code === 82 && ambiguousAndroidMenu)
+      || (code === 93 && ambiguousAndroidMenu) || (code === 176 && ambiguousAndroidMenu);
     var refresh = key === "f5" || key === "browserrefresh" || key === "refresh"
       || code === 116 || code === 181 || code === 285 || code === 135;
     if (!menu && !refresh) return;
