@@ -5841,5 +5841,37 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 #jonFeaturePanel{background:linear-gradient(145deg,#0d1f35,#050c18 68%,#180c16)!important;border:1px solid rgba(67,181,255,.4)!important;box-shadow:0 20px 65px rgba(0,0,0,.58),0 0 25px rgba(0,153,255,.12)!important;backdrop-filter:blur(13px)}
 .jonFeatureGrid button{background:linear-gradient(145deg,#122a43,#0b1728)!important;border:1px solid rgba(91,181,235,.28)!important;color:#f7fbff!important}.jonFeatureGrid button:focus,.jonFeatureGrid button:active{outline:2px solid #36baff;box-shadow:0 0 16px rgba(0,174,255,.35)}
 </style>
+
+<script id="jonTvAppRemoteGuard">
+(function(){
+  "use strict";
+  try {
+    if (new URLSearchParams(window.location.search).get("jonTvApp") !== "1") return;
+  } catch (_) { return; }
+
+  function blockUnwantedRemoteKeys(event) {
+    var key = String(event.key || "").toLowerCase();
+    var code = Number(event.keyCode || event.which || 0);
+    var menu = key === "menu" || key === "contextmenu" || key === "browsermenu"
+      || key === "settings" || code === 82 || code === 93 || code === 176;
+    var refresh = key === "f5" || key === "browserrefresh" || key === "refresh"
+      || code === 116 || code === 181 || code === 285 || code === 135;
+    if (!menu && !refresh) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+  }
+
+  window.addEventListener("keydown", blockUnwantedRemoteKeys, true);
+  window.addEventListener("keyup", blockUnwantedRemoteKeys, true);
+  document.addEventListener("keydown", blockUnwantedRemoteKeys, true);
+  document.addEventListener("keyup", blockUnwantedRemoteKeys, true);
+  document.addEventListener("contextmenu", function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+  }, true);
+})();
+</script>
 </body>
 </html>
