@@ -5447,11 +5447,19 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
     let result = await requestSession("claim", user, session.sessionId);
 
     if (result.confirmationRequired) {
-      const accepted = window.confirm(
-        "This email is already signed in on another device.\n\n" +
-        "Do you want to sign out the other device and continue on this device?\n\n" +
-        "OK = Yes (sign out the other device and continue here)\nCancel = No (keep the other device signed in; cancel this login)"
-      );
+      const accepted = typeof window.jonAdvancedDialog === "function"
+        ? !!(await window.jonAdvancedDialog({
+            eyebrow: "JON STREAM • DEVICE SECURITY",
+            title: "ACCOUNT ALREADY ACTIVE",
+            message: "This email is already signed in on another device.\\n\\nWould you like to sign out the other device and continue here?",
+            icon: "🔐",
+            confirmText: "YES — CONTINUE HERE",
+            cancelText: "NO — KEEP OTHER DEVICE"
+          }))
+        : window.confirm(
+            "This email is already signed in on another device.\\n\\n" +
+            "Do you want to sign out the other device and continue on this device?"
+          );
 
       if (!accepted) {
         pendingUser = null;
@@ -5854,5 +5862,100 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 #jonFeaturePanel{background:linear-gradient(145deg,#0d1f35,#050c18 68%,#180c16)!important;border:1px solid rgba(67,181,255,.4)!important;box-shadow:0 20px 65px rgba(0,0,0,.58),0 0 25px rgba(0,153,255,.12)!important;backdrop-filter:blur(13px)}
 .jonFeatureGrid button{background:linear-gradient(145deg,#122a43,#0b1728)!important;border:1px solid rgba(91,181,235,.28)!important;color:#f7fbff!important}.jonFeatureGrid button:focus,.jonFeatureGrid button:active{outline:2px solid #36baff;box-shadow:0 0 16px rgba(0,174,255,.35)}
 </style>
+
+<style id="jonDeviceSessionPopupGlow">
+#jonAdvancedDialogRoot{
+  z-index:2147483000!important;
+  background:rgba(2,7,18,.86)!important;
+  -webkit-backdrop-filter:blur(15px)!important;
+  backdrop-filter:blur(15px)!important;
+}
+#jonAdvancedDialogRoot .jon-adv-dialog-card{
+  position:relative!important;
+  overflow:hidden!important;
+  width:min(440px,calc(100vw - 28px))!important;
+  padding:clamp(22px,5vw,30px)!important;
+  border:1px solid rgba(73,190,255,.58)!important;
+  border-radius:25px!important;
+  color:#f5faff!important;
+  background:linear-gradient(145deg,#102a46 0%,#071426 58%,#210d1b 100%)!important;
+  box-shadow:0 28px 90px rgba(0,0,0,.72),0 0 38px rgba(0,156,255,.2),0 0 26px rgba(227,27,35,.12),inset 0 1px rgba(255,255,255,.1)!important;
+}
+#jonAdvancedDialogRoot .jon-adv-dialog-icon{
+  display:grid!important;
+  place-items:center!important;
+  width:62px!important;height:62px!important;
+  margin:0 auto 15px!important;
+  border:1px solid rgba(83,198,255,.65)!important;
+  border-radius:20px!important;
+  background:linear-gradient(145deg,rgba(0,145,255,.2),rgba(227,27,35,.13))!important;
+  box-shadow:0 0 25px rgba(0,164,255,.22),inset 0 0 18px rgba(255,255,255,.06)!important;
+  font-size:29px!important;
+  animation:jonDevicePopupIconGlow 3s ease-in-out infinite!important;
+}
+#jonAdvancedDialogRoot .jon-adv-dialog-kicker{
+  color:#8bdcff!important;
+  letter-spacing:.19em!important;
+  font-weight:900!important;
+  text-shadow:0 0 13px rgba(0,174,255,.38)!important;
+}
+#jonAdvancedDialogRoot #jonAdvancedDialogTitle{
+  color:#fff!important;
+  font-weight:950!important;
+  letter-spacing:.035em!important;
+  text-align:center!important;
+  text-shadow:0 0 10px rgba(0,174,255,.48),0 0 24px rgba(227,27,35,.17)!important;
+}
+#jonAdvancedDialogRoot .jon-adv-dialog-message{
+  color:#d5e7f7!important;
+  line-height:1.65!important;
+  text-align:center!important;
+  white-space:pre-line!important;
+}
+#jonAdvancedDialogRoot .jon-adv-dialog-actions{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:11px!important;
+  margin-top:23px!important;
+}
+#jonAdvancedDialogRoot .jon-adv-dialog-actions button{
+  min-height:49px!important;
+  border-radius:14px!important;
+  padding:10px 12px!important;
+  font-size:clamp(10px,2.5vw,12px)!important;
+  font-weight:900!important;
+  letter-spacing:.025em!important;
+  white-space:normal!important;
+  transition:transform .18s ease,box-shadow .18s ease!important;
+}
+#jonAdvancedDialogRoot #jonAdvancedDialogSubmit{
+  color:#fff!important;
+  border:1px solid rgba(125,220,255,.72)!important;
+  background:linear-gradient(110deg,#087fc7 0%,#1455b7 55%,#b7192b 100%)!important;
+  box-shadow:0 0 22px rgba(0,145,255,.23),inset 0 1px rgba(255,255,255,.2)!important;
+}
+#jonAdvancedDialogRoot #jonAdvancedDialogCancel{
+  color:#dce9f6!important;
+  border:1px solid rgba(135,169,199,.34)!important;
+  background:linear-gradient(145deg,#243b54,#111e30)!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.08)!important;
+}
+#jonAdvancedDialogRoot .jon-adv-dialog-actions button:active{transform:scale(.97)!important}
+#jonAdvancedDialogRoot .jon-adv-dialog-actions button:focus-visible{
+  outline:2px solid #7bdcff!important;
+  outline-offset:3px!important;
+}
+@keyframes jonDevicePopupIconGlow{
+  0%,100%{filter:drop-shadow(0 0 5px rgba(0,174,255,.48))}
+  50%{filter:drop-shadow(0 0 12px rgba(227,27,35,.5))}
+}
+@media(max-width:390px){
+  #jonAdvancedDialogRoot .jon-adv-dialog-actions{grid-template-columns:1fr!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #jonAdvancedDialogRoot .jon-adv-dialog-icon{animation:none!important}
+}
+</style>
+
 </body>
 </html>
