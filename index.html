@@ -5451,16 +5451,19 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
         ? !!(await window.jonAdvancedDialog({
             eyebrow: "JON STREAM • DEVICE SECURITY",
             title: "ACCOUNT ALREADY ACTIVE",
-            message: "This email is already signed in on another device.\n\nDo you want to sign out the other device and continue on this device?\n\nYES = Sign out the other device and continue here.\nNO = Keep the other device signed in and cancel this login.",
+            message: "This email is already signed in on another device.\n\n" +
+              "Do you want to sign out the other device and continue on this device?\n\n" +
+              "OK = Yes (sign out the other device and continue here)\n" +
+              "Cancel = No (keep the other device signed in; cancel this login)",
             icon: "🔐",
-            confirmText: "YES — CONTINUE HERE",
-            cancelText: "NO — KEEP OTHER DEVICE"
+            confirmText: "OK",
+            cancelText: "Cancel"
           }))
         : window.confirm(
-            "This email is already signed in on another device.\\n\\n" +
-            "Do you want to sign out the other device and continue on this device?\\n\\n" +
-            "YES = Sign out the other device and continue here.\\n" +
-            "NO = Keep the other device signed in and cancel this login."
+            "This email is already signed in on another device.\n\n" +
+            "Do you want to sign out the other device and continue on this device?\n\n" +
+            "OK = Yes (sign out the other device and continue here)\n" +
+            "Cancel = No (keep the other device signed in; cancel this login)"
           );
 
       if (!accepted) {
