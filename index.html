@@ -3149,7 +3149,14 @@ function updateTVPerformance(){
  if(tvPerfFirstPlayingAt)tvDiag("diagStartup",((tvPerfFirstPlayingAt-tvPerfStartedAt)/1000).toFixed(1)+"s");
 }
 let tvSourceIndex=0,tvSourceList=[],tvLastProgress=0,tvLastProgressAt=0,tvAbrCapTimer=null;
-let tvManualQuality=-1,tvLatencyMode="balanced",tvLowData=false;
+const JON_TV_LATENCY_MODE_KEY="jonStreamTVLatencyModeV1";
+function getSavedTVLatencyMode(){
+ try{
+  const saved=localStorage.getItem(JON_TV_LATENCY_MODE_KEY);
+  return ["balanced","low","data"].includes(saved)?saved:"balanced";
+ }catch(_){return "balanced"}
+}
+let tvManualQuality=-1,tvLatencyMode=getSavedTVLatencyMode(),tvLowData=tvLatencyMode==="data";
 const TV_RETRY_DELAYS=[3000,15000,30000,3000],TV_MAX_RETRIES=4,TV_STALL_LIMIT_MS=12000;
 
 function tvStatus(text){
@@ -3660,7 +3667,18 @@ function reloadTVStream(){if(currentTV)playTVStream(currentTV.url,currentTV.name
 function setTVVolume(value){tvPlayer.volume=Number(value);tvPlayer.muted=Number(value)===0}
 function setTVSpeed(value){tvPlayer.playbackRate=Number(value)}
 async function pictureInPictureTV(){try{if(document.pictureInPictureElement)await document.exitPictureInPicture();else if(document.pictureInPictureEnabled&&tvPlayer.readyState>0)await tvPlayer.requestPictureInPicture()}catch(e){}}
-function setTVLatencyMode(mode){tvLatencyMode=mode;tvLowData=mode==="data";if(currentTV){const playing=!tvPlayer.paused,idx=currentTVIndex,u=currentTV.url,n=currentTV.name;tvRetryAttempt=0;playTVStream(u,n,idx,tvSourceIndex);if(!playing)tvPlayer.pause()}}
+function setTVLatencyMode(mode){
+ if(!["balanced","low","data"].includes(mode))mode="balanced";
+ tvLatencyMode=mode;tvLowData=mode==="data";
+ try{localStorage.setItem(JON_TV_LATENCY_MODE_KEY,mode)}catch(_){}
+ const selector=document.getElementById("tvLatencyMode");
+ if(selector&&selector.value!==mode)selector.value=mode;
+ if(currentTV){
+  const playing=!tvPlayer.paused,idx=currentTVIndex,u=currentTV.url,n=currentTV.name;
+  tvRetryAttempt=0;playTVStream(u,n,idx,tvSourceIndex);
+  if(!playing)tvPlayer.pause();
+ }
+}
 function populateTVQualitySelect(){const s=document.getElementById("tvQualitySelect");if(!s)return;const old=tvManualQuality;s.innerHTML='<option value="-1">Auto</option>';if(hls&&hls.levels)hls.levels.forEach((l,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=(l.height?l.height+"p":"Level "+(i+1))+(l.bitrate?" • "+(l.bitrate/1000000).toFixed(1)+"Mbps":"");s.appendChild(o)});s.value=String(old);const fs=document.getElementById("tvFullscreenQuality");if(fs){fs.innerHTML=s.innerHTML;fs.value=String(old)}}
 function setTVManualQuality(value){tvManualQuality=Number(value);if(hls&&tvManualQuality<0)hls.autoLevelCapping=-1;clearTimeout(tvAbrCapTimer);tvAbrCapTimer=null;applyTVQuality()}
 function applyTVQuality(){if(!hls)return;if(tvManualQuality>=0&&tvManualQuality<hls.levels.length)hls.currentLevel=tvManualQuality;else{hls.autoLevelCapping=-1;hls.currentLevel=-1}}
