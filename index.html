@@ -2761,6 +2761,7 @@ let tvReconnectTimer=null;
    🔒 TV URLs are never rewritten or removed by the app.
 */
 function loadTV(){
+ const modeSelect=document.getElementById("tvLatencyMode");if(modeSelect)modeSelect.value=tvLatencyMode;
  const status=document.getElementById("tvStatus");
  tvChannels=applySavedTVOrder(USER_TV_CHANNELS.slice());
  filteredTV=tvChannels.slice();
