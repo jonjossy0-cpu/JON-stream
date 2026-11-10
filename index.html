@@ -3180,14 +3180,16 @@ function recordTVHLSProfile(channel,levels){
  updateTVHLSProfileDiagnostics();
 }
 function updateTVHLSProfileDiagnostics(){
- const profiles=Object.values(readTVHLSProfiles());
+ const stored=readTVHLSProfiles();
+ const activeKeys=new Set((Array.isArray(tvChannels)?tvChannels:[]).map(getTVChannelOrderId));
+ const profiles=Object.entries(stored).filter(([key])=>activeKeys.has(key)).map(([,value])=>value);
  const multi=profiles.filter(item=>Number(item&&item.count)>1).length;
  const single=profiles.filter(item=>Number(item&&item.count)===1).length;
- const current=currentTV?profiles.find(item=>item&&item.name===String(currentTV.name||"")):null;
+ const current=currentTV?stored[getTVChannelOrderId(currentTV)]:null;
  const profile=document.getElementById("diagHlsProfile");
  if(profile)profile.textContent=current?(current.count+" variant"+(current.count===1?"":"s")+(current.min&&current.max?" • "+(current.min/1000000).toFixed(2)+"–"+(current.max/1000000).toFixed(2)+" Mbps":"")):"Not measured";
  const scan=document.getElementById("diagHlsScanned");
- if(scan)scan.textContent=profiles.length+" profiles • "+multi+" multi • "+single+" single";
+ if(scan)scan.textContent=profiles.length+"/"+(Array.isArray(tvChannels)?tvChannels.length:0)+" scanned • "+multi+" multi • "+single+" single";
 }
 const TV_RETRY_DELAYS=[3000,15000,30000,3000],TV_MAX_RETRIES=4,TV_STALL_LIMIT_MS=12000;
 
