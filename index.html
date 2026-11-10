@@ -1771,6 +1771,8 @@ img.jon-ad-media{
    <div class="tv-diagnostics-grid">    <div class="tv-diagnostic"><b>Connection</b><span id="diagConnection">Ready</span></div>
     <div class="tv-diagnostic"><b>Buffer</b><span id="diagBuffer">0s</span></div>
     <div class="tv-diagnostic"><b>Bitrate</b><span id="diagBitrate">—</span></div>
+    <div class="tv-diagnostic"><b>HLS Quality Profile</b><span id="diagHlsProfile">Not measured</span></div>
+    <div class="tv-diagnostic"><b>HLS Channel Scan</b><span id="diagHlsScanned">0 profiles saved</span></div>
     <div class="tv-diagnostic"><b>Latency</b><span id="diagLatency">—</span></div>
     <div class="tv-diagnostic"><b>Network</b><span id="diagNetwork">—</span></div>
     <div class="tv-diagnostic"><b>Reconnects</b><span id="diagReconnects">0</span></div>
@@ -2761,6 +2763,7 @@ let tvReconnectTimer=null;
    🔒 TV URLs are never rewritten or removed by the app.
 */
 function loadTV(){
+ const modeSelect=document.getElementById("tvLatencyMode");if(modeSelect)modeSelect.value=tvLatencyMode;
  const status=document.getElementById("tvStatus");
  tvChannels=applySavedTVOrder(USER_TV_CHANNELS.slice());
  filteredTV=tvChannels.slice();
@@ -3149,7 +3152,45 @@ function updateTVPerformance(){
  if(tvPerfFirstPlayingAt)tvDiag("diagStartup",((tvPerfFirstPlayingAt-tvPerfStartedAt)/1000).toFixed(1)+"s");
 }
 let tvSourceIndex=0,tvSourceList=[],tvLastProgress=0,tvLastProgressAt=0,tvAbrCapTimer=null;
-let tvManualQuality=-1,tvLatencyMode="balanced",tvLowData=false;
+const JON_TV_LATENCY_MODE_KEY="jonStreamTVLatencyModeV1";
+function getSavedTVLatencyMode(){
+ try{
+  const saved=localStorage.getItem(JON_TV_LATENCY_MODE_KEY);
+  return ["balanced","low","data"].includes(saved)?saved:"balanced";
+ }catch(_){return "balanced"}
+}
+let tvManualQuality=-1,tvLatencyMode=getSavedTVLatencyMode(),tvLowData=tvLatencyMode==="data";
+/* Passive HLS inventory: records only quality levels already delivered by the
+   active player. It makes no extra requests and never writes to Firebase. */
+const JON_TV_HLS_PROFILE_KEY="jonStreamTVHLSProfilesV1";
+function readTVHLSProfiles(){
+ try{const value=JSON.parse(localStorage.getItem(JON_TV_HLS_PROFILE_KEY)||"{}");return value&&typeof value==="object"&&!Array.isArray(value)?value:{}}catch(_){return {}}
+}
+function recordTVHLSProfile(channel,levels){
+ if(!channel||!Array.isArray(levels)||!levels.length)return;
+ const key=getTVChannelOrderId(channel),profiles=readTVHLSProfiles();
+ const rates=levels.map(level=>Number(level&&level.bitrate)).filter(rate=>Number.isFinite(rate)&&rate>0);
+ profiles[key]={name:String(channel.name||"TV Channel"),count:levels.length,min:rates.length?Math.min(...rates):0,max:rates.length?Math.max(...rates):0,checkedAt:Date.now()};
+ const keys=Object.keys(profiles);
+ if(keys.length>400){
+  keys.sort((a,b)=>(Number(profiles[a]?.checkedAt)||0)-(Number(profiles[b]?.checkedAt)||0));
+  while(keys.length>400)delete profiles[keys.shift()];
+ }
+ try{localStorage.setItem(JON_TV_HLS_PROFILE_KEY,JSON.stringify(profiles))}catch(_){}
+ updateTVHLSProfileDiagnostics();
+}
+function updateTVHLSProfileDiagnostics(){
+ const stored=readTVHLSProfiles();
+ const activeKeys=new Set((Array.isArray(tvChannels)?tvChannels:[]).map(getTVChannelOrderId));
+ const profiles=Object.entries(stored).filter(([key])=>activeKeys.has(key)).map(([,value])=>value);
+ const multi=profiles.filter(item=>Number(item&&item.count)>1).length;
+ const single=profiles.filter(item=>Number(item&&item.count)===1).length;
+ const current=currentTV?stored[getTVChannelOrderId(currentTV)]:null;
+ const profile=document.getElementById("diagHlsProfile");
+ if(profile)profile.textContent=current?(current.count+" variant"+(current.count===1?"":"s")+(current.min&&current.max?" • "+(current.min/1000000).toFixed(2)+"–"+(current.max/1000000).toFixed(2)+" Mbps":"")):"Not measured";
+ const scan=document.getElementById("diagHlsScanned");
+ if(scan)scan.textContent=profiles.length+"/"+(Array.isArray(tvChannels)?tvChannels.length:0)+" scanned • "+multi+" multi • "+single+" single";
+}
 const TV_RETRY_DELAYS=[3000,15000,30000,3000],TV_MAX_RETRIES=4,TV_STALL_LIMIT_MS=12000;
 
 function tvStatus(text){
@@ -3292,7 +3333,7 @@ function updateTVDiagnostics(){
   if(level>=0&&hls.levels[level]&&hls.levels[level].bitrate)bitrate=(hls.levels[level].bitrate/1000000).toFixed(2)+" Mbps";
   try{if(typeof hls.latency==="number"&&isFinite(hls.latency))latency=hls.latency.toFixed(1)+"s"}catch(_){}
  }
- tvDiag("diagBitrate",bitrate);tvDiag("diagLatency",latency);
+ tvDiag("diagBitrate",bitrate);tvDiag("diagLatency",latency);updateTVHLSProfileDiagnostics();
  let dropped="—";
  try{
   const playback=typeof tvPlayer.getVideoPlaybackQuality==="function"?tvPlayer.getVideoPlaybackQuality():null;
@@ -3506,7 +3547,7 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigat
  if(isM3U8&&window.Hls&&Hls.isSupported()){
   hls=new Hls(configureHLS());hls.attachMedia(tvPlayer);
   hls.on(Hls.Events.MEDIA_ATTACHED,()=>{try{hls.loadSource(source)}catch(_){recoverTVStream()}});
-  hls.on(Hls.Events.MANIFEST_PARSED,()=>{updateQuality();populateTVQualitySelect();applyTVQuality();try{tvPlayer.play().then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){tvStatus("▶ Tap PLAY")}});
+  hls.on(Hls.Events.MANIFEST_PARSED,()=>{recordTVHLSProfile(currentTV,hls.levels);updateQuality();populateTVQualitySelect();applyTVQuality();try{tvPlayer.play().then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){tvStatus("▶ Tap PLAY")}});
   hls.on(Hls.Events.LEVEL_SWITCHED,()=>{updateQuality();populateTVQualitySelect();updateTVDiagnostics()});
   hls.on(Hls.Events.FRAG_BUFFERED,()=>{updateTVFullscreenNetwork()});
   hls.on(Hls.Events.FRAG_LOADED,(event,data)=>{recordTVFragmentThroughput(data)});
@@ -3660,7 +3701,18 @@ function reloadTVStream(){if(currentTV)playTVStream(currentTV.url,currentTV.name
 function setTVVolume(value){tvPlayer.volume=Number(value);tvPlayer.muted=Number(value)===0}
 function setTVSpeed(value){tvPlayer.playbackRate=Number(value)}
 async function pictureInPictureTV(){try{if(document.pictureInPictureElement)await document.exitPictureInPicture();else if(document.pictureInPictureEnabled&&tvPlayer.readyState>0)await tvPlayer.requestPictureInPicture()}catch(e){}}
-function setTVLatencyMode(mode){tvLatencyMode=mode;tvLowData=mode==="data";if(currentTV){const playing=!tvPlayer.paused,idx=currentTVIndex,u=currentTV.url,n=currentTV.name;tvRetryAttempt=0;playTVStream(u,n,idx,tvSourceIndex);if(!playing)tvPlayer.pause()}}
+function setTVLatencyMode(mode){
+ if(!["balanced","low","data"].includes(mode))mode="balanced";
+ tvLatencyMode=mode;tvLowData=mode==="data";
+ try{localStorage.setItem(JON_TV_LATENCY_MODE_KEY,mode)}catch(_){}
+ const selector=document.getElementById("tvLatencyMode");
+ if(selector&&selector.value!==mode)selector.value=mode;
+ if(currentTV){
+  const playing=!tvPlayer.paused,idx=currentTVIndex,u=currentTV.url,n=currentTV.name;
+  tvRetryAttempt=0;playTVStream(u,n,idx,tvSourceIndex);
+  if(!playing)tvPlayer.pause();
+ }
+}
 function populateTVQualitySelect(){const s=document.getElementById("tvQualitySelect");if(!s)return;const old=tvManualQuality;s.innerHTML='<option value="-1">Auto</option>';if(hls&&hls.levels)hls.levels.forEach((l,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=(l.height?l.height+"p":"Level "+(i+1))+(l.bitrate?" • "+(l.bitrate/1000000).toFixed(1)+"Mbps":"");s.appendChild(o)});s.value=String(old);const fs=document.getElementById("tvFullscreenQuality");if(fs){fs.innerHTML=s.innerHTML;fs.value=String(old)}}
 function setTVManualQuality(value){tvManualQuality=Number(value);if(hls&&tvManualQuality<0)hls.autoLevelCapping=-1;clearTimeout(tvAbrCapTimer);tvAbrCapTimer=null;applyTVQuality()}
 function applyTVQuality(){if(!hls)return;if(tvManualQuality>=0&&tvManualQuality<hls.levels.length)hls.currentLevel=tvManualQuality;else{hls.autoLevelCapping=-1;hls.currentLevel=-1}}
