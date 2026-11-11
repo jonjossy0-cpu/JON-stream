@@ -4190,6 +4190,9 @@ body.jon-ad-visible{padding-bottom:85px}
        lists. Nothing already in this file is removed or replaced. */
     if(Array.isArray(remote.tv)){
       const incoming=remote.tv.filter(x=>x&&x.enabled!==false&&typeof x.name==='string'&&x.name.trim()&&isHttpUrl(x.url)).map(x=>({
+        /* Preserve optional stream/quality metadata supplied by Firebase.
+           The normalized fields below remain authoritative for playback. */
+        ...x,
         name:x.name.trim(),
         url:x.url.trim(),
         logo:typeof x.logo==='string'?x.logo:'',
