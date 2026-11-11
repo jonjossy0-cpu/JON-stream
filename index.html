@@ -3544,6 +3544,7 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigat
   recoverTVStream();
  },18000);
  const isM3U8=kind==="hls";
+ let tvHlsGatewayFallbackTried=false;
  if(isM3U8&&window.Hls&&Hls.isSupported()){
   hls=new Hls(configureHLS());hls.attachMedia(tvPlayer);
   hls.on(Hls.Events.MEDIA_ATTACHED,()=>{try{hls.loadSource(source)}catch(_){recoverTVStream()}});
@@ -3551,7 +3552,19 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigat
   hls.on(Hls.Events.LEVEL_SWITCHED,()=>{updateQuality();populateTVQualitySelect();updateTVDiagnostics()});
   hls.on(Hls.Events.FRAG_BUFFERED,()=>{updateTVFullscreenNetwork()});
   hls.on(Hls.Events.FRAG_LOADED,(event,data)=>{recordTVFragmentThroughput(data)});
-  hls.on(Hls.Events.ERROR,(event,data)=>{if(!data||!data.fatal)return;tvStatus("🔄 Recovering stream...");if(data.type===Hls.ErrorTypes.MEDIA_ERROR){try{hls.recoverMediaError();return}catch(_){} }recoverTVStream()});
+  hls.on(Hls.Events.ERROR,(event,data)=>{
+   if(!data||!data.fatal)return;
+   const isFreeHls=String(currentTV&&currentTV.accessTier||"free").toLowerCase()!=="premium";
+   if(data.type===Hls.ErrorTypes.NETWORK_ERROR&&!tvHlsGatewayFallbackTried&&isFreeHls&&/^https?:\\/\\//i.test(source)&&!source.includes("/api/hls?url=")){
+    tvHlsGatewayFallbackTried=true;
+    const gatewaySource="https://jon-stream.vercel.app/api/hls?url="+encodeURIComponent(source);
+    tvStatus("🔄 HLS source blocked — retrying through gateway...");
+    try{hls.loadSource(gatewaySource);return}catch(_){}
+   }
+   tvStatus("🔄 Recovering stream...");
+   if(data.type===Hls.ErrorTypes.MEDIA_ERROR){try{hls.recoverMediaError();return}catch(_){}}
+   recoverTVStream();
+  });
  }else if(isM3U8&&tvPlayer.canPlayType("application/vnd.apple.mpegurl")){
   tvPlayer.src=source;tvPlayer.addEventListener("loadedmetadata",()=>{try{tvPlayer.play().then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){}},{once:true});
  }else if((kind==="flv"||kind==="ts")&&window.mpegts&&mpegts.isSupported()){
