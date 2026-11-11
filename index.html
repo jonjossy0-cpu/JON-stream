@@ -3545,13 +3545,17 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigat
  },18000);
  const isM3U8=kind==="hls";
  if(isM3U8&&window.Hls&&Hls.isSupported()){
-  hls=new Hls(configureHLS());hls.attachMedia(tvPlayer);
-  hls.on(Hls.Events.MEDIA_ATTACHED,()=>{try{hls.loadSource(source)}catch(_){recoverTVStream()}});
-  hls.on(Hls.Events.MANIFEST_PARSED,()=>{recordTVHLSProfile(currentTV,hls.levels);updateQuality();populateTVQualitySelect();applyTVQuality();try{tvPlayer.play().then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){tvStatus("▶ Tap PLAY")}});
-  hls.on(Hls.Events.LEVEL_SWITCHED,()=>{updateQuality();populateTVQualitySelect();updateTVDiagnostics()});
-  hls.on(Hls.Events.FRAG_BUFFERED,()=>{updateTVFullscreenNetwork()});
-  hls.on(Hls.Events.FRAG_LOADED,(event,data)=>{recordTVFragmentThroughput(data)});
-  hls.on(Hls.Events.ERROR,(event,data)=>{if(!data||!data.fatal)return;tvStatus("🔄 Recovering stream...");if(data.type===Hls.ErrorTypes.MEDIA_ERROR){try{hls.recoverMediaError();return}catch(_){} }recoverTVStream()});
+  const activeHls=hls=new Hls(configureHLS());activeHls.attachMedia(tvPlayer);
+  activeHls.on(Hls.Events.MEDIA_ATTACHED,()=>{try{activeHls.loadSource(source)}catch(_){recoverTVStream()}});
+  // Resolve quality only from the manifest already fetched by the active player.
+  // No secondary fetch, polling, speed test, or Firebase write is performed.
+  activeHls.on(Hls.Events.MANIFEST_LOADED,()=>{syncTVHLSQuality(activeHls)});
+  activeHls.on(Hls.Events.LEVELS_UPDATED,()=>{syncTVHLSQuality(activeHls)});
+  activeHls.on(Hls.Events.MANIFEST_PARSED,()=>{syncTVHLSQuality(activeHls);applyTVQuality();try{tvPlayer.play().then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){tvStatus("▶ Tap PLAY")}});
+  activeHls.on(Hls.Events.LEVEL_SWITCHED,()=>{syncTVHLSQuality(activeHls);updateTVDiagnostics()});
+  activeHls.on(Hls.Events.FRAG_BUFFERED,()=>{updateTVFullscreenNetwork()});
+  activeHls.on(Hls.Events.FRAG_LOADED,(event,data)=>{recordTVFragmentThroughput(data)});
+  activeHls.on(Hls.Events.ERROR,(event,data)=>{if(!data||!data.fatal||hls!==activeHls)return;tvStatus("🔄 Recovering stream...");if(data.type===Hls.ErrorTypes.MEDIA_ERROR){try{activeHls.recoverMediaError();return}catch(_){}}recoverTVStream()});
  }else if(isM3U8&&tvPlayer.canPlayType("application/vnd.apple.mpegurl")){
   tvPlayer.src=source;tvPlayer.addEventListener("loadedmetadata",()=>{try{tvPlayer.play().then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){}},{once:true});
  }else if((kind==="flv"||kind==="ts")&&window.mpegts&&mpegts.isSupported()){
@@ -3713,7 +3717,34 @@ function setTVLatencyMode(mode){
   if(!playing)tvPlayer.pause();
  }
 }
-function populateTVQualitySelect(){const s=document.getElementById("tvQualitySelect");if(!s)return;const old=tvManualQuality;s.innerHTML='<option value="-1">Auto</option>';if(hls&&hls.levels)hls.levels.forEach((l,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=(l.height?l.height+"p":"Level "+(i+1))+(l.bitrate?" • "+(l.bitrate/1000000).toFixed(1)+"Mbps":"");s.appendChild(o)});s.value=String(old);const fs=document.getElementById("tvFullscreenQuality");if(fs){fs.innerHTML=s.innerHTML;fs.value=String(old)}}
+function syncTVHLSQuality(instance){
+  // Ignore events from a player that has already been replaced by channel navigation.
+  if(!instance||instance!==hls||!currentTV)return;
+  const levels=Array.isArray(instance.levels)?instance.levels:[];
+  if(!levels.length)return;
+  recordTVHLSProfile(currentTV,levels);
+  updateQuality();
+  populateTVQualitySelect();
+}
+function populateTVQualitySelect(){
+  const s=document.getElementById("tvQualitySelect");
+  const fs=document.getElementById("tvFullscreenQuality");
+  if(!s&&!fs)return;
+  const old=tvManualQuality;
+  const options=['<option value="-1">Auto</option>'];
+  const levels=hls&&Array.isArray(hls.levels)?hls.levels:[];
+  levels.forEach((level,index)=>{
+    const height=Number(level&&level.height)||0;
+    const width=Number(level&&level.width)||0;
+    const bitrate=Number(level&&level.bitrate)||0;
+    const label=height?height+"p":(width?width+"w":(level&&level.name?String(level.name):"Level "+(index+1)));
+    const rate=bitrate>0?" • "+(bitrate/1000000).toFixed(2)+" Mbps":"";
+    options.push('<option value="'+index+'">'+label+rate+'</option>');
+  });
+  const html=options.join("");
+  if(s){s.innerHTML=html;s.value=String(old)}
+  if(fs){fs.innerHTML=html;fs.value=String(old)}
+}
 function setTVManualQuality(value){tvManualQuality=Number(value);if(hls&&tvManualQuality<0)hls.autoLevelCapping=-1;clearTimeout(tvAbrCapTimer);tvAbrCapTimer=null;applyTVQuality()}
 function applyTVQuality(){if(!hls)return;if(tvManualQuality>=0&&tvManualQuality<hls.levels.length)hls.currentLevel=tvManualQuality;else{hls.autoLevelCapping=-1;hls.currentLevel=-1}}
 function lowerTVAutoQualityOnBuffer(){
