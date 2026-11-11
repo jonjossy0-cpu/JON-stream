@@ -3555,7 +3555,7 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigat
   hls.on(Hls.Events.ERROR,(event,data)=>{
    if(!data||!data.fatal)return;
    const isFreeHls=String(currentTV&&currentTV.accessTier||"free").toLowerCase()!=="premium";
-   if(data.type===Hls.ErrorTypes.NETWORK_ERROR&&!tvHlsGatewayFallbackTried&&isFreeHls&&/^https?:\\/\\//i.test(source)&&!source.includes("/api/hls?url=")){
+   if(data.type===Hls.ErrorTypes.NETWORK_ERROR&&!tvHlsGatewayFallbackTried&&isFreeHls&&(source.startsWith("http://")||source.startsWith("https://"))&&!source.includes("/api/hls?url=")){
     tvHlsGatewayFallbackTried=true;
     const gatewaySource="https://jon-stream.vercel.app/api/hls?url="+encodeURIComponent(source);
     tvStatus("🔄 HLS source blocked — retrying through gateway...");
