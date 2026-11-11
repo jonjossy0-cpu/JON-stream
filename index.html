@@ -3545,13 +3545,42 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigat
  },18000);
  const isM3U8=kind==="hls";
  if(isM3U8&&window.Hls&&Hls.isSupported()){
-  hls=new Hls(configureHLS());hls.attachMedia(tvPlayer);
-  hls.on(Hls.Events.MEDIA_ATTACHED,()=>{try{hls.loadSource(source)}catch(_){recoverTVStream()}});
-  hls.on(Hls.Events.MANIFEST_PARSED,()=>{recordTVHLSProfile(currentTV,hls.levels);updateQuality();populateTVQualitySelect();applyTVQuality();try{tvPlayer.play().then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){tvStatus("▶ Tap PLAY")}});
-  hls.on(Hls.Events.LEVEL_SWITCHED,()=>{updateQuality();populateTVQualitySelect();updateTVDiagnostics()});
-  hls.on(Hls.Events.FRAG_BUFFERED,()=>{updateTVFullscreenNetwork()});
-  hls.on(Hls.Events.FRAG_LOADED,(event,data)=>{recordTVFragmentThroughput(data)});
-  hls.on(Hls.Events.ERROR,(event,data)=>{if(!data||!data.fatal)return;tvStatus("🔄 Recovering stream...");if(data.type===Hls.ErrorTypes.MEDIA_ERROR){try{hls.recoverMediaError();return}catch(_){} }recoverTVStream()});
+  // Keep callbacks bound to this playback attempt. A late event from a previous
+  // channel must never read or overwrite the next channel's global HLS instance.
+  const player=new Hls(configureHLS());
+  hls=player;
+  player.attachMedia(tvPlayer);
+  player.on(Hls.Events.MEDIA_ATTACHED,()=>{
+   if(hls!==player||startupAttemptId!==tvPlayAttemptId)return;
+   try{player.loadSource(source)}catch(_){recoverTVStream()}
+  });
+  player.on(Hls.Events.MANIFEST_PARSED,(event,data)=>{
+   if(hls!==player||startupAttemptId!==tvPlayAttemptId)return;
+   const levels=Array.isArray(data&&data.levels)?data.levels:player.levels;
+   recordTVHLSProfile(currentTV,levels);
+   updateQuality(player,levels);
+   populateTVQualitySelect(player,levels);
+   applyTVQuality(player);
+   try{tvPlayer.play().then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){tvStatus("▶ Tap PLAY")}
+  });
+  player.on(Hls.Events.LEVEL_SWITCHED,()=>{
+   if(hls!==player||startupAttemptId!==tvPlayAttemptId)return;
+   updateQuality(player);
+   populateTVQualitySelect(player);
+   updateTVDiagnostics();
+  });
+  player.on(Hls.Events.FRAG_BUFFERED,()=>{
+   if(hls===player&&startupAttemptId===tvPlayAttemptId)updateTVFullscreenNetwork();
+  });
+  player.on(Hls.Events.FRAG_LOADED,(event,data)=>{
+   if(hls===player&&startupAttemptId===tvPlayAttemptId)recordTVFragmentThroughput(data);
+  });
+  player.on(Hls.Events.ERROR,(event,data)=>{
+   if(hls!==player||startupAttemptId!==tvPlayAttemptId||!data||!data.fatal)return;
+   tvStatus("🔄 Recovering stream...");
+   if(data.type===Hls.ErrorTypes.MEDIA_ERROR){try{player.recoverMediaError();return}catch(_){}}
+   recoverTVStream();
+  });
  }else if(isM3U8&&tvPlayer.canPlayType("application/vnd.apple.mpegurl")){
   tvPlayer.src=source;tvPlayer.addEventListener("loadedmetadata",()=>{try{tvPlayer.play().then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){}},{once:true});
  }else if((kind==="flv"||kind==="ts")&&window.mpegts&&mpegts.isSupported()){
@@ -3591,18 +3620,11 @@ function stopTV(){clearTimeout(tvReconnectTimer);clearTimeout(tvStartupTimer);tv
 async function fullscreenTV(){const target=document.getElementById("tvVideoFrame")||document.getElementById("tvPlayer");const fs=document.fullscreenElement||document.webkitFullscreenElement;if(!target)return;if(fs){try{if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)await document.webkitExitFullscreen()}catch(_){}}else{try{if(target.requestFullscreen)await target.requestFullscreen();else if(target.webkitRequestFullscreen)await target.webkitRequestFullscreen()}catch(_){}}}
 
 /* TV QUALITY */
-function updateQuality(){
- const box=document.getElementById("videoQuality");
-
- if(hls && hls.levels && hls.levels.length){
-  const levels=hls.levels;
-
-  const qualities=levels.map(level=>{
-   if(level.height)return level.height+"p";
-   if(level.width)return level.width+"px";
-   return "Auto";
-  }).filter((value,index,array)=>array.indexOf(value)===index);
-
+function updateQuality(playerInstance=hls,levelsOverride=null){
+ const box=document.getElementById("videoQuality");if(!box)return;
+ const levels=Array.isArray(levelsOverride)?levelsOverride:(playerInstance&&Array.isArray(playerInstance.levels)?playerInstance.levels:[]);
+ if(levels.length){
+  const qualities=levels.map(level=>level.height?level.height+"p":(level.width?level.width+"px":"Auto")).filter((value,index,array)=>array.indexOf(value)===index);
   box.innerHTML=qualities.map(q=>`<span>📺 ${q}</span>`).join("");
  }else{
   box.innerHTML="<span>📺 Quality: Auto</span>";
@@ -3713,9 +3735,25 @@ function setTVLatencyMode(mode){
   if(!playing)tvPlayer.pause();
  }
 }
-function populateTVQualitySelect(){const s=document.getElementById("tvQualitySelect");if(!s)return;const old=tvManualQuality;s.innerHTML='<option value="-1">Auto</option>';if(hls&&hls.levels)hls.levels.forEach((l,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=(l.height?l.height+"p":"Level "+(i+1))+(l.bitrate?" • "+(l.bitrate/1000000).toFixed(1)+"Mbps":"");s.appendChild(o)});s.value=String(old);const fs=document.getElementById("tvFullscreenQuality");if(fs){fs.innerHTML=s.innerHTML;fs.value=String(old)}}
+function populateTVQualitySelect(playerInstance=hls,levelsOverride=null){
+ const s=document.getElementById("tvQualitySelect");if(!s)return;
+ const old=tvManualQuality,levels=Array.isArray(levelsOverride)?levelsOverride:(playerInstance&&Array.isArray(playerInstance.levels)?playerInstance.levels:[]);
+ s.innerHTML='<option value="-1">Auto</option>';
+ levels.forEach((l,i)=>{
+  const o=document.createElement("option");o.value=String(i);
+  o.textContent=(l.height?l.height+"p":(l.width?l.width+"px":"Level "+(i+1)))+(l.bitrate?" • "+(l.bitrate/1000000).toFixed(1)+"Mbps":"");
+  s.appendChild(o);
+ });
+ s.value=String(old>=0&&old<levels.length?old:-1);
+ const fs=document.getElementById("tvFullscreenQuality");
+ if(fs){fs.innerHTML=s.innerHTML;fs.value=s.value}
+}
 function setTVManualQuality(value){tvManualQuality=Number(value);if(hls&&tvManualQuality<0)hls.autoLevelCapping=-1;clearTimeout(tvAbrCapTimer);tvAbrCapTimer=null;applyTVQuality()}
-function applyTVQuality(){if(!hls)return;if(tvManualQuality>=0&&tvManualQuality<hls.levels.length)hls.currentLevel=tvManualQuality;else{hls.autoLevelCapping=-1;hls.currentLevel=-1}}
+function applyTVQuality(playerInstance=hls){
+ if(!playerInstance)return;
+ if(tvManualQuality>=0&&tvManualQuality<playerInstance.levels.length)playerInstance.currentLevel=tvManualQuality;
+ else{playerInstance.autoLevelCapping=-1;playerInstance.currentLevel=-1}
+}
 function lowerTVAutoQualityOnBuffer(){
  if(!hls||!hls.levels||hls.levels.length<2||(tvManualQuality>=0&&tvManualQuality<hls.levels.length))return;
  clearTimeout(tvAbrCapTimer);tvAbrCapTimer=null;
