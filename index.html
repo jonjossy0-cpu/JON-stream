@@ -1468,6 +1468,223 @@ img.jon-ad-media{
 @media(prefers-reduced-motion:reduce){.radio-section .player.jon-radio-player-premium,.radio-section .player.jon-radio-player-premium::before{animation:none!important}}
 </style>
 
+<style id="jonAdvancedPlayerProUI">
+/* JON STREAM — compact red/blue neon player refresh; playback logic stays unchanged */
+#tvPlayerBox .tv-player-box,
+#tvPlayerBox{--jon-blue:#08aaff;--jon-red:#ef2634}
+#tvPlayerBox .tv-controls{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px}
+#tvPlayerBox .tv-controls>button:nth-child(-n+2){display:none}
+#tvPlayerBox .tv-controls button{min-height:43px;border-radius:13px;font-weight:850;letter-spacing:.02em}
+#tvPlayerBox .tv-controls .more-control-btn{background:linear-gradient(110deg,#e31b23,#a80e25);box-shadow:0 0 16px #e31b2330}
+#tvPlayerBox .advanced-media-player.jon-player-pro{
+ position:relative;isolation:isolate;overflow:hidden;margin-top:12px;padding:13px;
+ border:1px solid #28618a;border-radius:19px;
+ background:linear-gradient(145deg,rgba(13,31,53,.98),rgba(5,14,29,.98) 65%,rgba(35,12,24,.96));
+ box-shadow:inset 0 1px 0 #ffffff12,0 10px 28px #0005,0 0 19px #008cff18;
+}
+#tvPlayerBox .jon-player-pro:before{content:"";position:absolute;z-index:-1;inset:0 10% auto;height:2px;background:linear-gradient(90deg,transparent,#00c8ff 30%,#e31b23 70%,transparent);box-shadow:0 0 14px #00aaff99}
+#tvPlayerBox .jon-player-pro:after{content:"";position:absolute;z-index:-1;width:45%;height:90px;left:28%;top:20px;border-radius:50%;background:#087dff18;filter:blur(35px);pointer-events:none}
+#tvPlayerBox .jon-player-pro .advanced-title{margin:0 0 11px;color:#eaf7ff;font-size:12px;font-weight:900;letter-spacing:.13em}
+#tvPlayerBox .jon-equalizer{margin-right:6px;color:#00caff;text-shadow:0 0 10px #00aaff}
+#tvPlayerBox .jon-player-transport{display:grid;grid-template-columns:1fr 1.12fr 1fr;align-items:center;gap:11px;padding:3px 2px 12px}
+#tvPlayerBox .jon-transport-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:63px;padding:8px 5px;border:1px solid #2786c9;border-radius:16px;background:linear-gradient(145deg,#102d4c,#081629);color:#eaf8ff;font-size:23px;box-shadow:inset 0 1px #ffffff12,0 0 13px #008cff20}
+#tvPlayerBox .jon-transport-btn small{font-size:9px;font-weight:900;letter-spacing:.1em;color:#9bcbe9}
+#tvPlayerBox .jon-transport-btn.jon-play-btn{min-height:72px;border:1px solid #ff5360;background:linear-gradient(145deg,#e92332,#9d1025);box-shadow:0 0 18px #e31b2355,inset 0 1px #ffffff30;font-size:26px}
+#tvPlayerBox .jon-play-btn small{color:#fff}
+#tvPlayerBox .jon-player-audio{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 10px;border:1px solid #28567e;border-radius:15px;background:linear-gradient(90deg,#09182b,#10223a);box-shadow:inset 0 1px #ffffff0b}
+#tvPlayerBox .jon-volume-icon{flex:0 0 30px;width:30px;height:32px;padding:0;background:transparent;color:#dff5ff;font-size:19px}
+#tvPlayerBox .jon-player-audio input[type=range]{flex:1;min-width:45px;width:100%;height:5px;accent-color:#078dff;cursor:pointer}
+#tvPlayerBox .jon-speed-control{display:flex;align-items:center;gap:5px;padding-left:9px;border-left:1px solid #31516e;color:#ffd36b;font-size:13px}
+#tvPlayerBox .jon-speed-control select{width:64px;min-height:34px;padding:4px 7px;border:1px solid #3b6b92;border-radius:9px;background:#0b1b30;color:#fff;font-size:12px;font-weight:800}
+#tvPlayerBox .jon-player-utility{display:flex;justify-content:center;gap:8px;margin-top:9px}
+#tvPlayerBox .jon-player-utility button{min-height:32px;padding:6px 13px;border:1px solid #294d70;border-radius:10px;background:#122943;color:#ccecff;font-size:10px;font-weight:850;letter-spacing:.05em}
+#tvPlayerBox .jon-tv-status{margin:8px 0 5px;font-size:11px}
+#tvPlayerBox .tv-smart-options.jon-player-settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:7px 0 0;padding:10px;border:1px solid #263f60;border-radius:15px;background:linear-gradient(145deg,#0e1c30,#091525)}
+#tvPlayerBox .jon-player-settings label{display:flex;min-width:0;flex-direction:column;align-items:stretch;gap:5px;font-size:9px;font-weight:900;letter-spacing:.08em;color:#a9cce6}
+#tvPlayerBox .jon-player-settings label>span{white-space:nowrap}
+#tvPlayerBox .jon-player-settings select{width:100%;min-width:0;min-height:35px;padding:5px 7px;border:1px solid #2c5278;border-radius:9px;background:#0a1a2e;color:#f3f9ff;font-size:11px;font-weight:750}
+#tvPlayerBox .jon-diagnostics-btn{display:block;width:min(100%,250px);min-height:38px;margin:10px auto 0;padding:8px 12px;border:1px solid #087fc7;border-radius:12px;background:linear-gradient(100deg,#0b3d70,#075c91);color:#effaff;font-size:11px;font-weight:850;box-shadow:0 0 14px #008cff20}
+#tvPlayerBox .tv-diagnostics{border-color:#274c70;background:linear-gradient(145deg,#0b1b2e,#101c2e);border-radius:15px}
+#tvPlayerBox .tv-diagnostic{border-color:#233f5c;border-radius:10px}
+@media(max-width:380px){
+ #tvPlayerBox .advanced-media-player.jon-player-pro{padding:10px}
+ #tvPlayerBox .jon-player-transport{gap:7px}
+ #tvPlayerBox .jon-transport-btn{min-height:56px;font-size:20px}
+ #tvPlayerBox .jon-transport-btn.jon-play-btn{min-height:64px}
+ #tvPlayerBox .jon-player-audio{gap:6px;padding:7px}
+ #tvPlayerBox .jon-speed-control{padding-left:6px}
+ #tvPlayerBox .jon-speed-control select{width:55px}
+ #tvPlayerBox .jon-player-settings{gap:5px!important;padding:8px!important}
+ #tvPlayerBox .jon-player-settings select{font-size:10px;padding:4px}
+}
+@media(orientation:landscape){
+ #tvPlayerBox .advanced-media-player.jon-player-pro{padding:10px 14px}
+ #tvPlayerBox .jon-player-transport{grid-template-columns:1fr 1fr 1fr;max-width:470px;margin:auto;padding:0 0 8px}
+ #tvPlayerBox .jon-transport-btn{min-height:52px;flex-direction:row;gap:7px}
+ #tvPlayerBox .jon-transport-btn.jon-play-btn{min-height:56px}
+ #tvPlayerBox .jon-player-audio{max-width:620px;margin:auto}
+ #tvPlayerBox .jon-player-utility{margin-top:7px}
+ #tvPlayerBox .tv-smart-options.jon-player-settings{max-width:720px;margin:8px auto 0}
+}
+@media(prefers-reduced-motion:no-preference){
+ #tvPlayerBox .jon-player-pro{animation:jonPlayerEdgeGlow 5s ease-in-out infinite}
+ @keyframes jonPlayerEdgeGlow{0%,100%{border-color:#24618c;box-shadow:inset 0 1px #ffffff12,0 10px 28px #0005,0 0 13px #008cff16}50%{border-color:#8a3448;box-shadow:inset 0 1px #ffffff12,0 10px 28px #0005,0 0 16px #e31b2324}}
+}
+@media(prefers-reduced-motion:reduce){#tvPlayerBox .jon-player-pro{animation:none}}
+</style>
+
+<style id="jonAdvancedPlayerMiniGlow">
+/* JON STREAM — mini footprint + visible premium neon accents */
+#tvPlayerBox .advanced-media-player.jon-player-pro{
+ padding:8px 10px!important;margin-top:7px!important;border-radius:14px!important;
+ background:linear-gradient(125deg,#0b1a30 0%,#101b31 55%,#241020 100%)!important;
+ border:1px solid rgba(0,174,255,.68)!important;
+ box-shadow:0 0 5px #00aaff99,0 0 14px #087cff55, inset 0 0 12px #e31b231b!important;
+}
+#tvPlayerBox .jon-player-pro:before{
+ height:2px!important;opacity:1!important;
+ background:linear-gradient(90deg,transparent,#00c8ff 18%,#168cff 42%,#ff243e 78%,transparent)!important;
+ box-shadow:0 0 8px #00bfff,0 0 14px #ef233c!important;
+}
+#tvPlayerBox .jon-player-pro:after{width:70%;height:50px;left:15%;top:15px;background:linear-gradient(90deg,#078dff33,#ed1b3533);filter:blur(22px)}
+#tvPlayerBox .jon-player-pro .advanced-title{font-size:10px!important;letter-spacing:.12em!important;margin:0 0 6px!important}
+#tvPlayerBox .jon-player-transport{max-width:360px;margin:auto!important;gap:7px!important;padding:0 0 7px!important}
+#tvPlayerBox .jon-transport-btn{min-height:42px!important;height:42px!important;padding:4px!important;border-radius:11px!important;font-size:17px!important;gap:1px!important;border-color:#168bce!important;box-shadow:0 0 7px #008cff66,inset 0 0 7px #00aaff18!important}
+#tvPlayerBox .jon-transport-btn small{font-size:7px!important;letter-spacing:.08em!important}
+#tvPlayerBox .jon-transport-btn.jon-play-btn{min-height:46px!important;height:46px!important;font-size:19px!important;border-color:#ff5263!important;box-shadow:0 0 7px #ff263fbb,0 0 15px #e31b2366!important}
+#tvPlayerBox .jon-player-audio{min-height:34px!important;padding:4px 7px!important;gap:6px!important;border-radius:10px!important;box-shadow:0 0 7px #007bff55!important}
+#tvPlayerBox .jon-volume-icon{width:23px!important;flex-basis:23px!important;height:24px!important;font-size:15px!important}
+#tvPlayerBox .jon-player-audio input[type=range]{height:4px!important}
+#tvPlayerBox .jon-speed-control{font-size:10px!important;padding-left:6px!important}
+#tvPlayerBox .jon-speed-control select{width:49px!important;min-height:26px!important;padding:2px 4px!important;font-size:10px!important}
+#tvPlayerBox .jon-player-utility{margin-top:5px!important;gap:6px!important}
+#tvPlayerBox .jon-player-utility button{min-height:26px!important;padding:3px 10px!important;font-size:9px!important;border-radius:8px!important;box-shadow:0 0 7px #008cff55!important}
+#tvPlayerBox .jon-tv-status{margin:5px 0 3px!important;font-size:10px!important}
+#tvPlayerBox .tv-smart-options.jon-player-settings{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;margin:4px 0 0!important;padding:6px!important;border-radius:11px!important;box-shadow:0 0 8px #006dff38!important}
+#tvPlayerBox .jon-player-settings label{font-size:8px!important;gap:3px!important}
+#tvPlayerBox .jon-player-settings select{min-height:27px!important;padding:3px 5px!important;border-radius:7px!important;font-size:10px!important;border-color:#2477b2!important}
+#tvPlayerBox .jon-diagnostics-btn{min-height:28px!important;width:auto!important;margin:6px auto 0!important;padding:4px 10px!important;font-size:9px!important;border-radius:9px!important;box-shadow:0 0 9px #008cff77!important}
+#tvPlayerBox .tv-controls{
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ gap:6px!important;margin:7px 0 5px!important;
+}
+#tvPlayerBox .tv-controls>button:nth-child(-n+2){display:none!important}
+#tvPlayerBox .tv-controls>button{
+ min-height:31px!important;height:31px!important;padding:4px 8px!important;
+ border-radius:9px!important;font-size:10px!important;font-weight:850!important;
+ background:linear-gradient(110deg,#122b48,#14243b)!important;color:#eaf7ff!important;
+ border:1px solid #236c9f!important;box-shadow:0 0 7px #008cff55!important;
+}
+#tvPlayerBox .tv-controls>button.fullscreen{
+ background:linear-gradient(100deg,#075e9d,#123a70)!important;
+ border-color:#16baff!important;box-shadow:0 0 8px #00aaffbb, inset 0 0 7px #00aaff33!important;
+}
+#tvPlayerBox .tv-controls>button.more-control-btn{
+ background:linear-gradient(100deg,#a80e27,#e31b36)!important;
+ border-color:#ff5367!important;box-shadow:0 0 8px #ff254fbb,0 0 15px #e31b2355!important;
+}
+#tvPlayerBox .tv-controls>button.stop{border-color:#7e3445!important}
+#tvPlayerBox .more-controls-panel{margin-top:5px!important;padding:8px!important;border-radius:12px!important;border:1px solid #197db8!important;box-shadow:0 0 12px #008cff55!important}
+#tvPlayerBox .more-controls-title{font-size:11px!important;margin-bottom:6px!important}
+#tvPlayerBox .more-control-grid{gap:6px!important}
+#tvPlayerBox .more-control-grid button,#tvPlayerBox .more-control-grid select{min-height:29px!important;padding:4px 7px!important;font-size:10px!important;border-radius:8px!important}
+@media(orientation:landscape){
+ #tvPlayerBox .advanced-media-player.jon-player-pro{padding:7px 12px!important}
+ #tvPlayerBox .jon-player-transport{max-width:400px!important;grid-template-columns:1fr 1fr 1fr!important}
+ #tvPlayerBox .tv-smart-options.jon-player-settings{max-width:620px;margin-left:auto!important;margin-right:auto!important}
+ #tvPlayerBox .tv-controls{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+}
+@media(prefers-reduced-motion:no-preference){
+ #tvPlayerBox .advanced-media-player.jon-player-pro{animation:jonMiniNeon 2.8s ease-in-out infinite!important}
+ #tvPlayerBox .jon-transport-btn.jon-play-btn{animation:jonPlayPulse 2.2s ease-in-out infinite}
+ #tvPlayerBox .tv-controls>button.fullscreen,#tvPlayerBox .tv-controls>button.more-control-btn{animation:jonControlGlow 2.6s ease-in-out infinite}
+ @keyframes jonMiniNeon{0%,100%{box-shadow:0 0 5px #00aaff99,0 0 12px #087cff44,inset 0 0 10px #e31b2315}50%{box-shadow:0 0 8px #00c8ffdd,0 0 18px #087cff88,0 0 10px #ef233c66,inset 0 0 13px #e31b2328}}
+ @keyframes jonPlayPulse{0%,100%{filter:brightness(1);box-shadow:0 0 7px #ff263f99}50%{filter:brightness(1.18);box-shadow:0 0 12px #ff263fff,0 0 20px #e31b2388}}
+ @keyframes jonControlGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.22)}}
+}
+@media(prefers-reduced-motion:reduce){#tvPlayerBox .advanced-media-player.jon-player-pro,#tvPlayerBox .jon-transport-btn.jon-play-btn,#tvPlayerBox .tv-controls>button.fullscreen,#tvPlayerBox .tv-controls>button.more-control-btn{animation:none!important}}
+</style>
+
+<style id="jonPlayerActionDock">
+/* Place secondary controls inside the compact neon player card */
+#tvPlayerBox .jon-player-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:7px;padding-top:7px;border-top:1px solid #1d4564}
+#tvPlayerBox .jon-player-actions button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:30px;padding:4px 5px;border-radius:9px;color:#f5fbff;font-size:12px;font-weight:900;letter-spacing:.035em;background:linear-gradient(135deg,#122d49,#0b1a30);border:1px solid #247ab0;box-shadow:0 0 7px #008cff55,inset 0 0 7px #008cff12}
+#tvPlayerBox .jon-player-actions button span{font-size:8px;white-space:nowrap}
+#tvPlayerBox .jon-player-actions .jon-action-mute{border-color:#1689c6;box-shadow:0 0 8px #00aaff66}
+#tvPlayerBox .jon-player-actions .jon-action-fullscreen{background:linear-gradient(110deg,#075c99,#123d70);border-color:#15baff;box-shadow:0 0 9px #00bfffaa,0 0 15px #087cff44}
+#tvPlayerBox .jon-player-actions .jon-action-stop{background:linear-gradient(110deg,#4d1a30,#29172b);border-color:#b83b59;box-shadow:0 0 8px #ed234e77}
+#tvPlayerBox .jon-player-actions .jon-action-more{background:linear-gradient(110deg,#a90f29,#e51d39);border-color:#ff6475;box-shadow:0 0 9px #ff254fbb,0 0 16px #e31b2355}
+#tvPlayerBox .more-controls-panel{margin:7px 0 0!important;padding:8px!important;border:1px solid #168ac5!important;border-radius:11px!important;background:linear-gradient(145deg,#0b1d33,#17182c)!important;box-shadow:0 0 10px #008cff66,0 0 14px #e31b2322!important}
+#tvPlayerBox .more-controls-title{font-size:10px!important;margin-bottom:6px!important}
+#tvPlayerBox .more-control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px!important}
+#tvPlayerBox .more-control-grid button,#tvPlayerBox .more-control-grid label{min-width:0;min-height:29px!important;padding:4px 6px!important;border-radius:8px!important;font-size:9px!important}
+#tvPlayerBox .more-control-grid select{max-width:100%;min-height:25px!important;font-size:10px!important}
+@media(orientation:landscape){#tvPlayerBox .jon-player-actions{max-width:540px;margin:7px auto 0;width:100%}}
+@media(max-width:340px){#tvPlayerBox .jon-player-actions{gap:4px}#tvPlayerBox .jon-player-actions button{gap:2px;padding:3px 2px}#tvPlayerBox .jon-player-actions button span{font-size:7px}}
+</style>
+
+<style id="jonPlayerStatusMiniDock">
+#tvPlayerBox .jon-player-utility-status{display:grid!important;grid-template-columns:minmax(62px,1fr) minmax(120px,1.55fr) minmax(48px,.75fr)!important;align-items:center;gap:5px!important;margin-top:5px!important}
+#tvPlayerBox .jon-player-utility-status>button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:27px!important;padding:3px 5px!important;border:1px solid #1686c5!important;border-radius:8px!important;background:linear-gradient(110deg,#102d4a,#0b1a30)!important;color:#e8f8ff!important;font-size:11px!important;box-shadow:0 0 7px #008cff77!important}
+#tvPlayerBox .jon-player-utility-status>button span{font-size:8px;font-weight:900;letter-spacing:.05em}
+#tvPlayerBox .jon-live-status{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:27px;padding:3px 5px;border:1px solid #2374a6;border-radius:8px;background:linear-gradient(100deg,#071a2d,#111b32);color:#c9eaff;box-shadow:0 0 8px #008cff55,inset 0 0 8px #008cff16;font-size:9px;font-weight:900;letter-spacing:.045em;white-space:nowrap}
+#tvPlayerBox .jon-live-status>i{width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:#38bdf8;box-shadow:0 0 7px currentColor}
+#tvPlayerBox .jon-live-status .jon-status-text{overflow:hidden;text-overflow:ellipsis}
+#tvPlayerBox .jon-live-status>button{width:19px;height:19px;flex:0 0 19px;padding:0;border:1px solid #1688d0;border-radius:50%;background:#102c49;color:#8bdcff;font-size:13px;line-height:1;box-shadow:0 0 6px #008cff77}
+#tvPlayerBox .jon-live-status[data-state="connected"]{border-color:#1eaa78;color:#70ffc2;box-shadow:0 0 8px #00d68f66}
+#tvPlayerBox .jon-live-status[data-state="connected"]>i{background:#35f0a0}
+#tvPlayerBox .jon-live-status[data-state="buffering"]{border-color:#e4a52b;color:#ffd477;box-shadow:0 0 8px #ffb52b66}
+#tvPlayerBox .jon-live-status[data-state="buffering"]>i{background:#ffc04d;animation:jonStatusBlink 1s ease-in-out infinite}
+#tvPlayerBox .jon-live-status[data-state="reconnecting"],#tvPlayerBox .jon-live-status[data-state="error"]{border-color:#f04a61;color:#ff9aaa;box-shadow:0 0 8px #f02b5066}
+#tvPlayerBox .jon-live-status[data-state="reconnecting"]>i{background:#ff526b;animation:jonStatusBlink .7s ease-in-out infinite}
+#tvPlayerBox .jon-live-status[data-state="ready"]>i{background:#39baff}
+#tvPlayerBox .jon-live-status[data-state="stopped"]{border-color:#52647b;color:#aab8c9}
+#tvPlayerBox .jon-player-transport{max-width:320px!important;gap:6px!important;padding-bottom:5px!important}
+#tvPlayerBox .jon-transport-btn{height:36px!important;min-height:36px!important;border-radius:9px!important;font-size:15px!important}
+#tvPlayerBox .jon-transport-btn small{font-size:6.5px!important}
+#tvPlayerBox .jon-transport-btn.jon-play-btn{height:39px!important;min-height:39px!important;font-size:17px!important}
+#tvPlayerBox .jon-player-audio{min-height:30px!important;padding:3px 6px!important}
+#tvPlayerBox .jon-player-utility-status{margin-bottom:0!important}
+@keyframes jonStatusBlink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.78)}}
+@media(max-width:350px){#tvPlayerBox .jon-player-utility-status{grid-template-columns:54px minmax(100px,1fr) 43px!important;gap:3px!important}#tvPlayerBox .jon-live-status{font-size:8px;gap:3px;padding:2px 3px}#tvPlayerBox .jon-player-utility-status>button span{font-size:7px}}
+@media(prefers-reduced-motion:reduce){#tvPlayerBox .jon-live-status>i{animation:none!important}}
+</style>
+
+<style id="jonInlineConnectionStatus">
+/* Keep connection text inline in the existing Reload / PiP control row */
+#tvPlayerBox .jon-player-utility-status{
+ display:grid!important;grid-template-columns:auto minmax(0,1fr) auto!important;
+ align-items:center!important;gap:8px!important;
+}
+#tvPlayerBox .jon-player-utility-status .jon-live-status{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ gap:5px!important;min-width:0!important;min-height:24px!important;
+ padding:0 5px!important;border:0!important;border-radius:0!important;
+ background:transparent!important;box-shadow:none!important;
+ color:#9bdcff!important;font-size:9px!important;font-weight:850!important;
+ white-space:nowrap!important;
+}
+#tvPlayerBox .jon-player-utility-status .jon-live-status>i{
+ width:6px!important;height:6px!important;flex:0 0 6px!important;
+ border-radius:50%!important;background:#36c7ff!important;
+ box-shadow:0 0 7px currentColor!important;
+}
+#tvPlayerBox .jon-player-utility-status .jon-live-status .jon-status-text{
+ overflow:hidden!important;text-overflow:ellipsis!important;
+}
+#tvPlayerBox .jon-player-utility-status .jon-live-status>button{
+ width:19px!important;height:19px!important;flex:0 0 19px!important;
+ padding:0!important;border:1px solid #188bd0!important;border-radius:50%!important;
+ background:#102c49!important;color:#8bdcff!important;font-size:12px!important;
+ box-shadow:0 0 7px #008cff88!important;
+}
+#tvPlayerBox .jon-player-utility-status .jon-live-status[data-state="connected"]{color:#6fffc0!important}
+#tvPlayerBox .jon-player-utility-status .jon-live-status[data-state="buffering"]{color:#ffd477!important}
+#tvPlayerBox .jon-player-utility-status .jon-live-status[data-state="reconnecting"],#tvPlayerBox .jon-player-utility-status .jon-live-status[data-state="error"]{color:#ff9aaa!important}
+#tvPlayerBox .jon-player-utility-status .jon-live-status[data-state="stopped"]{color:#aab8c9!important}
+@media(max-width:350px){#tvPlayerBox .jon-player-utility-status{gap:4px!important}#tvPlayerBox .jon-player-utility-status .jon-live-status{font-size:8px!important;gap:3px!important}}
+</style>
+
 </head>
 
 <body>
@@ -1713,15 +1930,32 @@ img.jon-ad-media{
    <span>Quality: Auto</span>
   </div>
 
-  <div class="tv-controls">
-   <button onclick="previousTV()">⏮ PREVIOUS</button>
-   <button onclick="nextTV()">NEXT ⏭</button>
-   <button onclick="toggleTVMute()">🔊 MUTE</button>
-   <button class="fullscreen" onclick="fullscreenTV()">⛶ FULLSCREEN</button>
-   <button class="stop" onclick="stopTV()">⏹ STOP</button>
-   <button type="button" class="more-control-btn" onclick="toggleMoreControls('tv')" aria-expanded="false" id="tvMoreBtn">⋯ MORE</button>
-  </div>
+  <section class="advanced-media-player jon-player-pro" id="advancedMediaPlayer" aria-label="Advanced media player">
+   <div class="advanced-title"><span class="jon-equalizer">▮▮▮</span> ADVANCED MEDIA PLAYER</div>
+   <div class="jon-player-transport">
+    <button type="button" class="jon-transport-btn" onclick="previousTV()" aria-label="Previous channel" title="Previous channel">⏮<small>PREVIOUS</small></button>
+    <button type="button" class="jon-transport-btn jon-play-btn" onclick="toggleTVPlay()" id="tvPlayPauseBtn" aria-label="Play or pause">▶<small>PLAY</small></button>
+    <button type="button" class="jon-transport-btn" onclick="nextTV()" aria-label="Next channel" title="Next channel">⏭<small>NEXT</small></button>
+   </div>
+   <div class="jon-player-audio">
+    <button type="button" class="jon-volume-icon" onclick="toggleTVMute()" aria-label="Mute or unmute">🔊</button>
+    <input id="tvVolume" type="range" min="0" max="1" step="0.05" value="1" oninput="setTVVolume(this.value)" aria-label="Volume">
+    <label class="jon-speed-control"><span>⚡</span><select id="tvSpeed" onchange="setTVSpeed(this.value)" aria-label="Playback speed">
+     <option value="1">1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option><option value="2">2x</option>
+    </select></label>
+   </div>
+   <div class="jon-player-utility jon-player-utility-status">
+    <button type="button" onclick="reloadTVStream()" aria-label="Reload stream">↻ <span>RELOAD</span></button>
+    <div class="jon-live-status" id="tvConnectionStatus" role="status" aria-live="polite"><i></i><span class="jon-status-text">READY</span><button type="button" onclick="reconnectTV()" aria-label="Reconnect stream" title="Reconnect">↻</button></div>
+    <button type="button" onclick="pictureInPictureTV()" aria-label="Picture in picture">▣ <span>PiP</span></button>
+   </div>
 
+   <div class="jon-player-actions" aria-label="Player actions">
+    <button type="button" class="jon-action-mute" onclick="toggleTVMute()" aria-label="Mute or unmute">🔊 <span>MUTE</span></button>
+    <button type="button" class="jon-action-fullscreen" onclick="fullscreenTV()" aria-label="Fullscreen">⛶ <span>FULLSCREEN</span></button>
+    <button type="button" class="jon-action-stop" onclick="stopTV()" aria-label="Stop playback">■ <span>STOP</span></button>
+    <button type="button" class="jon-action-more" onclick="toggleMoreControls('tv')" aria-expanded="false" id="tvMoreBtn" aria-controls="tvMoreControls">••• <span>MORE</span></button>
+   </div>
   <div class="more-controls-panel" id="tvMoreControls" hidden>
    <div class="more-controls-title">⚙️ TV More Controls</div>
    <div class="more-control-grid">
@@ -1734,38 +1968,20 @@ img.jon-ad-media{
    </div>
   </div>
 
-  <div class="advanced-media-player" id="advancedMediaPlayer">
-   <div class="advanced-title">🎛️ Advanced Media Player</div>
-   <div class="advanced-controls">
-    <button onclick="toggleTVPlay()" id="tvPlayPauseBtn">▶ PLAY</button>
-    <button onclick="reloadTVStream()">🔄 RELOAD</button>
-    <button onclick="pictureInPictureTV()">🖼️ PiP</button>
-    <label>🔊 <input id="tvVolume" type="range" min="0" max="1" step="0.05" value="1" oninput="setTVVolume(this.value)"></label>
-    <label>⚡ <select id="tvSpeed" onchange="setTVSpeed(this.value)">
-     <option value="1">1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option><option value="2">2x</option>
-    </select></label>
-   </div>
-  </div>
+  </section>
 
-  <div class="status" id="tvConnectionStatus">⚪ Ready</div>
-  <div class="tv-smart-options">
-   <label>⚡ Mode
-    <select id="tvLatencyMode" onchange="setTVLatencyMode(this.value)">
+  <div class="tv-smart-options jon-player-settings">
+   <label><span>⚡ MODE</span><select id="tvLatencyMode" onchange="setTVLatencyMode(this.value)">
      <option value="balanced">Balanced</option><option value="low">Low-Latency</option><option value="data">Low-Data</option>
-    </select>
-   </label>
-   <label>🎚️ Quality
-    <select id="tvQualitySelect" onchange="setTVManualQuality(this.value)">
+   </select></label>
+   <label><span>💎 QUALITY</span><select id="tvQualitySelect" onchange="setTVManualQuality(this.value)">
      <option value="-1">Auto</option>
-    </select>
-   </label>
-   <label>🖼️ Fit
-    <select id="tvFitSelect" onchange="setTVFit(this.value)">
+   </select></label>
+   <label><span>▣ FIT</span><select id="tvFitSelect" onchange="setTVFit(this.value)">
      <option value="contain">Fit</option><option value="cover">Crop</option><option value="fill">Stretch</option>
-    </select>
-   </label>
+   </select></label>
   </div>
-  <button type="button" class="diagnostics-toggle" id="tvDiagnosticsToggle" onclick="toggleDiagnostics('tv')">📊 Hide Live Diagnostics</button>
+  <button type="button" class="diagnostics-toggle jon-diagnostics-btn" id="tvDiagnosticsToggle" onclick="toggleDiagnostics('tv')">📊 Hide Live Diagnostics</button>
   <div class="tv-diagnostics" id="tvDiagnostics">
    <div class="advanced-title">📊 Live Diagnostics</div>
    <div class="tv-diagnostics-grid">    <div class="tv-diagnostic"><b>Connection</b><span id="diagConnection">Ready</span></div>
@@ -3194,8 +3410,17 @@ function updateTVHLSProfileDiagnostics(){
 const TV_RETRY_DELAYS=[3000,15000,30000,3000],TV_MAX_RETRIES=4,TV_STALL_LIMIT_MS=12000;
 
 function tvStatus(text){
- const e=document.getElementById("tvConnectionStatus");if(e)e.innerHTML=text;
- const d=document.getElementById("diagConnection");if(d)d.textContent=text.replace(/<[^>]*>/g,"");
+ const e=document.getElementById("tvConnectionStatus");
+ const clean=String(text).trim();
+ if(e){
+  const low=clean.toLowerCase();
+  const state=/connected|playing/.test(low)?"connected":/buffer|loading/.test(low)?"buffering":/reconnect|retry|failed|error|offline/.test(low)?"reconnecting":/stopped/.test(low)?"stopped":"ready";
+  e.dataset.state=state;
+  const label=e.querySelector(".jon-status-text");
+  if(label)label.textContent=clean.toUpperCase()||"READY";
+  else e.textContent=clean;
+ }
+ const d=document.getElementById("diagConnection");if(d)d.textContent=clean;
 }
 function tvNeedTapToPlay(){clearTimeout(tvStartupTimer);tvStatus("▶ Tap PLAY")}
 function updateCurrentTVHealthFromPlayer(state,title){
