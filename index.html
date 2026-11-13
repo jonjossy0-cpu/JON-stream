@@ -3411,13 +3411,13 @@ const TV_RETRY_DELAYS=[3000,15000,30000,3000],TV_MAX_RETRIES=4,TV_STALL_LIMIT_MS
 
 function tvStatus(text){
  const e=document.getElementById("tvConnectionStatus");
- const clean=String(text).replace(/<[^>]*>/g,"").trim();
+ const clean=String(text).trim();
  if(e){
   const low=clean.toLowerCase();
   const state=/connected|playing/.test(low)?"connected":/buffer|loading/.test(low)?"buffering":/reconnect|retry|failed|error|offline/.test(low)?"reconnecting":/stopped/.test(low)?"stopped":"ready";
   e.dataset.state=state;
   const label=e.querySelector(".jon-status-text");
-  if(label)label.textContent=clean.replace(/^[^A-Za-z0-9]+/,"").toUpperCase()||"READY";
+  if(label)label.textContent=clean.toUpperCase()||"READY";
   else e.textContent=clean;
  }
  const d=document.getElementById("diagConnection");if(d)d.textContent=clean;
