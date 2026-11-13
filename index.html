@@ -1623,6 +1623,33 @@ img.jon-ad-media{
 @media(max-width:340px){#tvPlayerBox .jon-player-actions{gap:4px}#tvPlayerBox .jon-player-actions button{gap:2px;padding:3px 2px}#tvPlayerBox .jon-player-actions button span{font-size:7px}}
 </style>
 
+<style id="jonPlayerStatusMiniDock">
+#tvPlayerBox .jon-player-utility-status{display:grid!important;grid-template-columns:minmax(62px,1fr) minmax(120px,1.55fr) minmax(48px,.75fr)!important;align-items:center;gap:5px!important;margin-top:5px!important}
+#tvPlayerBox .jon-player-utility-status>button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:27px!important;padding:3px 5px!important;border:1px solid #1686c5!important;border-radius:8px!important;background:linear-gradient(110deg,#102d4a,#0b1a30)!important;color:#e8f8ff!important;font-size:11px!important;box-shadow:0 0 7px #008cff77!important}
+#tvPlayerBox .jon-player-utility-status>button span{font-size:8px;font-weight:900;letter-spacing:.05em}
+#tvPlayerBox .jon-live-status{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:27px;padding:3px 5px;border:1px solid #2374a6;border-radius:8px;background:linear-gradient(100deg,#071a2d,#111b32);color:#c9eaff;box-shadow:0 0 8px #008cff55,inset 0 0 8px #008cff16;font-size:9px;font-weight:900;letter-spacing:.045em;white-space:nowrap}
+#tvPlayerBox .jon-live-status>i{width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:#38bdf8;box-shadow:0 0 7px currentColor}
+#tvPlayerBox .jon-live-status .jon-status-text{overflow:hidden;text-overflow:ellipsis}
+#tvPlayerBox .jon-live-status>button{width:19px;height:19px;flex:0 0 19px;padding:0;border:1px solid #1688d0;border-radius:50%;background:#102c49;color:#8bdcff;font-size:13px;line-height:1;box-shadow:0 0 6px #008cff77}
+#tvPlayerBox .jon-live-status[data-state="connected"]{border-color:#1eaa78;color:#70ffc2;box-shadow:0 0 8px #00d68f66}
+#tvPlayerBox .jon-live-status[data-state="connected"]>i{background:#35f0a0}
+#tvPlayerBox .jon-live-status[data-state="buffering"]{border-color:#e4a52b;color:#ffd477;box-shadow:0 0 8px #ffb52b66}
+#tvPlayerBox .jon-live-status[data-state="buffering"]>i{background:#ffc04d;animation:jonStatusBlink 1s ease-in-out infinite}
+#tvPlayerBox .jon-live-status[data-state="reconnecting"],#tvPlayerBox .jon-live-status[data-state="error"]{border-color:#f04a61;color:#ff9aaa;box-shadow:0 0 8px #f02b5066}
+#tvPlayerBox .jon-live-status[data-state="reconnecting"]>i{background:#ff526b;animation:jonStatusBlink .7s ease-in-out infinite}
+#tvPlayerBox .jon-live-status[data-state="ready"]>i{background:#39baff}
+#tvPlayerBox .jon-live-status[data-state="stopped"]{border-color:#52647b;color:#aab8c9}
+#tvPlayerBox .jon-player-transport{max-width:320px!important;gap:6px!important;padding-bottom:5px!important}
+#tvPlayerBox .jon-transport-btn{height:36px!important;min-height:36px!important;border-radius:9px!important;font-size:15px!important}
+#tvPlayerBox .jon-transport-btn small{font-size:6.5px!important}
+#tvPlayerBox .jon-transport-btn.jon-play-btn{height:39px!important;min-height:39px!important;font-size:17px!important}
+#tvPlayerBox .jon-player-audio{min-height:30px!important;padding:3px 6px!important}
+#tvPlayerBox .jon-player-utility-status{margin-bottom:0!important}
+@keyframes jonStatusBlink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.78)}}
+@media(max-width:350px){#tvPlayerBox .jon-player-utility-status{grid-template-columns:54px minmax(100px,1fr) 43px!important;gap:3px!important}#tvPlayerBox .jon-live-status{font-size:8px;gap:3px;padding:2px 3px}#tvPlayerBox .jon-player-utility-status>button span{font-size:7px}}
+@media(prefers-reduced-motion:reduce){#tvPlayerBox .jon-live-status>i{animation:none!important}}
+</style>
+
 </head>
 
 <body>
@@ -1882,9 +1909,10 @@ img.jon-ad-media{
      <option value="1">1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option><option value="2">2x</option>
     </select></label>
    </div>
-   <div class="jon-player-utility">
-    <button type="button" onclick="reloadTVStream()">↻ RELOAD</button>
-    <button type="button" onclick="pictureInPictureTV()">▣ PiP</button>
+   <div class="jon-player-utility jon-player-utility-status">
+    <button type="button" onclick="reloadTVStream()" aria-label="Reload stream">↻ <span>RELOAD</span></button>
+    <div class="jon-live-status" id="tvConnectionStatus" role="status" aria-live="polite"><i></i><span class="jon-status-text">READY</span><button type="button" onclick="reconnectTV()" aria-label="Reconnect stream" title="Reconnect">↻</button></div>
+    <button type="button" onclick="pictureInPictureTV()" aria-label="Picture in picture">▣ <span>PiP</span></button>
    </div>
 
    <div class="jon-player-actions" aria-label="Player actions">
@@ -1907,7 +1935,6 @@ img.jon-ad-media{
 
   </section>
 
-  <div class="status jon-tv-status" id="tvConnectionStatus">⚪ Ready</div>
   <div class="tv-smart-options jon-player-settings">
    <label><span>⚡ MODE</span><select id="tvLatencyMode" onchange="setTVLatencyMode(this.value)">
      <option value="balanced">Balanced</option><option value="low">Low-Latency</option><option value="data">Low-Data</option>
@@ -3348,8 +3375,17 @@ function updateTVHLSProfileDiagnostics(){
 const TV_RETRY_DELAYS=[3000,15000,30000,3000],TV_MAX_RETRIES=4,TV_STALL_LIMIT_MS=12000;
 
 function tvStatus(text){
- const e=document.getElementById("tvConnectionStatus");if(e)e.innerHTML=text;
- const d=document.getElementById("diagConnection");if(d)d.textContent=text.replace(/<[^>]*>/g,"");
+ const e=document.getElementById("tvConnectionStatus");
+ const clean=String(text).replace(/<[^>]*>/g,"").trim();
+ if(e){
+  const low=clean.toLowerCase();
+  const state=/connected|playing/.test(low)?"connected":/buffer|loading/.test(low)?"buffering":/reconnect|retry|failed|error|offline/.test(low)?"reconnecting":/stopped/.test(low)?"stopped":"ready";
+  e.dataset.state=state;
+  const label=e.querySelector(".jon-status-text");
+  if(label)label.textContent=clean.replace(/^[^A-Za-z0-9]+/,"").toUpperCase()||"READY";
+  else e.textContent=clean;
+ }
+ const d=document.getElementById("diagConnection");if(d)d.textContent=clean;
 }
 function tvNeedTapToPlay(){clearTimeout(tvStartupTimer);tvStatus("▶ Tap PLAY")}
 function updateCurrentTVHealthFromPlayer(state,title){
