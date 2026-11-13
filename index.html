@@ -1605,6 +1605,24 @@ img.jon-ad-media{
 @media(prefers-reduced-motion:reduce){#tvPlayerBox .advanced-media-player.jon-player-pro,#tvPlayerBox .jon-transport-btn.jon-play-btn,#tvPlayerBox .tv-controls>button.fullscreen,#tvPlayerBox .tv-controls>button.more-control-btn{animation:none!important}}
 </style>
 
+<style id="jonPlayerActionDock">
+/* Place secondary controls inside the compact neon player card */
+#tvPlayerBox .jon-player-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:7px;padding-top:7px;border-top:1px solid #1d4564}
+#tvPlayerBox .jon-player-actions button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:30px;padding:4px 5px;border-radius:9px;color:#f5fbff;font-size:12px;font-weight:900;letter-spacing:.035em;background:linear-gradient(135deg,#122d49,#0b1a30);border:1px solid #247ab0;box-shadow:0 0 7px #008cff55,inset 0 0 7px #008cff12}
+#tvPlayerBox .jon-player-actions button span{font-size:8px;white-space:nowrap}
+#tvPlayerBox .jon-player-actions .jon-action-mute{border-color:#1689c6;box-shadow:0 0 8px #00aaff66}
+#tvPlayerBox .jon-player-actions .jon-action-fullscreen{background:linear-gradient(110deg,#075c99,#123d70);border-color:#15baff;box-shadow:0 0 9px #00bfffaa,0 0 15px #087cff44}
+#tvPlayerBox .jon-player-actions .jon-action-stop{background:linear-gradient(110deg,#4d1a30,#29172b);border-color:#b83b59;box-shadow:0 0 8px #ed234e77}
+#tvPlayerBox .jon-player-actions .jon-action-more{background:linear-gradient(110deg,#a90f29,#e51d39);border-color:#ff6475;box-shadow:0 0 9px #ff254fbb,0 0 16px #e31b2355}
+#tvPlayerBox .more-controls-panel{margin:7px 0 0!important;padding:8px!important;border:1px solid #168ac5!important;border-radius:11px!important;background:linear-gradient(145deg,#0b1d33,#17182c)!important;box-shadow:0 0 10px #008cff66,0 0 14px #e31b2322!important}
+#tvPlayerBox .more-controls-title{font-size:10px!important;margin-bottom:6px!important}
+#tvPlayerBox .more-control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px!important}
+#tvPlayerBox .more-control-grid button,#tvPlayerBox .more-control-grid label{min-width:0;min-height:29px!important;padding:4px 6px!important;border-radius:8px!important;font-size:9px!important}
+#tvPlayerBox .more-control-grid select{max-width:100%;min-height:25px!important;font-size:10px!important}
+@media(orientation:landscape){#tvPlayerBox .jon-player-actions{max-width:540px;margin:7px auto 0;width:100%}}
+@media(max-width:340px){#tvPlayerBox .jon-player-actions{gap:4px}#tvPlayerBox .jon-player-actions button{gap:2px;padding:3px 2px}#tvPlayerBox .jon-player-actions button span{font-size:7px}}
+</style>
+
 </head>
 
 <body>
@@ -1850,27 +1868,6 @@ img.jon-ad-media{
    <span>Quality: Auto</span>
   </div>
 
-  <div class="tv-controls">
-   <button onclick="previousTV()">⏮ PREVIOUS</button>
-   <button onclick="nextTV()">NEXT ⏭</button>
-   <button onclick="toggleTVMute()">🔊 MUTE</button>
-   <button class="fullscreen" onclick="fullscreenTV()">⛶ FULLSCREEN</button>
-   <button class="stop" onclick="stopTV()">⏹ STOP</button>
-   <button type="button" class="more-control-btn" onclick="toggleMoreControls('tv')" aria-expanded="false" id="tvMoreBtn">⋯ MORE</button>
-  </div>
-
-  <div class="more-controls-panel" id="tvMoreControls" hidden>
-   <div class="more-controls-title">⚙️ TV More Controls</div>
-   <div class="more-control-grid">
-    <button type="button" onclick="seekTV(-10)">⏪ 10 SEC</button>
-    <button type="button" onclick="seekTV(10)">10 SEC ⏩</button>
-    <button type="button" onclick="pictureInPictureTV()">🪟 PiP</button>
-    <button type="button" onclick="toggleDiagnostics('tv')">📊 DIAGNOSTICS</button>
-    <label>🔊 Audio <select id="tvAudioTrackSelect" onchange="setTVAudioTrack(this.value)"><option value="-1">Default</option></select></label>
-    <label>💬 Subtitles <select id="tvSubtitleSelect" onchange="setTVSubtitle(this.value)"><option value="-1">Off</option></select></label>
-   </div>
-  </div>
-
   <section class="advanced-media-player jon-player-pro" id="advancedMediaPlayer" aria-label="Advanced media player">
    <div class="advanced-title"><span class="jon-equalizer">▮▮▮</span> ADVANCED MEDIA PLAYER</div>
    <div class="jon-player-transport">
@@ -1889,6 +1886,25 @@ img.jon-ad-media{
     <button type="button" onclick="reloadTVStream()">↻ RELOAD</button>
     <button type="button" onclick="pictureInPictureTV()">▣ PiP</button>
    </div>
+
+   <div class="jon-player-actions" aria-label="Player actions">
+    <button type="button" class="jon-action-mute" onclick="toggleTVMute()" aria-label="Mute or unmute">🔊 <span>MUTE</span></button>
+    <button type="button" class="jon-action-fullscreen" onclick="fullscreenTV()" aria-label="Fullscreen">⛶ <span>FULLSCREEN</span></button>
+    <button type="button" class="jon-action-stop" onclick="stopTV()" aria-label="Stop playback">■ <span>STOP</span></button>
+    <button type="button" class="jon-action-more" onclick="toggleMoreControls('tv')" aria-expanded="false" id="tvMoreBtn" aria-controls="tvMoreControls">••• <span>MORE</span></button>
+   </div>
+  <div class="more-controls-panel" id="tvMoreControls" hidden>
+   <div class="more-controls-title">⚙️ TV More Controls</div>
+   <div class="more-control-grid">
+    <button type="button" onclick="seekTV(-10)">⏪ 10 SEC</button>
+    <button type="button" onclick="seekTV(10)">10 SEC ⏩</button>
+    <button type="button" onclick="pictureInPictureTV()">🪟 PiP</button>
+    <button type="button" onclick="toggleDiagnostics('tv')">📊 DIAGNOSTICS</button>
+    <label>🔊 Audio <select id="tvAudioTrackSelect" onchange="setTVAudioTrack(this.value)"><option value="-1">Default</option></select></label>
+    <label>💬 Subtitles <select id="tvSubtitleSelect" onchange="setTVSubtitle(this.value)"><option value="-1">Off</option></select></label>
+   </div>
+  </div>
+
   </section>
 
   <div class="status jon-tv-status" id="tvConnectionStatus">⚪ Ready</div>
