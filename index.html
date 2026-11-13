@@ -1650,6 +1650,41 @@ img.jon-ad-media{
 @media(prefers-reduced-motion:reduce){#tvPlayerBox .jon-live-status>i{animation:none!important}}
 </style>
 
+<style id="jonInlineConnectionStatus">
+/* Keep connection text inline in the existing Reload / PiP control row */
+#tvPlayerBox .jon-player-utility-status{
+ display:grid!important;grid-template-columns:auto minmax(0,1fr) auto!important;
+ align-items:center!important;gap:8px!important;
+}
+#tvPlayerBox .jon-player-utility-status .jon-live-status{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ gap:5px!important;min-width:0!important;min-height:24px!important;
+ padding:0 5px!important;border:0!important;border-radius:0!important;
+ background:transparent!important;box-shadow:none!important;
+ color:#9bdcff!important;font-size:9px!important;font-weight:850!important;
+ white-space:nowrap!important;
+}
+#tvPlayerBox .jon-player-utility-status .jon-live-status>i{
+ width:6px!important;height:6px!important;flex:0 0 6px!important;
+ border-radius:50%!important;background:#36c7ff!important;
+ box-shadow:0 0 7px currentColor!important;
+}
+#tvPlayerBox .jon-player-utility-status .jon-live-status .jon-status-text{
+ overflow:hidden!important;text-overflow:ellipsis!important;
+}
+#tvPlayerBox .jon-player-utility-status .jon-live-status>button{
+ width:19px!important;height:19px!important;flex:0 0 19px!important;
+ padding:0!important;border:1px solid #188bd0!important;border-radius:50%!important;
+ background:#102c49!important;color:#8bdcff!important;font-size:12px!important;
+ box-shadow:0 0 7px #008cff88!important;
+}
+#tvPlayerBox .jon-player-utility-status .jon-live-status[data-state="connected"]{color:#6fffc0!important}
+#tvPlayerBox .jon-player-utility-status .jon-live-status[data-state="buffering"]{color:#ffd477!important}
+#tvPlayerBox .jon-player-utility-status .jon-live-status[data-state="reconnecting"],#tvPlayerBox .jon-player-utility-status .jon-live-status[data-state="error"]{color:#ff9aaa!important}
+#tvPlayerBox .jon-player-utility-status .jon-live-status[data-state="stopped"]{color:#aab8c9!important}
+@media(max-width:350px){#tvPlayerBox .jon-player-utility-status{gap:4px!important}#tvPlayerBox .jon-player-utility-status .jon-live-status{font-size:8px!important;gap:3px!important}}
+</style>
+
 </head>
 
 <body>
