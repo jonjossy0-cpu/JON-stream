@@ -3687,7 +3687,7 @@ function jonGatewayForChannel(channel,kind){
  if(kind==="hls"&&source){
    try{
      const u=new URL(source);
-     if(u.protocol==="http:"&&u.hostname&&!["localhost","127.0.0.1"].includes(u.hostname)){
+     if((u.protocol==="http:"&&u.hostname&&!["localhost","127.0.0.1"].includes(u.hostname))||(u.protocol==="https:"&&u.hostname==="183.giatvcdn.com"&&u.pathname.startsWith("/giatvplayout7/giatv-208314/"))){
        return "https://jon-stream.vercel.app/api/hls?url="+encodeURIComponent(source);
      }
    }catch(_){}
