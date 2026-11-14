@@ -1685,6 +1685,17 @@ img.jon-ad-media{
 @media(max-width:350px){#tvPlayerBox .jon-player-utility-status{gap:4px!important}#tvPlayerBox .jon-player-utility-status .jon-live-status{font-size:8px!important;gap:3px!important}}
 </style>
 
+<style id="jonAdvancedPauseWaterGlassCSS">
+#tvPlayerBox .jon-player-transport .jon-transport-btn.jon-play-btn{position:relative!important;isolation:isolate!important;overflow:visible!important;width:68px!important;height:68px!important;min-height:68px!important;justify-self:center!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:1px!important;aspect-ratio:1/1!important;border-radius:50%!important;padding:7px!important;color:#f8fcff!important;background:radial-gradient(circle at 32% 24%,rgba(255,255,255,.22),transparent 34%),linear-gradient(145deg,#122a46,#071426 72%)!important;border:1px solid rgba(129,210,255,.68)!important;box-shadow:inset 0 1px 5px rgba(255,255,255,.2),inset 0 -8px 18px rgba(0,0,0,.35),0 0 16px rgba(0,153,255,.28)!important;animation:none!important}
+#tvPlayerBox .jon-player-transport .jon-transport-btn.jon-play-btn::before{content:"";position:absolute;inset:-5px;border-radius:50%;padding:3px;z-index:-1;background:conic-gradient(from 0deg,#09baff,#147bff 24%,#e31b36 52%,#ff5365 70%,#09baff 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;filter:drop-shadow(0 0 7px rgba(0,174,255,.55));animation:jonPauseRingRotate 8s linear infinite}
+#tvPlayerBox .jon-player-transport .jon-transport-btn.jon-play-btn::after{content:"";position:absolute;inset:-10px;border-radius:50%;z-index:-2;pointer-events:none;background:radial-gradient(circle,rgba(0,174,255,.22),rgba(227,27,54,.13) 52%,transparent 72%);filter:blur(7px);opacity:.85;animation:jonPauseWaterGlow 6s ease-in-out infinite alternate}
+#tvPlayerBox .jon-transport-btn.jon-play-btn svg{width:27px!important;height:27px!important;display:block;filter:drop-shadow(0 0 5px rgba(255,255,255,.4))}
+#tvPlayerBox .jon-transport-btn.jon-play-btn small{font-size:7px!important;line-height:1.1;color:#eaf8ff!important;letter-spacing:.13em!important}
+#tvPlayerBox .jon-transport-btn.jon-play-btn.is-paused{border-color:rgba(0,190,255,.8)!important}
+@keyframes jonPauseRingRotate{to{transform:rotate(360deg)}}@keyframes jonPauseWaterGlow{0%{opacity:.48;transform:scale(.94)}100%{opacity:1;transform:scale(1.07)}}
+@media(max-width:380px){#tvPlayerBox .jon-player-transport .jon-transport-btn.jon-play-btn{width:62px!important;height:62px!important;min-height:62px!important}}
+@media(prefers-reduced-motion:reduce){#tvPlayerBox .jon-player-transport .jon-transport-btn.jon-play-btn::before,#tvPlayerBox .jon-player-transport .jon-transport-btn.jon-play-btn::after{animation:none!important}}
+</style>
 </head>
 
 <body>
@@ -2972,6 +2983,7 @@ const tvPlayer=document.getElementById("tvPlayer");
 let hls=null;
 let currentTV=null;
 let tvReconnectTimer=null;
+let tvUserPaused=false;
 
 /* LOAD TV
    🔒 Uses the TV links supplied by the user.
@@ -3729,6 +3741,7 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigat
  // A new playback attempt must not inherit a delayed retry from the previous channel/source.
  clearTimeout(tvRetryTimer);
  tvRetryTimer=null;
+ tvUserPaused=false;
  const startupAttemptId=++tvPlayAttemptId;
  const baseChannel=indexedMatch||tvChannels.find(c=>String(c.url||"")===String(url||""))||filteredTV[index]||{name,url};
  const channel=baseChannel;
@@ -3763,7 +3776,7 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigat
    else{tvStatus("⚠️ "+kind.toUpperCase()+" needs an HLS/HTTP gateway on Android/WebView");tvDiag("diagSource",kind.toUpperCase()+" — gateway required");return}
  }
  tvStartupTimer=setTimeout(()=>{
-  if(!currentTV||startupAttemptId!==tvPlayAttemptId)return;
+  if(!currentTV||startupAttemptId!==tvPlayAttemptId||tvUserPaused)return;
   if(tvPlayer.paused&&tvPlayer.readyState>=2){tvNeedTapToPlay();return}
   tvStatus("⏳ Startup timeout — trying recovery...");
   recoverTVStream();
@@ -3793,8 +3806,8 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigat
  startTVDiagnostics();
 }
 function recoverTVStream(){
- // Prevent overlapping retries when stalled/error/startup events fire together.
- if(!currentTV||tvRetryTimer)return;
+ // A deliberate user pause is not a stream failure and must never trigger reconnect.
+ if(!currentTV||tvUserPaused||tvRetryTimer)return;
  if(tvRetryAttempt>=TV_MAX_RETRIES){
   if(tvSourceIndex+1<tvSourceList.length){tvSourceIndex++;tvRetryAttempt=0;tvStatus("🔀 Switching to backup source...");playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex);return}
   const nextSourceIndex=tvSourceList.length>1?0:tvSourceIndex;
@@ -3805,7 +3818,7 @@ function recoverTVStream(){
  }
  const delay=TV_RETRY_DELAYS[Math.min(tvRetryAttempt,TV_RETRY_DELAYS.length-1)];tvRetryAttempt++;tvDiag("diagReconnects",tvRetryAttempt);
  tvStatus("🔄 Reconnecting in "+Math.round(delay/1000)+"s...");
- tvRetryTimer=setTimeout(()=>{tvRetryTimer=null;if(currentTV)playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex,false)},delay);
+ tvRetryTimer=setTimeout(()=>{tvRetryTimer=null;if(currentTV&&!tvUserPaused)playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex,false)},delay);
 }
 function reconnectTV(){recoverTVStream()}
 function setTVConnected(){clearTimeout(tvStartupTimer);clearTimeout(tvRetryTimer);tvRetryTimer=null;tvRetryAttempt=0;tvStatus("🟢 Connected")}
@@ -3921,7 +3934,7 @@ async function fullscreenTV(){
 
 
 /* ADVANCED MEDIA PLAYER - TV */
-function toggleTVPlay(){if(!currentTV){if(filteredTV.length)playTVStream(filteredTV[0].url,filteredTV[0].name,0);return}if(tvPlayer.paused)tvPlayer.play().then(setTVConnected).catch(()=>{});else tvPlayer.pause()}
+function toggleTVPlay(){if(!currentTV){if(filteredTV.length)playTVStream(filteredTV[0].url,filteredTV[0].name,0);return}if(!tvPlayer.paused){tvUserPaused=true;clearTimeout(tvStartupTimer);clearTimeout(tvRetryTimer);tvRetryTimer=null;tvPlayer.pause();tvStatus("⏸ Paused");return}tvUserPaused=false;try{const resume=tvPlayer.play();if(resume&&resume.then)resume.then(setTVConnected).catch(()=>tvNeedTapToPlay())}catch(_){tvNeedTapToPlay()}}
 function reloadTVStream(){if(currentTV)playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex)}
 function setTVVolume(value){tvPlayer.volume=Number(value);tvPlayer.muted=Number(value)===0}
 function setTVSpeed(value){tvPlayer.playbackRate=Number(value)}
@@ -3952,13 +3965,17 @@ function scheduleTVAutoQualityRestore(){
  clearTimeout(tvAbrCapTimer);
  tvAbrCapTimer=setTimeout(()=>{tvAbrCapTimer=null;if(hls&&currentTV&&!(tvManualQuality>=0&&tvManualQuality<hls.levels.length))hls.autoLevelCapping=-1},30000);
 }
-tvPlayer.addEventListener("play",()=>{const b=document.getElementById("tvPlayPauseBtn");if(b)b.textContent="⏸ PAUSE"});
-tvPlayer.addEventListener("pause",()=>{const b=document.getElementById("tvPlayPauseBtn");if(b)b.textContent="▶ PLAY"});
+function syncTVPlayPauseButton(){
+ const b=document.getElementById("tvPlayPauseBtn"),paused=tvPlayer.paused;
+ if(b){b.classList.toggle("is-paused",paused);b.innerHTML=paused?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13L19 12 8 5.5Z" fill="currentColor"/></svg><small>PLAY</small>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 5h4.2v14H6.5zM13.3 5h4.2v14h-4.2z" fill="currentColor"/></svg><small>PAUSE</small>';b.setAttribute("aria-label",paused?"Play TV":"Pause TV");b.setAttribute("aria-pressed",String(!paused));}
+ const fs=document.getElementById("tvFullscreenPlay");if(fs)fs.textContent=paused?"▶ Play":"⏸ Pause";
+}
+tvPlayer.addEventListener("play",syncTVPlayPauseButton);tvPlayer.addEventListener("pause",syncTVPlayPauseButton);syncTVPlayPauseButton();
 /* TV EVENTS - recovery, never delete a channel */
 tvPlayer.addEventListener("playing",()=>{clearTimeout(tvStartupTimer);if(tvPerfStartedAt&&!tvPerfFirstPlayingAt)tvPerfFirstPlayingAt=Date.now();if(tvPerfBufferingStartedAt){tvPerfBufferingMs+=Date.now()-tvPerfBufferingStartedAt;tvPerfBufferingStartedAt=0}updateTVPerformance();scheduleTVAutoQualityRestore();tvLastProgress=tvPlayer.currentTime||0;tvLastProgressAt=Date.now();tvLastStallRecoveryAt=0;setTVConnected()});
 tvPlayer.addEventListener("waiting",()=>{if(currentTV){if(tvPerfFirstPlayingAt&&!tvPerfBufferingStartedAt){tvPerfBufferingStartedAt=Date.now();tvPerfBufferCount++}updateTVPerformance();lowerTVAutoQualityOnBuffer();tvStatus("⏳ Buffering...")}});
-tvPlayer.addEventListener("stalled",()=>{if(currentTV){tvStatus("⏳ Stalled — recovering...");recoverTVStream()}});
-tvPlayer.addEventListener("error",()=>{if(currentTV){tvStatus("⚠️ Stream error — recovering...");recoverTVStream()}});
+tvPlayer.addEventListener("stalled",()=>{if(currentTV&&!tvUserPaused){tvStatus("⏳ Stalled — recovering...");recoverTVStream()}});
+tvPlayer.addEventListener("error",()=>{if(currentTV&&!tvUserPaused){tvStatus("⚠️ Stream error — recovering...");recoverTVStream()}});
 const tvNetworkConnection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
 if(tvNetworkConnection&&tvNetworkConnection.addEventListener)tvNetworkConnection.addEventListener("change",()=>{if(currentTV){/* Let the existing player/ABR adapt; a connection-info change alone must not restart playback. */updateTVFullscreenNetwork();updateTVDiagnostics()}});
 window.addEventListener("online",()=>{if(currentTV){/* Do not interrupt a stream that has already recovered. The stall/error recovery path handles genuine failures. */if(tvPlayer&&tvPlayer.error)recoverTVStream();else{updateTVFullscreenNetwork();updateTVDiagnostics()}}});
@@ -6085,14 +6102,15 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
   if(originalStopTV)return originalStopTV();
  };
  window.toggleTVPlay=function(){
-  if(gate&&!gate.hidden){
-   if(pendingChannel)attemptPlay(pendingChannel.channel.url,pendingChannel.channel.name,pendingChannel.index);
+  if(gate&&!gate.hidden){if(pendingChannel)attemptPlay(pendingChannel.channel.url,pendingChannel.channel.name,pendingChannel.index);return;}
+  if(typeof currentTV!=="undefined"&&currentTV){
+   const player=document.getElementById("tvPlayer");
+   if(player&&!player.paused){tvUserPaused=true;clearTimeout(tvStartupTimer);clearTimeout(tvRetryTimer);tvRetryTimer=null;player.pause();if(typeof tvStatus==="function")tvStatus("⏸ Paused");}
+   else if(player){tvUserPaused=false;try{const resume=player.play();if(resume&&resume.then)resume.then(()=>{if(typeof setTVConnected==="function")setTVConnected()}).catch(()=>{if(typeof tvNeedTapToPlay==="function")tvNeedTapToPlay()})}catch(_){if(typeof tvNeedTapToPlay==="function")tvNeedTapToPlay()}}
    return;
   }
   const index=selectedChannelIndex>=0?selectedChannelIndex:(typeof currentTVIndex==="number"?currentTVIndex:0);
-  const channel=Array.isArray(filteredTV)?filteredTV[index]:null;
-  if(channel){attemptPlay(channel.url,channel.name,index);return}
-  if(typeof currentTV!=="undefined"&&currentTV)attemptPlay(currentTV.url,currentTV.name,index);
+  const channel=Array.isArray(filteredTV)?filteredTV[index]:null;if(channel)attemptPlay(channel.url,channel.name,index);
  };
  window.addEventListener("jon-premium-access-changed",()=>{
   if(!pendingChannel||gate.hidden)return;
