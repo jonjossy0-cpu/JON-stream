@@ -3756,7 +3756,7 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigat
  tvDisplayBox.hidden=false;
  tvDisplayBox.style.setProperty("display","block","important");
  tvDisplayBox.classList.add("tv-display-persistent");
- document.getElementById("tvPlayerTitle").innerHTML="📺 "+escapeHTML(name);tvStatus("🔄 Connecting...");
+ document.getElementById("tvPlayerTitle").innerHTML="📺 "+escapeHTML(name);setJONTVMediaIdentity();tvStatus("🔄 Connecting...");
   /* Reveal the existing fullscreen controls after a channel change, then retain their normal auto-hide. */
   const fullscreenFrame=document.getElementById("tvVideoFrame");
   if(fullscreenFrame&&(document.fullscreenElement===fullscreenFrame||document.webkitFullscreenElement===fullscreenFrame)&&typeof window.jonShowTVFullscreenOverlay==="function")window.jonShowTVFullscreenOverlay();
@@ -3938,7 +3938,32 @@ function toggleTVPlay(){if(!currentTV){if(filteredTV.length)playTVStream(filtere
 function reloadTVStream(){if(currentTV)playTVStream(currentTV.url,currentTV.name,currentTVIndex,tvSourceIndex)}
 function setTVVolume(value){tvPlayer.volume=Number(value);tvPlayer.muted=Number(value)===0}
 function setTVSpeed(value){tvPlayer.playbackRate=Number(value)}
-async function pictureInPictureTV(){try{if(document.pictureInPictureElement)await document.exitPictureInPicture();else if(document.pictureInPictureEnabled&&tvPlayer.readyState>0)await tvPlayer.requestPictureInPicture()}catch(e){}}
+function setJONTVMediaIdentity(){
+ const channelName=String(currentTV&&currentTV.name||"JON STREAM");
+ try{
+  document.title="JON STREAM — For Advanced Growth";
+  tvPlayer.setAttribute("title",channelName+" | JON STREAM");
+  tvPlayer.setAttribute("aria-label",channelName+" on JON STREAM");
+  if("mediaSession" in navigator&&"MediaMetadata" in window){
+   navigator.mediaSession.metadata=new MediaMetadata({
+    title:channelName,
+    artist:"JON MEDIA SERVICE",
+    album:"JON STREAM • LIVE TV",
+    artwork:[{src:EMBEDDED_LOGO,sizes:"512x512",type:"image/jpeg"}]
+   });
+   navigator.mediaSession.setActionHandler("play",()=>{if(tvPlayer.paused)toggleTVPlay()});
+   navigator.mediaSession.setActionHandler("pause",()=>{if(!tvPlayer.paused)toggleTVPlay()});
+  }
+ }catch(e){}
+}
+async function pictureInPictureTV(){
+ try{
+  if(document.pictureInPictureElement){await document.exitPictureInPicture();return}
+  if(!document.pictureInPictureEnabled||tvPlayer.readyState<=0)return;
+  setJONTVMediaIdentity();
+  await tvPlayer.requestPictureInPicture();
+ }catch(e){}
+}
 function setTVLatencyMode(mode){
  if(!["balanced","low","data"].includes(mode))mode="balanced";
  tvLatencyMode=mode;tvLowData=mode==="data";
@@ -4540,7 +4565,7 @@ const video=()=>document.querySelector('video');
 function seek(n){const v=video();if(v&&Number.isFinite(v.currentTime))v.currentTime=Math.max(0,v.currentTime+n)}
 q('#jonFeaturesBtn')?.addEventListener('click',()=>q('#jonFeaturePanel')?.classList.toggle('open'));q('#jonCloseFeatures')?.addEventListener('click',()=>q('#jonFeaturePanel')?.classList.remove('open'));
 q('#jonBack10')?.addEventListener('click',()=>seek(-10));q('#jonForward10')?.addEventListener('click',()=>seek(10));
-q('#jonPip')?.addEventListener('click',async()=>{const v=video();try{if(!document.pictureInPictureEnabled||!v){window.jonAdvancedInfoDialog({title:"PICTURE-IN-PICTURE",eyebrow:"JON STREAM • PLAYER TOOLS",message:"Picture-in-Picture is not available in this browser or for the current player."});return}if(document.pictureInPictureElement)await document.exitPictureInPicture();else await v.requestPictureInPicture()}catch(e){window.jonAdvancedInfoDialog({title:"PICTURE-IN-PICTURE",message:"The current browser or stream could not start Picture-in-Picture."})}});
+q('#jonPip')?.addEventListener('click',async()=>{try{if(!document.pictureInPictureEnabled||!video()){window.jonAdvancedInfoDialog({title:"PICTURE-IN-PICTURE",eyebrow:"JON STREAM • PLAYER TOOLS",message:"Picture-in-Picture is not available in this browser or for the current player."});return}await pictureInPictureTV()}catch(e){window.jonAdvancedInfoDialog({title:"PICTURE-IN-PICTURE",message:"The current browser or stream could not start Picture-in-Picture."})}});
 q('#jonCast')?.addEventListener('click',async()=>{const v=video();try{if(navigator.presentation?.requestStart)await navigator.presentation.requestStart();else if(v?.remote?.prompt)await v.remote.prompt();else window.jonAdvancedInfoDialog({title:"CAST / SHARE SCREEN",eyebrow:"JON STREAM • CONNECTIVITY",message:"Casting is available only when this browser and player support Chromecast or Remote Playback."})}catch(e){window.jonAdvancedInfoDialog({title:"CAST / SHARE SCREEN",message:"Cast or Remote Playback is not available on this device right now."})}});
 q('#jonAudioTracks')?.addEventListener('click',()=>{const tracks=video()?.audioTracks;if(tracks&&tracks.length)window.jonAdvancedInfoDialog({title:"AUDIO TRACKS",eyebrow:"JON STREAM • MEDIA OPTIONS",message:"Audio tracks available in the current stream.",items:[...tracks].map((t,i)=>[(i+1)+". "+(t.label||t.language||"Audio track"),t.language||"Available audio track"])});else window.jonAdvancedInfoDialog({title:"AUDIO TRACKS",message:"No alternate audio tracks are exposed by the current stream."})});
 q('#jonSubtitles')?.addEventListener('click',()=>{const tracks=video()?.textTracks;if(tracks?.length)window.jonAdvancedInfoDialog({title:"SUBTITLES",eyebrow:"JON STREAM • ACCESSIBILITY",message:"Subtitle tracks available in the current stream.",items:[...tracks].map((t,i)=>[(i+1)+". "+(t.label||t.language||"Subtitle"),t.language||"Available subtitle track"])});else window.jonAdvancedInfoDialog({title:"SUBTITLES",message:"No SRT/WebVTT subtitle track is attached to the current stream."})});
