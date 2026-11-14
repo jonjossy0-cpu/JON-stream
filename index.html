@@ -3958,108 +3958,11 @@ function setJONTVMediaIdentity(){
 }
 async function pictureInPictureTV(){
  try{
-  if(window.__JON_DOCUMENT_PIP_WINDOW&&!window.__JON_DOCUMENT_PIP_WINDOW.closed){
-   window.__JON_DOCUMENT_PIP_WINDOW.close();return;
-  }
-  if(document.pictureInPictureElement){await document.exitPictureInPicture();return;}
-  if(!tvPlayer||tvPlayer.readyState<=0)return;
+  if(document.pictureInPictureElement){await document.exitPictureInPicture();return}
+  if(!document.pictureInPictureEnabled||tvPlayer.readyState<=0)return;
   setJONTVMediaIdentity();
-
-  /* Desktop Chromium: use a Document PiP window so JON controls remain visible
-     and the browser does not display the source page inside the floating window. */
-  if("documentPictureInPicture" in window&&window.documentPictureInPicture?.requestWindow){
-   const pipWindow=await window.documentPictureInPicture.requestWindow({width:720,height:460});
-   window.__JON_DOCUMENT_PIP_WINDOW=pipWindow;
-   const pipDoc=pipWindow.document;
-   pipDoc.title="JON STREAM • "+String(currentTV?.name||"LIVE TV");
-   const style=pipDoc.createElement("style");
-   style.textContent=`
-    *{box-sizing:border-box}
-    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050b15;color:#fff;font-family:Arial,Helvetica,sans-serif}
-    body{display:flex;flex-direction:column;padding:9px;gap:7px;background:radial-gradient(ellipse at 12% 0%,#12314e 0,transparent 48%),radial-gradient(ellipse at 95% 100%,#35111d 0,transparent 45%),#050b15}
-    .jp-shell{display:flex;flex:1;min-height:0;flex-direction:column;overflow:hidden;border:1px solid #4caeffa0;border-radius:13px;background:#030914;box-shadow:0 0 18px #008cff30}
-    .jp-head{height:34px;flex:0 0 34px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 12px;background:linear-gradient(90deg,#0d2944,#101725 70%,#29101a);border-bottom:1px solid #58baff40}
-    .jp-brand{font-size:10px;font-weight:900;letter-spacing:1.8px;color:#eaf7ff}
-    .jp-channel{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:700;color:#b9d8f1;text-align:right}
-    .jp-stage{position:relative;display:flex;flex:1;min-height:0;align-items:center;justify-content:center;background:#000;overflow:hidden}
-    #tvPlayer{display:block!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;margin:0!important;border:0!important;border-radius:0!important;background:#000!important}
-    .jp-controls{display:flex;flex-direction:column;gap:6px;padding:7px 10px 8px;background:linear-gradient(90deg,#09192b,#101827,#210e18);border-top:1px solid #58baff42}
-    .jp-timeline{display:flex;align-items:center;gap:8px;min-width:0}
-    .jp-time{min-width:42px;font-size:9px;font-variant-numeric:tabular-nums;color:#c4d8eb;text-align:center}
-    .jp-seek{flex:1;min-width:0;height:4px;accent-color:#20a9f4;cursor:pointer}
-    .jp-seek:disabled{opacity:.45;cursor:default}
-    .jp-actions{display:flex;align-items:center;justify-content:center;gap:9px}
-    .jp-btn{height:29px;min-width:42px;padding:0 10px;border-radius:18px;border:1px solid #7ccfff85;background:linear-gradient(145deg,#173e60,#101b30);color:#fff;font-size:11px;font-weight:800;cursor:pointer}
-    .jp-btn.primary{min-width:48px;background:linear-gradient(145deg,#087fc7,#123e78 65%,#9e182b)}
-    .jp-live{font-size:9px;font-weight:900;letter-spacing:1px;color:#ff6975}
-    .jp-live:before{content:"";display:inline-block;width:6px;height:6px;margin-right:5px;border-radius:50%;background:#ff3447}
-    .jp-foot{height:11px;flex:0 0 11px;text-align:center;color:#829db7;font-size:7px;font-weight:800;letter-spacing:1.8px}
-    button:focus-visible,input:focus-visible{outline:2px solid #8be1ff;outline-offset:2px}
-   `;
-   pipDoc.head.appendChild(style);
-   const shell=pipDoc.createElement("section");shell.className="jp-shell";
-   const head=pipDoc.createElement("header");head.className="jp-head";
-   const brand=pipDoc.createElement("span");brand.className="jp-brand";brand.textContent="JON STREAM";
-   const channel=pipDoc.createElement("span");channel.className="jp-channel";channel.textContent=String(currentTV?.name||"LIVE TV");
-   head.append(brand,channel);
-   const stage=pipDoc.createElement("div");stage.className="jp-stage";
-   const controls=pipDoc.createElement("div");controls.className="jp-controls";
-   const timeline=pipDoc.createElement("div");timeline.className="jp-timeline";
-   const elapsed=pipDoc.createElement("span");elapsed.className="jp-time";elapsed.textContent="00:00";
-   const seek=pipDoc.createElement("input");seek.className="jp-seek";seek.type="range";seek.min="0";seek.max="1000";seek.value="0";seek.setAttribute("aria-label","Video position");
-   const total=pipDoc.createElement("span");total.className="jp-time";total.textContent="LIVE";
-   timeline.append(elapsed,seek,total);
-   const actions=pipDoc.createElement("div");actions.className="jp-actions";
-   const makeButton=(label,aria,action,primary=false)=>{const b=pipDoc.createElement("button");b.type="button";b.className="jp-btn"+(primary?" primary":"");b.textContent=label;b.setAttribute("aria-label",aria);b.addEventListener("click",action);return b;};
-   const back=makeButton("−10","Seek back 10 seconds",()=>{try{tvPlayer.currentTime=Math.max(0,tvPlayer.currentTime-10);}catch(_){}});
-   const play=makeButton(tvPlayer.paused?"▶":"Ⅱ","Play or pause",()=>{if(tvPlayer.paused){tvUserPaused=false;tvPlayer.play().catch(()=>{});}else{tvUserPaused=true;clearTimeout(tvStartupTimer);clearTimeout(tvRetryTimer);tvRetryTimer=null;tvPlayer.pause();}},true);
-   const forward=makeButton("+10","Seek forward 10 seconds",()=>{try{const end=Number.isFinite(tvPlayer.duration)?tvPlayer.duration:(tvPlayer.seekable.length?tvPlayer.seekable.end(tvPlayer.seekable.length-1):tvPlayer.currentTime+10);tvPlayer.currentTime=Math.min(end,tvPlayer.currentTime+10);}catch(_){}});
-   const close=makeButton("✕","Close picture in picture",()=>pipWindow.close());
-   const live=pipDoc.createElement("span");live.className="jp-live";live.textContent="LIVE";
-   actions.append(back,play,forward,live,close);
-   controls.append(timeline,actions);
-   const foot=pipDoc.createElement("div");foot.className="jp-foot";foot.textContent="FOR ADVANCED GROWTH";
-   shell.append(head,stage,controls);pipDoc.body.append(shell,foot);
-
-   const placeholder=pipDoc.createComment("JON TV player return point");
-   const originalParent=tvPlayer.parentNode;
-   if(originalParent)originalParent.insertBefore(placeholder,tvPlayer);
-   stage.appendChild(tvPlayer);
-
-   const fmt=(n)=>{if(!Number.isFinite(n)||n<0)return "00:00";const h=Math.floor(n/3600),m=Math.floor((n%3600)/60),s=Math.floor(n%60);return h>0?[h,m,s].map(v=>String(v).padStart(2,"0")).join(":"):[m,s].map(v=>String(v).padStart(2,"0")).join(":");};
-   const syncPlay=()=>{play.textContent=tvPlayer.paused?"▶":"Ⅱ";};
-   const syncTimeline=()=>{
-    let start=0,end=NaN,isLive=!Number.isFinite(tvPlayer.duration);
-    if(!isLive&&tvPlayer.duration>0){end=tvPlayer.duration;start=0;}
-    else if(tvPlayer.seekable&&tvPlayer.seekable.length){const i=tvPlayer.seekable.length-1;start=tvPlayer.seekable.start(i);end=tvPlayer.seekable.end(i);}
-    if(Number.isFinite(end)&&end>start){
-     const pos=Math.min(end,Math.max(start,tvPlayer.currentTime));
-     seek.disabled=false;seek.value=String(Math.round(((pos-start)/(end-start))*1000));
-     elapsed.textContent=fmt(pos-start);total.textContent=fmt(end-start);
-     live.textContent=isLive&&end-tvPlayer.currentTime<12?"LIVE":"DVR";
-    }else{
-     seek.disabled=true;seek.value="0";elapsed.textContent=fmt(tvPlayer.currentTime);total.textContent="LIVE";live.textContent="LIVE";
-    }
-   };
-   const onSeek=()=>{if(seek.disabled)return;let start=0,end=NaN;if(Number.isFinite(tvPlayer.duration)&&tvPlayer.duration>0)end=tvPlayer.duration;else if(tvPlayer.seekable?.length){const i=tvPlayer.seekable.length-1;start=tvPlayer.seekable.start(i);end=tvPlayer.seekable.end(i);}if(Number.isFinite(end)&&end>start)try{tvPlayer.currentTime=start+(Number(seek.value)/1000)*(end-start);}catch(_){}};
-   seek.addEventListener("input",onSeek);
-   const sync=()=>{syncPlay();syncTimeline();};
-   ["play","pause","timeupdate","durationchange","progress","loadedmetadata","seeked"].forEach(ev=>tvPlayer.addEventListener(ev,sync));
-   sync();
-   pipWindow.addEventListener("pagehide",()=>{
-    ["play","pause","timeupdate","durationchange","progress","loadedmetadata","seeked"].forEach(ev=>tvPlayer.removeEventListener(ev,sync));
-    seek.removeEventListener("input",onSeek);
-    if(placeholder.parentNode)placeholder.parentNode.insertBefore(tvPlayer,placeholder);
-    placeholder.remove();
-    window.__JON_DOCUMENT_PIP_WINDOW=null;
-   },{once:true});
-   return;
-  }
-
-  /* Browsers without Document PiP use native video PiP as a compatibility fallback.
-     Native PiP attribution and auto-hiding controls are owned by the browser/OS. */
-  if(document.pictureInPictureEnabled&&tvPlayer.requestPictureInPicture)await tvPlayer.requestPictureInPicture();
- }catch(e){console.warn("JON Stream PiP could not be opened:",e);}
+  await tvPlayer.requestPictureInPicture();
+ }catch(e){}
 }
 function setTVLatencyMode(mode){
  if(!["balanced","low","data"].includes(mode))mode="balanced";
