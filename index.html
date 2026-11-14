@@ -3739,10 +3739,26 @@ async function playTVStream(url,name,index,sourceIndex=0,resetRetry=true,navigat
  currentTV={...channel,url:jonNormalizeStreamUrl(url)};currentTVIndex=index;tvSourceList=buildTVSources(currentTV).map(jonNormalizeStreamUrl).filter(Boolean);
  tvSourceIndex=Math.max(0,Math.min(sourceIndex,tvSourceList.length-1));
  const tvDisplayBox=document.getElementById("tvPlayerBox");
- if(typeof setMode==="function")setMode("tv");
- tvDisplayBox.hidden=false;
- tvDisplayBox.style.setProperty("display","block","important");
- tvDisplayBox.classList.add("tv-display-persistent");
+ // Reveal the player and TV section before calling the shared mode switch.
+ // A storage exception in setMode must never abort TV playback/display setup.
+ if(tvDisplayBox){
+  tvDisplayBox.hidden=false;
+  tvDisplayBox.style.setProperty("display","block","important");
+  tvDisplayBox.classList.add("tv-display-persistent");
+ }
+ const tvSection=document.querySelector(".tv-section");
+ const radioSection=document.querySelector(".radio-section");
+ if(tvSection)tvSection.classList.add("active");
+ if(radioSection)radioSection.classList.remove("active");
+ const featured=document.querySelector(".featured.radio-only");
+ if(featured)featured.style.display="none";
+ document.getElementById("tvModeBtn")?.classList.add("active");
+ document.getElementById("radioModeBtn")?.classList.remove("active");
+ try{
+  if(typeof setMode==="function")setMode("tv");
+ }catch(modeError){
+  console.warn("JON Stream TV mode persistence unavailable; continuing TV playback:",modeError);
+ }
  document.getElementById("tvPlayerTitle").innerHTML="📺 "+escapeHTML(name);tvStatus("🔄 Connecting...");
   /* Reveal the existing fullscreen controls after a channel change, then retain their normal auto-hide. */
   const fullscreenFrame=document.getElementById("tvVideoFrame");
