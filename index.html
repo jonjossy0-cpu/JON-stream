@@ -372,7 +372,33 @@ button:active{transform:scale(.98)}
 .time-card{background:var(--card);border:1px solid var(--border);border-radius:17px;padding:13px;text-align:center}
 .time-card .label{font-size:12px;color:var(--muted);font-weight:800;margin-bottom:5px}
 .time-card .time{font-size:20px;font-weight:900}
+
 .time-card .date{font-size:11px;color:var(--muted);margin-top:4px}
+.jon-calendar-panel{align-items:stretch}
+.jon-calendar-card{position:relative;isolation:isolate;overflow:hidden;min-height:176px;padding:15px 12px 13px;border:1px solid rgba(72,143,255,.38);background:linear-gradient(145deg,rgba(9,25,46,.98),rgba(10,18,34,.96) 55%,rgba(37,12,29,.96));box-shadow:inset 0 0 22px rgba(20,105,255,.12),0 0 15px rgba(0,93,255,.12),0 0 13px rgba(227,27,35,.12)}
+.jon-calendar-card:before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 8% 8%,rgba(0,111,255,.24),transparent 48%),radial-gradient(ellipse at 92% 92%,rgba(227,27,35,.2),transparent 48%)}
+.jon-calendar-card:after{content:"";position:absolute;inset:5px;border:1px solid rgba(227,27,35,.16);border-radius:13px;pointer-events:none;z-index:-1}
+.jon-calendar-card>*:not(.calendar-card-art):not(.world-map-art){position:relative;z-index:1}
+.jon-calendar-card .label{letter-spacing:.35px}
+.jon-calendar-card .time{font-variant-numeric:tabular-nums;text-shadow:0 0 12px rgba(52,143,255,.38)}
+.calendar-card-art{position:absolute;right:12px;top:28px;width:76px;height:76px;display:grid;place-items:center;opacity:.28;pointer-events:none}
+.calendar-art-symbol{font-size:48px;filter:drop-shadow(0 0 12px #168bff)}
+.calendar-art-orbit{position:absolute;inset:3px;border:1px solid rgba(80,164,255,.65);border-radius:50%;box-shadow:0 0 18px rgba(0,112,255,.28),inset 0 0 16px rgba(227,27,35,.18);animation:jonCalendarOrbit 12s linear infinite}
+@keyframes jonCalendarOrbit{to{transform:rotate(360deg)}}
+.world-map-art{position:absolute;inset:5px 0 0;width:100%;height:100%;color:#76b9ff;pointer-events:none;z-index:-1}
+.calendar-event{display:flex;align-items:center;justify-content:center;gap:7px;margin:10px auto 0;padding:6px 8px;max-width:100%;width:max-content;border-radius:999px;border:1px solid rgba(90,159,255,.42);background:rgba(8,23,42,.72);color:#d8eaff;font-size:10px;font-weight:900;letter-spacing:.35px;text-shadow:0 0 9px rgba(56,147,255,.4)}
+.calendar-event-icon{font-size:14px}
+.calendar-event-note{margin-top:5px;color:#a9c2df;font-size:10px;line-height:1.35;text-align:center}
+.jon-calendar-card.is-holiday{border-color:rgba(255,194,83,.72);box-shadow:inset 0 0 28px rgba(255,171,54,.12),0 0 20px rgba(255,170,50,.2),0 0 14px rgba(0,102,255,.18)}
+.jon-calendar-card.is-holiday .calendar-event{border-color:rgba(255,195,91,.65);color:#ffe5b5;box-shadow:0 0 13px rgba(255,180,65,.14)}
+.jon-calendar-card.is-kiremt{background:linear-gradient(145deg,rgba(5,31,47,.98),rgba(7,29,39,.96) 55%,rgba(13,25,46,.96))}
+.jon-calendar-card.is-kiremt:before{background:radial-gradient(ellipse at 15% 12%,rgba(33,157,220,.3),transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(37,160,100,.2),transparent 48%)}
+.jon-calendar-card.is-christmas{background:linear-gradient(145deg,rgba(7,38,34,.98),rgba(12,24,39,.96) 55%,rgba(56,13,26,.96))}
+.jon-calendar-card.is-christmas:before{background:radial-gradient(ellipse at 12% 10%,rgba(255,35,65,.24),transparent 45%),radial-gradient(ellipse at 85% 80%,rgba(40,220,125,.2),transparent 48%)}
+.jon-calendar-card.is-winter{background:linear-gradient(145deg,rgba(13,34,58,.98),rgba(10,22,42,.96) 55%,rgba(32,20,53,.96))}
+.jon-calendar-card.is-winter:before{background:radial-gradient(ellipse at 12% 10%,rgba(101,180,255,.3),transparent 48%),radial-gradient(ellipse at 88% 86%,rgba(227,27,35,.14),transparent 48%)}
+@media(max-width:520px){.jon-calendar-card{min-height:180px;padding:13px 8px}.jon-calendar-card .time{font-size:18px}.jon-calendar-card .label{font-size:10px}.calendar-event{font-size:9px;padding:6px 7px}.calendar-event-note{font-size:9px}.calendar-card-art{right:5px;top:31px;width:60px;height:60px}.calendar-art-symbol{font-size:38px}}
+
 .social-box{background:var(--card);border:1px solid var(--border);border-radius:17px;padding:15px;margin:16px 0}
 .social-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .social-link{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;text-decoration:none;background:var(--card2);color:var(--text);font-weight:800;font-size:12px;border:1px solid var(--border)}
@@ -1709,9 +1735,33 @@ img.jon-ad-media{
  </div>
 </div>
 
-<div class="time-panel">
- <div class="time-card"><div class="label">🇪🇹 ETHIOPIA • AFRICA/ADDIS_ABABA</div><div class="time" id="ethiopiaTime">--:--:-- --</div><div class="date" id="ethiopiaDate">--</div></div>
- <div class="time-card"><div class="label">🌍 INTERNATIONAL • UTC</div><div class="time" id="utcTime">--:--:-- --</div><div class="date" id="utcDate">--</div></div>
+<div class="time-panel jon-calendar-panel" id="jonCalendarPanel">
+ <div class="time-card jon-calendar-card jon-ethiopia-card" id="jonEthiopiaCalendar">
+  <div class="calendar-card-art" aria-hidden="true"><span class="calendar-art-symbol" id="jonEthArtSymbol">🇪🇹</span><span class="calendar-art-orbit"></span></div>
+  <div class="label">🇪🇹 ETHIOPIA • ADDIS ABABA</div>
+  <div class="time" id="ethiopiaTime">--:--:-- --</div>
+  <div class="date" id="ethiopiaDate">--</div>
+  <div class="calendar-event" id="jonEthEvent" aria-live="polite"><span class="calendar-event-icon">🇪🇹</span><span>ETHIOPIAN SPECIAL DAYS</span></div>
+  <div class="calendar-event-note" id="jonEthEventNote">Ethiopian calendar & celebrations</div>
+ </div>
+ <div class="time-card jon-calendar-card jon-world-card" id="jonWorldCalendar">
+  <svg class="world-map-art" viewBox="0 0 360 180" role="presentation" aria-hidden="true">
+   <g fill="currentColor" opacity=".22">
+    <path d="M24 43 42 27 69 22 84 31 106 28 119 42 108 55 93 57 87 72 72 75 67 91 52 88 44 73 29 69 20 56Z"/>
+    <path d="m91 96 17 5 12 18-4 24-13 23-12-9-5-25-8-20Z"/>
+    <path d="m151 35 20-13 27 5 11 14-9 13-23 1-9 13-19-7-11-13Z"/>
+    <path d="m178 75 24-13 26 8 13 21-7 30-18 23-17-9-10-28-18-12Z"/>
+    <path d="m214 36 31-15 51 8 27 18-8 19-26 5-12 17-24-7-12-19-22 1-18-12Z"/>
+    <path d="m284 113 20-8 18 12-7 21-20 6-14-13Z"/>
+   </g>
+   <path d="M15 90H345M180 10V170" stroke="currentColor" stroke-opacity=".12" stroke-width="1" fill="none"/>
+  </svg>
+  <div class="label">🌍 INTERNATIONAL • UTC</div>
+  <div class="time" id="utcTime">--:--:-- --</div>
+  <div class="date" id="utcDate">--</div>
+  <div class="calendar-event" id="jonWorldEvent" aria-live="polite"><span class="calendar-event-icon">🌐</span><span>WORLD SPECIAL DAYS</span></div>
+  <div class="calendar-event-note" id="jonWorldEventNote">International observances & seasons</div>
+ </div>
 </div>
 
 <div class="mode-switch" role="tablist" aria-label="Choose Radio or TV">
@@ -2668,32 +2718,77 @@ function cancelTimer(){
 /* =====================================================
                           CLOCK
 ===================================================== */
-function gregorianToEthiopian(date){
- const y=date.getUTCFullYear();
- const startThisYear=Date.UTC(y,8,11);
- const startYear=date.getTime()>=startThisYear?y:y-1;
- const start=Date.UTC(startYear,8,11);
- const diff=Math.floor((Date.UTC(y,date.getUTCMonth(),date.getUTCDate())-start)/86400000);
- const ethYear=startYear-7;
- const ethMonth=Math.floor(diff/30)+1;
- const ethDay=(diff%30)+1;
- const months=["መስከረም","ጥቅምት","ኅዳር","ታኅሣሥ","ጥር","የካቲት","መጋቢት","ሚያዝያ","ግንቦት","ሰኔ","ሐምሌ","ነሐሴ","ጳጉሜን"];
- return `${ethYear} ${months[ethMonth-1]} ${ethDay}`;
+function jonCalendarParts(date,timeZone,calendar,locale){
+ const parts=new Intl.DateTimeFormat(locale+"-u-ca-"+calendar,{timeZone,year:"numeric",month:"numeric",day:"numeric"}).formatToParts(date);
+ const values={};parts.forEach(part=>{if(part.type!=="literal")values[part.type]=Number(part.value)});
+ return values;
 }
-
+function jonGetEthiopianDate(date){
+ try{return new Intl.DateTimeFormat("am-ET-u-ca-ethiopic",{timeZone:"Africa/Addis_Ababa",weekday:"long",year:"numeric",month:"long",day:"numeric"}).format(date)}
+ catch(error){return new Intl.DateTimeFormat("en",{timeZone:"Africa/Addis_Ababa",year:"numeric",month:"long",day:"numeric"}).format(date)}
+}
+function jonEthiopianHoliday(date){
+ const p=jonCalendarParts(date,"Africa/Addis_Ababa","ethiopic","en");
+ const fixed=[
+  {month:1,day:1,name:"እንቁጣጣሽ • Ethiopian New Year",icon:"🌼",note:"A new year, new hopes and fresh beginnings"},
+  {month:1,day:17,name:"መስቀል • Meskel",icon:"🔥",note:"The finding of the True Cross"},
+  {month:4,day:29,name:"ገና • Ethiopian Christmas",icon:"🎄",note:"Ethiopian Orthodox Christmas celebration"},
+  {month:5,day:11,name:"ጥምቀት • Timkat",icon:"💧",note:"Epiphany, water blessings and procession"},
+  {month:6,day:23,name:"የአድዋ ድል በዓል • Adwa Victory",icon:"🇪🇹",note:"Remembering Ethiopia’s victory at Adwa"},
+  {month:8,day:27,name:"የአርበኞች ቀን • Patriots’ Day",icon:"🕊️",note:"Honoring Ethiopia’s patriots"},
+  {month:9,day:20,name:"የደርግ ውድቀት ቀን • Downfall Day",icon:"🇪🇹",note:"Ethiopian national remembrance day"}
+ ];
+ return fixed.find(item=>item.month===p.month&&item.day===p.day)||null;
+}
+function jonWorldHoliday(date){
+ const m=date.getUTCMonth()+1,d=date.getUTCDate();
+ const fixed=[
+  {month:1,day:1,name:"NEW YEAR’S DAY",icon:"🎆",note:"A fresh beginning around the world"},
+  {month:2,day:14,name:"VALENTINE’S DAY",icon:"❤️",note:"A day celebrating love and friendship"},
+  {month:3,day:8,name:"INTERNATIONAL WOMEN’S DAY",icon:"💜",note:"Celebrating women’s achievements"},
+  {month:3,day:21,name:"WORLD DOWN SYNDROME DAY",icon:"🧦",note:"Promoting inclusion and awareness"},
+  {month:4,day:22,name:"EARTH DAY",icon:"🌍",note:"Protecting our planet and environment"},
+  {month:5,day:1,name:"INTERNATIONAL WORKERS’ DAY",icon:"✊",note:"Recognizing workers around the world"},
+  {month:6,day:5,name:"WORLD ENVIRONMENT DAY",icon:"🌱",note:"A global call to protect nature"},
+  {month:6,day:21,name:"WORLD MUSIC DAY",icon:"🎵",note:"Celebrating music across cultures"},
+  {month:9,day:21,name:"INTERNATIONAL DAY OF PEACE",icon:"🕊️",note:"Promoting peace and non-violence"},
+  {month:10,day:31,name:"WORLD CITIES DAY",icon:"🏙️",note:"Building sustainable cities"},
+  {month:11,day:20,name:"WORLD CHILDREN’S DAY",icon:"🧒",note:"Advancing children’s rights and wellbeing"},
+  {month:12,day:25,name:"CHRISTMAS DAY",icon:"🎄",note:"Season of light, joy and giving"}
+ ];
+ return fixed.find(item=>item.month===m&&item.day===d)||null;
+}
+function jonSetCalendarEvent(cardId,eventId,noteId,event,defaultIcon,defaultTitle,defaultNote,classes){
+ const card=document.getElementById(cardId),eventNode=document.getElementById(eventId),noteNode=document.getElementById(noteId);
+ if(!card||!eventNode||!noteNode)return;
+ card.classList.remove("is-holiday","is-kiremt","is-christmas","is-winter");
+ classes.forEach(name=>card.classList.add(name));
+ const active=!!event;
+ if(active)card.classList.add("is-holiday");
+ eventNode.innerHTML='<span class="calendar-event-icon">'+(event?event.icon:defaultIcon)+'</span><span>'+(event?event.name:defaultTitle)+'</span>';
+ noteNode.textContent=event?event.note:defaultNote;
+}
 function updateClock(){
  const now=new Date();
  const ethTime=now.toLocaleTimeString("en-US",{timeZone:"Africa/Addis_Ababa",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true});
- const ethUTCDate=new Date(now.toLocaleString("en-US",{timeZone:"Africa/Addis_Ababa"}));
- const ethDate="🇪🇹 "+gregorianToEthiopian(new Date(Date.UTC(ethUTCDate.getFullYear(),ethUTCDate.getMonth(),ethUTCDate.getDate())));
+ const ethDate="🇪🇹 "+jonGetEthiopianDate(now);
  const utcTime=now.toLocaleTimeString("en-US",{timeZone:"UTC",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true});
  const utcDate=now.toLocaleDateString("en-US",{timeZone:"UTC",weekday:"short",year:"numeric",month:"short",day:"numeric"});
+ const ethParts=jonCalendarParts(now,"Africa/Addis_Ababa","ethiopic","en");
+ const ethHoliday=jonEthiopianHoliday(now);
+ const worldHoliday=jonWorldHoliday(now);
+ const kiremt=ethParts.month>=10&&ethParts.month<=13;
+ const christmas=now.getUTCMonth()===11;
+ const winter=[11,0,1].includes(now.getUTCMonth());
  document.getElementById("ethiopiaTime").textContent=ethTime;
  document.getElementById("ethiopiaDate").textContent=ethDate;
  document.getElementById("utcTime").textContent=utcTime;
  document.getElementById("utcDate").textContent=utcDate;
- document.getElementById("clock").innerHTML=ethTime;
+ document.getElementById("clock").textContent=ethTime;
+ jonSetCalendarEvent("jonEthiopiaCalendar","jonEthEvent","jonEthEventNote",ethHoliday,"🇪🇹","ETHIOPIAN SPECIAL DAYS",kiremt?"Kiremt season • Rain, clouds & green landscapes":"Ethiopian calendar & seasonal highlights",kiremt?["is-kiremt"]:[]);
+ jonSetCalendarEvent("jonWorldCalendar","jonWorldEvent","jonWorldEventNote",worldHoliday,"🌐","WORLD SPECIAL DAYS",christmas?"Christmas season • Festive lights & decorations":winter?"Northern winter season • Snow, ice & winter skies":"International observances & seasonal highlights",christmas?["is-christmas"]:winter?["is-winter"]:[]);
 }
+
 
 setInterval(updateClock,1000);
 updateClock();
