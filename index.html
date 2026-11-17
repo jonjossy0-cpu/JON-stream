@@ -6434,8 +6434,7 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth
           <div><span>🖼️</span>Personalize your profile and chat background</div>
           <div><span>⏳</span>Stories that disappear after 24 hours</div>
         </div>
-        <button id="jonInboxWelcomeAction" type="button">${verified ? "VERIFY YOUR EMAIL" : "SIGN IN / CREATE ACCOUNT"}</button>
-        <p id="jonInboxWelcomeFoot">${verified ? "Verify your JON Stream email to use Inbox." : "A verified JON Stream account is required to use Inbox."}</p>
+        <p id="jonInboxWelcomeFoot" style="margin:14px 0 0!important;font-size:11px!important;color:#8da4bd!important">JON Stream members with verified accounts can use Inbox. Close this window to continue watching.</p>
       </section>`;
     document.body.appendChild(overlay);
     const close = () => overlay.remove();
