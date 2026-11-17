@@ -1788,6 +1788,7 @@ img.jon-ad-media{
   <p id="jonAccountMessage" class="jon-account-note" aria-live="polite"></p>
 
   <div class="jon-account-actions"><button id="jonResendVerification" type="button" class="jon-account-secondary">Resend verification</button><button id="jonAccountSignout" type="button" class="jon-account-secondary">Sign out</button></div>
+  <button id="jonOpenInbox" type="button" class="jon-account-secondary" style="width:100%;margin-top:10px">💬 Open JON Stream Inbox</button>
  </div>
  <p id="jonAccountError" class="jon-account-error" role="status" aria-live="polite"></p>
 </section>
@@ -6377,6 +6378,46 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
   #jonAdvancedDialogRoot .jon-adv-dialog-icon{animation:none!important}
 }
 </style>
+
+
+<script type="module" id="jonInboxSingleSignOnHandoff">
+import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+(() => {
+  const button = document.getElementById("jonOpenInbox");
+  if (!button) return;
+  const INBOX_SSO_ENDPOINT = "https://jon-stream-inbox-git-preview-inbox-dark-c-c9fb95-jonjossy0-5772.vercel.app/api/auth/sso";
+  button.addEventListener("click", async () => {
+    const user = getAuth(getApp()).currentUser;
+    if (!user || !user.emailVerified) {
+      window.alert("Please sign in to your verified JON Stream account first.");
+      return;
+    }
+    button.disabled = true;
+    const originalText = button.textContent;
+    button.textContent = "Connecting securely…";
+    try {
+      const idToken = await user.getIdToken();
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = INBOX_SSO_ENDPOINT;
+      form.style.display = "none";
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "idToken";
+      input.value = idToken;
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+    } catch (error) {
+      console.error("JON Inbox SSO handoff failed", error);
+      button.disabled = false;
+      button.textContent = originalText || "💬 Open JON Stream Inbox";
+      window.alert("Could not securely open Inbox. Please check your connection and try again.");
+    }
+  });
+})();
+</script>
 
 </body>
 </html>
