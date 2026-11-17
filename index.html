@@ -6399,10 +6399,70 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth
     .map(id => document.getElementById(id)).filter(Boolean);
   if (!buttons.length) return;
   const INBOX_SSO_ENDPOINT = "https://jon-stream-inbox-git-preview-inbox-dark-c-c9fb95-jonjossy0-5772.vercel.app/api/auth/sso";
+
+  function showInboxWelcome(verified) {
+    document.getElementById("jonInboxWelcomeOverlay")?.remove();
+    const overlay = document.createElement("div");
+    overlay.id = "jonInboxWelcomeOverlay";
+    overlay.setAttribute("role", "presentation");
+    overlay.style.cssText = "position:fixed;inset:0;z-index:100500;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(2,8,20,.76);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);";
+    overlay.innerHTML = `
+      <style>
+        #jonInboxWelcomeCard{position:relative;width:min(430px,100%);max-height:min(88vh,720px);overflow:auto;padding:26px 22px 22px;border:1px solid rgba(74,174,255,.38);border-radius:25px;color:#eef7ff;background:radial-gradient(ellipse at 50% 0%,rgba(0,139,255,.23),transparent 48%),linear-gradient(155deg,#101f36,#07111f 72%);box-shadow:0 24px 90px rgba(0,0,0,.58),0 0 32px rgba(0,145,255,.13);font-family:inherit;text-align:center;animation:jonInboxWelcomeIn .24s ease-out}
+        #jonInboxWelcomeClose{position:absolute;right:13px;top:12px;width:35px;height:35px;border:1px solid rgba(255,255,255,.15);border-radius:50%;background:rgba(255,255,255,.07);color:#dbeafe;font-size:20px;cursor:pointer}
+        #jonInboxWelcomeIcon{width:76px;height:76px;margin:2px auto 14px;display:grid;place-items:center;border-radius:24px;color:#6bc8ff;font-size:37px;background:linear-gradient(145deg,rgba(18,111,190,.42),rgba(227,27,35,.14));border:1px solid rgba(93,190,255,.48);box-shadow:0 0 28px rgba(39,159,255,.22),inset 0 1px rgba(255,255,255,.12)}
+        #jonInboxWelcomeCard h2{margin:0;color:#75caff;font-size:25px;letter-spacing:.2px}
+        #jonInboxWelcomeTag{margin:7px 0 12px;color:#f3f8ff;font-size:12px;font-weight:800;letter-spacing:2px}
+        #jonInboxWelcomeCard p{margin:0 auto 17px;max-width:340px;color:#b9c9dc;font-size:14px;line-height:1.65}
+        #jonInboxWelcomeFeatures{display:grid;gap:9px;margin:17px 0 20px;text-align:left}
+        #jonInboxWelcomeFeatures div{display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid rgba(135,183,226,.14);border-radius:13px;background:rgba(255,255,255,.045);font-size:13px;color:#e5f1ff}
+        #jonInboxWelcomeFeatures span{width:25px;text-align:center;font-size:18px}
+        #jonInboxWelcomeAction{width:100%;min-height:47px;border:0;border-radius:14px;background:linear-gradient(100deg,#087bd2,#1765bd 58%,#b51f31);color:#fff;font-size:14px;font-weight:800;letter-spacing:.3px;cursor:pointer;box-shadow:0 8px 25px rgba(0,112,210,.25)}
+        #jonInboxWelcomeFoot{margin:12px 0 0!important;font-size:11px!important;color:#8da4bd!important}
+        @keyframes jonInboxWelcomeIn{from{opacity:0;transform:translateY(10px) scale(.975)}to{opacity:1;transform:translateY(0) scale(1)}}
+        @media(prefers-reduced-motion:reduce){#jonInboxWelcomeCard{animation:none}}
+      </style>
+      <section id="jonInboxWelcomeCard" role="dialog" aria-modal="true" aria-labelledby="jonInboxWelcomeTitle">
+        <button id="jonInboxWelcomeClose" type="button" aria-label="Close">×</button>
+        <div id="jonInboxWelcomeIcon" aria-hidden="true">✉</div>
+        <h2 id="jonInboxWelcomeTitle">JON Inbox</h2>
+        <div id="jonInboxWelcomeTag">CONNECT • CHAT • SHARE</div>
+        <p>Private messaging for the JON Stream community. Stay connected with people you know, right inside your JON Stream experience.</p>
+        <div id="jonInboxWelcomeFeatures">
+          <div><span>💬</span>Private one-to-one conversations</div>
+          <div><span>📎</span>Share photos, files and media</div>
+          <div><span>🖼️</span>Personalize your profile and chat background</div>
+          <div><span>⏳</span>Stories that disappear after 24 hours</div>
+        </div>
+        <button id="jonInboxWelcomeAction" type="button">${verified ? "VERIFY YOUR EMAIL" : "SIGN IN / CREATE ACCOUNT"}</button>
+        <p id="jonInboxWelcomeFoot">${verified ? "Verify your JON Stream email to use Inbox." : "A verified JON Stream account is required to use Inbox."}</p>
+      </section>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelector("#jonInboxWelcomeClose").addEventListener("click", close);
+    overlay.addEventListener("click", event => { if (event.target === overlay) close(); });
+    overlay.querySelector("#jonInboxWelcomeAction").addEventListener("click", () => {
+      close();
+      const panel = document.getElementById("jonAccountPanel");
+      if (panel) {
+        panel.hidden = false;
+        panel.scrollIntoView?.({behavior:"smooth",block:"center"});
+      }
+      document.getElementById("profileToggleBtn")?.setAttribute("aria-expanded","true");
+      setTimeout(() => {
+        const target = verified
+          ? document.getElementById("jonResendVerification")
+          : document.getElementById("jonAccountEmail");
+        target?.focus?.();
+      }, 350);
+    });
+    overlay.querySelector("#jonInboxWelcomeClose").focus();
+  }
+
   buttons.forEach(button => button.addEventListener("click", async () => {
     const user = getAuth(getApp()).currentUser;
     if (!user || !user.emailVerified) {
-      window.alert("Please sign in to your verified JON Stream account first.");
+      showInboxWelcome(!!user);
       return;
     }
     buttons.forEach(item => { item.disabled = true; });
