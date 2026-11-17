@@ -1722,6 +1722,16 @@ img.jon-ad-media{
 @media(max-width:380px){#tvPlayerBox .jon-player-transport .jon-transport-btn.jon-play-btn{width:62px!important;height:62px!important;min-height:62px!important}}
 @media(prefers-reduced-motion:reduce){#tvPlayerBox .jon-player-transport .jon-transport-btn.jon-play-btn::before,#tvPlayerBox .jon-player-transport .jon-transport-btn.jon-play-btn::after{animation:none!important}}
 </style>
+
+<style id="jonInboxTopbarButtonCSS">
+.topbar-actions .jon-inbox-nav-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:76px;padding:7px 10px;border:1px solid rgba(65,170,255,.48);border-radius:12px;background:linear-gradient(145deg,rgba(12,47,78,.96),rgba(9,22,39,.98));color:#dff5ff;box-shadow:0 0 10px rgba(0,153,255,.18),inset 0 1px rgba(255,255,255,.09);font-size:12px;font-weight:800;letter-spacing:.2px;cursor:pointer;transition:border-color .18s,box-shadow .18s,transform .18s}
+.topbar-actions .jon-inbox-nav-btn:hover{border-color:#59c6ff;box-shadow:0 0 13px rgba(0,153,255,.38),inset 0 1px rgba(255,255,255,.12)}
+.jon-inbox-nav-icon{font-size:19px;line-height:1;filter:drop-shadow(0 0 5px rgba(51,180,255,.7))}
+.jon-inbox-nav-label{font-size:11px}
+.topbar-actions .jon-inbox-nav-btn:disabled{opacity:.65;cursor:wait}
+@media(max-width:390px){.topbar-actions .jon-inbox-nav-btn{min-width:39px;width:39px;padding:6px}.jon-inbox-nav-label{display:none}.jon-inbox-nav-icon{font-size:20px}}
+@media(prefers-reduced-motion:reduce){.topbar-actions .jon-inbox-nav-btn{transition:none}}
+</style>
 </head>
 
 <body>
@@ -1731,6 +1741,7 @@ img.jon-ad-media{
  <div class="clock" id="clock">🕐 --:--:--</div>
  <div class="topbar-actions">
   <button class="theme-btn jon-profile-trigger jon-profile-state-unknown" id="profileToggleBtn" type="button" onclick="toggleProfilePanel()" aria-label="Open profile" aria-controls="jonAccountPanel" aria-expanded="false" title="Profile"><span class="jon-profile-glyph" id="jonHomeProfileFallback" aria-hidden="true">👤</span><img class="jon-home-profile-photo" id="jonHomeProfilePhoto" alt="" hidden><span class="jon-profile-tier-label" id="jonHomeProfileTier" hidden></span><span class="jon-profile-verified" id="jonProfileVerifiedBadge" aria-label="Verified Premium member" hidden>✓</span></button>
+  <button class="theme-btn jon-inbox-nav-btn" id="jonOpenInboxTop" type="button" aria-label="Open JON Stream Inbox" title="JON Stream Inbox"><span class="jon-inbox-nav-icon" aria-hidden="true">✉</span><span class="jon-inbox-nav-label">Inbox</span></button>
   <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme" title="Theme">🌙</button>
  </div>
 </div>
@@ -6384,18 +6395,19 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 (() => {
-  const button = document.getElementById("jonOpenInbox");
-  if (!button) return;
+  const buttons = ["jonOpenInboxTop", "jonOpenInbox"]
+    .map(id => document.getElementById(id)).filter(Boolean);
+  if (!buttons.length) return;
   const INBOX_SSO_ENDPOINT = "https://jon-stream-inbox-git-preview-inbox-dark-c-c9fb95-jonjossy0-5772.vercel.app/api/auth/sso";
-  button.addEventListener("click", async () => {
+  buttons.forEach(button => button.addEventListener("click", async () => {
     const user = getAuth(getApp()).currentUser;
     if (!user || !user.emailVerified) {
       window.alert("Please sign in to your verified JON Stream account first.");
       return;
     }
-    button.disabled = true;
-    const originalText = button.textContent;
-    button.textContent = "Connecting securely…";
+    buttons.forEach(item => { item.disabled = true; });
+    const originals = buttons.map(item => item.textContent);
+    buttons.forEach(item => { item.textContent = item.id === "jonOpenInboxTop" ? "Opening…" : "Connecting securely…"; });
     try {
       const idToken = await user.getIdToken();
       const form = document.createElement("form");
@@ -6411,11 +6423,10 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth
       form.submit();
     } catch (error) {
       console.error("JON Inbox SSO handoff failed", error);
-      button.disabled = false;
-      button.textContent = originalText || "💬 Open JON Stream Inbox";
+      buttons.forEach((item,index) => { item.disabled = false; item.textContent = originals[index]; });
       window.alert("Could not securely open Inbox. Please check your connection and try again.");
     }
-  });
+  }));
 })();
 </script>
 
