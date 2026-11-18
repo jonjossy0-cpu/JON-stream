@@ -6393,7 +6393,7 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 
 <script type="module" id="jonInboxSingleSignOnHandoff">
 import { getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 (() => {
   const buttons = ["jonOpenInboxTop", "jonOpenInbox"]
     .map(id => document.getElementById(id)).filter(Boolean);
@@ -6459,9 +6459,28 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth
     overlay.querySelector("#jonInboxWelcomeClose").focus();
   }
 
+  let openingInbox = false;
+  function waitForSignedInUser(auth) {
+    return new Promise(resolve => {
+      let settled = false;
+      let unsubscribe = () => {};
+      const finish = user => {
+        if (settled) return;
+        settled = true;
+        unsubscribe();
+        resolve(user);
+      };
+      unsubscribe = onAuthStateChanged(auth, finish, () => finish(null));
+      setTimeout(() => finish(auth.currentUser), 10000);
+    });
+  }
+
   buttons.forEach(button => button.addEventListener("click", async () => {
-    const user = getAuth(getApp()).currentUser;
+    if (openingInbox) return;
+    openingInbox = true;
+    const user = await waitForSignedInUser(getAuth(getApp()));
     if (!user || !user.emailVerified) {
+      openingInbox = false;
       showInboxWelcome(!!user);
       return;
     }
@@ -6483,6 +6502,7 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth
       form.submit();
     } catch (error) {
       console.error("JON Inbox SSO handoff failed", error);
+      openingInbox = false;
       buttons.forEach((item,index) => { item.disabled = false; item.textContent = originals[index]; });
       window.alert("Could not securely open Inbox. Please check your connection and try again.");
     }
