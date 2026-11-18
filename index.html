@@ -6398,7 +6398,7 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth
   const buttons = ["jonOpenInboxTop", "jonOpenInbox"]
     .map(id => document.getElementById(id)).filter(Boolean);
   if (!buttons.length) return;
-  const INBOX_SSO_ENDPOINT = "https://jon-stream-inbox-git-preview-inbox-dark-c-c9fb95-jonjossy0-5772.vercel.app/api/auth/sso";
+  const INBOX_SSO_ENDPOINT = "https://jon-stream-inbox.vercel.app/api/auth/sso";
 
   function showInboxWelcome(verified) {
     document.getElementById("jonInboxWelcomeOverlay")?.remove();
@@ -6434,6 +6434,7 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth
           <div><span>🖼️</span>Personalize your profile and chat background</div>
           <div><span>⏳</span>Stories that disappear after 24 hours</div>
         </div>
+        <button id="jonInboxWelcomeAction" type="button">Sign in / verify email</button>
         <p id="jonInboxWelcomeFoot" style="margin:14px 0 0!important;font-size:11px!important;color:#8da4bd!important">JON Stream members with verified accounts can use Inbox. Close this window to continue watching.</p>
       </section>`;
     document.body.appendChild(overlay);
