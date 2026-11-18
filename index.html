@@ -5087,7 +5087,8 @@ if(authPanel){
        if(!idToken||idToken.length>10000)throw new Error("Could not create a valid sign-in handoff. Please sign in again.");
        const form=document.createElement("form");
        form.method="POST";
-       form.action="https://jon-stream-inbox.vercel.app/api/auth/sso";
+       const inboxOrigin=location.hostname==="jon-stream.vercel.app"?"https://jon-stream-inbox.vercel.app":"https://jon-stream-inbox-git-integration-jon-stream-sso-jonjossy0-5772.vercel.app";
+       form.action=inboxOrigin+"/api/auth/sso";
        form.acceptCharset="UTF-8";
        form.style.display="none";
        const tokenInput=document.createElement("input");
