@@ -6483,7 +6483,9 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
   if(typeof window.jonInboxCanUseSSO==="function"&&window.jonInboxCanUseSSO()&&typeof window.jonOpenInboxSecure==="function"){
    close();window.jonOpenInboxSecure();return;
   }
-  window.location.assign("https://jon-stream-inbox.vercel.app");
+  close();
+  const profileButton=document.getElementById("profileToggleBtn");
+  if(profileButton)profileButton.click();
  });
 })();
 </script>
