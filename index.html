@@ -1731,7 +1731,7 @@ img.jon-ad-media{
  <div class="clock" id="clock">🕐 --:--:--</div>
  <div class="topbar-actions">
   <button class="theme-btn jon-profile-trigger jon-profile-state-unknown" id="profileToggleBtn" type="button" onclick="toggleProfilePanel()" aria-label="Open profile" aria-controls="jonAccountPanel" aria-expanded="false" title="Profile"><span class="jon-profile-glyph" id="jonHomeProfileFallback" aria-hidden="true">👤</span><img class="jon-home-profile-photo" id="jonHomeProfilePhoto" alt="" hidden><span class="jon-profile-tier-label" id="jonHomeProfileTier" hidden></span><span class="jon-profile-verified" id="jonProfileVerifiedBadge" aria-label="Verified Premium member" hidden>✓</span></button>
-  <button class="theme-btn" id="jonInboxTopbarBtn" type="button" onclick="document.getElementById('jonOpenInbox').click()" aria-label="Open JON Inbox" title="JON Inbox">📥</button>
+  <button class="theme-btn jon-inbox-topbar-btn" id="jonInboxTopbarBtn" type="button" onclick="openJonInboxInfo()" aria-label="JON Inbox information" title="JON Inbox"><span aria-hidden="true">📥</span><span>Inbox</span></button>
   <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme" title="Theme">🌙</button>
  </div>
 </div>
@@ -5069,6 +5069,8 @@ if(authPanel){
  const message=(text,isError=false)=>{ $("jonAccountError").textContent=text||""; $("jonAccountError").style.color=isError?"#fca5a5":"#86efac"; };
 
  const openInboxButton=$("jonOpenInbox");
+ window.jonInboxCanUseSSO=()=>!!(auth.currentUser&&auth.currentUser.emailVerified);
+ window.jonOpenInboxSecure=()=>openInboxButton?.click();
  let openingInbox=false;
  if(openInboxButton){
    openInboxButton.addEventListener("click",async()=>{
@@ -6424,6 +6426,67 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
   #jonAdvancedDialogRoot .jon-adv-dialog-icon{animation:none!important}
 }
 </style>
+
+<style id="jonInboxInfoPopupStyles">
+.topbar-actions .jon-inbox-topbar-btn{width:auto;min-width:82px;height:42px;padding:0 11px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid rgba(69,177,255,.55);border-radius:13px;background:linear-gradient(145deg,#102b49,#111b31 68%,#35121c);color:#fff;font-size:13px;font-weight:900;letter-spacing:.2px;box-shadow:0 0 13px rgba(0,145,255,.14),inset 0 1px rgba(255,255,255,.08)}
+.topbar-actions .jon-inbox-topbar-btn span:first-child{font-size:18px;line-height:1}
+.topbar-actions .jon-inbox-topbar-btn span:last-child{font-size:12px}
+#jonInboxInfoModal{position:fixed;inset:0;z-index:2147482500;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(2,7,17,.84);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+#jonInboxInfoModal[hidden]{display:none!important}
+.jon-inbox-info-card{position:relative;width:min(520px,100%);max-height:min(88vh,760px);overflow:auto;padding:clamp(20px,4vw,28px);border:1px solid rgba(68,183,255,.52);border-radius:23px;color:#f5faff;background:linear-gradient(145deg,#102a46 0%,#071426 58%,#210d1b 100%);box-shadow:0 26px 80px rgba(0,0,0,.68),0 0 32px rgba(0,156,255,.17),inset 0 1px rgba(255,255,255,.09)}
+.jon-inbox-info-kicker{text-align:center;color:#8bdcff;font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase}
+.jon-inbox-info-icon{width:62px;height:62px;margin:0 auto 13px;display:grid;place-items:center;border:1px solid rgba(83,198,255,.6);border-radius:19px;background:linear-gradient(145deg,rgba(0,145,255,.2),rgba(227,27,35,.14));font-size:29px;box-shadow:0 0 24px rgba(0,164,255,.2)}
+.jon-inbox-info-card h2{margin:8px 0;text-align:center;color:#fff;font-size:clamp(22px,5vw,28px);font-weight:950;letter-spacing:.04em;text-shadow:0 0 16px rgba(0,174,255,.32)}
+.jon-inbox-info-lead{max-width:430px;margin:0 auto 18px;text-align:center;color:#c6d9e9;font-size:13px;line-height:1.65}
+.jon-inbox-info-features{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:18px 0}
+.jon-inbox-info-feature{min-height:75px;padding:12px;border:1px solid rgba(94,157,202,.28);border-radius:13px;background:linear-gradient(120deg,rgba(17,43,67,.9),rgba(10,23,39,.92))}
+.jon-inbox-info-feature b{display:block;margin-bottom:5px;color:#8bdcff;font-size:12px}
+.jon-inbox-info-feature span{display:block;color:#d0dce8;font-size:11px;line-height:1.45}
+.jon-inbox-info-note{margin:14px 0 0;padding:12px;border:1px solid rgba(227,27,35,.25);border-radius:12px;background:rgba(227,27,35,.07);color:#c6d9e9;font-size:11px;line-height:1.55;text-align:center}
+.jon-inbox-info-actions{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:19px}
+.jon-inbox-info-actions button{min-height:47px;padding:10px 15px;border-radius:13px;font-size:11px;font-weight:900;letter-spacing:.04em}
+#jonInboxInfoOpen{border:1px solid rgba(125,220,255,.7);background:linear-gradient(110deg,#087fc7,#1455b7 58%,#b7192b);box-shadow:0 0 18px rgba(0,145,255,.18)}
+#jonInboxInfoClose{border:1px solid rgba(135,169,199,.34);background:linear-gradient(145deg,#243b54,#111e30);color:#dce9f6}
+@media(max-width:420px){.jon-inbox-info-features{grid-template-columns:1fr}.jon-inbox-info-feature{min-height:0}.jon-inbox-info-actions{grid-template-columns:1fr}.topbar-actions .jon-inbox-topbar-btn{min-width:76px;padding:0 8px}}
+@media(prefers-reduced-motion:no-preference){.jon-inbox-info-card{animation:jonInboxInfoEnter .2s ease-out}@keyframes jonInboxInfoEnter{from{opacity:0;transform:translateY(9px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}}
+</style>
+<div id="jonInboxInfoModal" hidden>
+ <section class="jon-inbox-info-card" role="dialog" aria-modal="true" aria-labelledby="jonInboxInfoTitle" aria-describedby="jonInboxInfoLead">
+  <div class="jon-inbox-info-icon" aria-hidden="true">📥</div>
+  <div class="jon-inbox-info-kicker">JON STREAM • PRIVATE MESSAGING</div>
+  <h2 id="jonInboxInfoTitle">JON INBOX</h2>
+  <p class="jon-inbox-info-lead" id="jonInboxInfoLead">A private place for the JON Stream community to connect, share updates and enjoy a modern messaging experience.</p>
+  <div class="jon-inbox-info-features">
+   <div class="jon-inbox-info-feature"><b>💬 Private Messaging</b><span>Chat with other eligible JON Stream members.</span></div>
+   <div class="jon-inbox-info-feature"><b>👤 Personal Profile</b><span>Add your profile photo and a short bio.</span></div>
+   <div class="jon-inbox-info-feature"><b>🎨 Your Chat Style</b><span>Personalize your chat background.</span></div>
+   <div class="jon-inbox-info-feature"><b>✓ Premium Badge</b><span>Premium members can display their verified badge.</span></div>
+   <div class="jon-inbox-info-feature"><b>📸 24-Hour Stories</b><span>Share Stories that disappear automatically after 24 hours.</span></div>
+   <div class="jon-inbox-info-feature"><b>✨ Modern & Lightweight</b><span>A clean, attractive chat experience designed to stay simple.</span></div>
+  </div>
+  <p class="jon-inbox-info-note">To use private chats, sign in to JON Stream with an email-verified account. Your JON Stream account is used to access Inbox; there is no separate Inbox sign-in.</p>
+  <div class="jon-inbox-info-actions"><button type="button" id="jonInboxInfoOpen">OPEN JON INBOX&nbsp; →</button><button type="button" id="jonInboxInfoClose">CLOSE</button></div>
+ </section>
+</div>
+<script id="jonInboxInfoPopupScript">
+(function(){
+ const modal=document.getElementById("jonInboxInfoModal");
+ const openButton=document.getElementById("jonInboxInfoOpen");
+ const closeButton=document.getElementById("jonInboxInfoClose");
+ if(!modal||!openButton||!closeButton)return;
+ window.openJonInboxInfo=function(){modal.hidden=false;closeButton.focus()};
+ function close(){modal.hidden=true}
+ closeButton.addEventListener("click",close);
+ modal.addEventListener("click",event=>{if(event.target===modal)close()});
+ document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!modal.hidden)close()});
+ openButton.addEventListener("click",()=>{
+  if(typeof window.jonInboxCanUseSSO==="function"&&window.jonInboxCanUseSSO()&&typeof window.jonOpenInboxSecure==="function"){
+   close();window.jonOpenInboxSecure();return;
+  }
+  window.location.assign("https://jon-stream-inbox.vercel.app");
+ });
+})();
+</script>
 
 </body>
 </html>
