@@ -1786,6 +1786,7 @@ img.jon-ad-media{
   <div class="jon-account-row jon-account-row-time"><span class="jon-account-label"><i class="jon-account-icon" aria-hidden="true">◷</i>Time remaining</span><strong id="jonProfileRemaining">Checking…</strong></div>
   <div class="jon-account-row jon-account-row-payment"><span class="jon-account-label"><i class="jon-account-icon" aria-hidden="true">▣</i>Payment</span><strong id="jonProfilePayment">—</strong></div>
   <p id="jonAccountMessage" class="jon-account-note" aria-live="polite"></p>
+  <div class="jon-account-actions"><button id="jonOpenInbox" type="button" class="jon-account-secondary">Open JON Inbox</button></div>
 
   <div class="jon-account-actions"><button id="jonResendVerification" type="button" class="jon-account-secondary">Resend verification</button><button id="jonAccountSignout" type="button" class="jon-account-secondary">Sign out</button></div>
  </div>
@@ -5065,6 +5066,50 @@ if(authPanel){
  const auth=getAuth(getApp());
  const $=id=>document.getElementById(id);
  const message=(text,isError=false)=>{ $("jonAccountError").textContent=text||""; $("jonAccountError").style.color=isError?"#fca5a5":"#86efac"; };
+
+ const openInboxButton=$("jonOpenInbox");
+ let openingInbox=false;
+ if(openInboxButton){
+   openInboxButton.addEventListener("click",async()=>{
+     if(openingInbox)return;
+     const user=auth.currentUser;
+     if(!user){message("Sign in to JON Stream before opening JON Inbox.",true);return;}
+     openingInbox=true;
+     openInboxButton.disabled=true;
+     const originalLabel=openInboxButton.textContent||"Open JON Inbox";
+     openInboxButton.textContent="Connecting securely…";
+     let submitted=false;
+     try{
+       await reload(user);
+       if(!auth.currentUser||auth.currentUser.uid!==user.uid)throw new Error("Your JON Stream sign-in changed. Please try again.");
+       if(!user.emailVerified){message("Please verify your JON Stream email before opening JON Inbox.",true);return;}
+       const idToken=await user.getIdToken(true);
+       if(!idToken||idToken.length>10000)throw new Error("Could not create a valid sign-in handoff. Please sign in again.");
+       const form=document.createElement("form");
+       form.method="POST";
+       form.action="https://jon-stream-inbox.vercel.app/api/auth/sso";
+       form.acceptCharset="UTF-8";
+       form.style.display="none";
+       const tokenInput=document.createElement("input");
+       tokenInput.type="hidden";
+       tokenInput.name="idToken";
+       tokenInput.value=idToken;
+       form.appendChild(tokenInput);
+       document.body.appendChild(form);
+       message("Opening your secure JON Inbox session…");
+       submitted=true;
+       form.submit();
+     }catch(error){
+       message("Could not open JON Inbox: "+String(error&&error.message||error),true);
+     }finally{
+       if(!submitted){
+         openingInbox=false;
+         openInboxButton.disabled=false;
+         openInboxButton.textContent=originalLabel;
+       }
+     }
+   });
+ }
  const authErrorText=(error,action)=>{
    const code=String(error&&error.code||"");
    const messages={
