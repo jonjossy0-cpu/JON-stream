@@ -164,11 +164,32 @@ button{
 button:active{transform:scale(.98)}
 
 .topbar{
- display:flex;
- justify-content:space-between;
+ display:grid;
+ grid-template-columns:1fr auto 1fr;
  align-items:center;
- margin-bottom:10px;
+ gap:10px;
+ margin-bottom:5px;
 }
+.topbar-left,.topbar-right{display:flex;align-items:center;min-width:0}
+.topbar-left{justify-content:flex-start}
+.topbar-right{justify-content:flex-end}
+.topbar-inbox-link{
+ display:inline-flex;align-items:center;justify-content:center;gap:8px;
+ min-width:116px;min-height:46px;padding:8px 15px;border-radius:15px;
+ color:#eaf7ff;text-decoration:none;font-size:12px;font-weight:900;
+ letter-spacing:1.25px;border:1px solid rgba(0,190,255,.48);
+ background:linear-gradient(135deg,rgba(10,45,75,.96),rgba(12,25,46,.96) 62%,rgba(55,15,30,.94));
+ box-shadow:0 0 14px rgba(0,153,255,.15),inset 0 1px rgba(255,255,255,.08);
+ transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.topbar-inbox-link:hover{transform:translateY(-1px);border-color:rgba(0,210,255,.85);box-shadow:0 0 19px rgba(0,153,255,.28)}
+.topbar-inbox-link:focus-visible{outline:2px solid #55caff;outline-offset:3px}
+.topbar-inbox-link svg,.topbar-theme-btn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.topbar-inbox-link svg{color:#55caff;filter:drop-shadow(0 0 5px rgba(0,190,255,.45))}
+.topbar-clock{text-align:right;margin:0 2px 8px 0}
+.topbar-theme-btn{display:grid;place-items:center;color:#f8d66d;background:linear-gradient(145deg,#172b43,#101a2d);border:1px solid rgba(245,190,75,.42);box-shadow:0 0 12px rgba(245,190,75,.12)}
+.topbar-theme-btn svg{width:22px;height:22px}
+@media(max-width:380px){.topbar-inbox-link{min-width:94px;padding:7px 10px;gap:6px;font-size:11px}.topbar-inbox-link svg{width:20px;height:20px}}
 
 .clock{
  color:var(--muted);
@@ -1727,13 +1748,21 @@ img.jon-ad-media{
 <body>
 <div class="container">
 
-<div class="topbar">
- <div class="clock" id="clock">🕐 --:--:--</div>
- <div class="topbar-actions">
+<div class="topbar" aria-label="JON Stream quick navigation">
+ <div class="topbar-left">
   <button class="theme-btn jon-profile-trigger jon-profile-state-unknown" id="profileToggleBtn" type="button" onclick="toggleProfilePanel()" aria-label="Open profile" aria-controls="jonAccountPanel" aria-expanded="false" title="Profile"><span class="jon-profile-glyph" id="jonHomeProfileFallback" aria-hidden="true">👤</span><img class="jon-home-profile-photo" id="jonHomeProfilePhoto" alt="" hidden><span class="jon-profile-tier-label" id="jonHomeProfileTier" hidden></span><span class="jon-profile-verified" id="jonProfileVerifiedBadge" aria-label="Verified Premium member" hidden>✓</span></button>
-  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme" title="Theme">🌙</button>
+ </div>
+ <a class="topbar-inbox-link" href="https://jon-stream-inbox.vercel.app" aria-label="Open JON Stream Inbox" title="Inbox">
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 4.75h16a1.25 1.25 0 0 1 1.25 1.25v12A1.25 1.25 0 0 1 20 19.25H4A1.25 1.25 0 0 1 2.75 18V6A1.25 1.25 0 0 1 4 4.75Z"/><path d="M3.25 13.25h4.1l1.45 2h6.4l1.45-2h4.1M3.2 7.1l8.8 6.2 8.8-6.2"/></svg>
+  <span>INBOX</span>
+ </a>
+ <div class="topbar-right">
+  <button class="theme-btn topbar-theme-btn" id="themeBtn" type="button" onclick="toggleTheme()" aria-label="Switch to light mode" title="Toggle theme">
+   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+  </button>
  </div>
 </div>
+<div class="clock topbar-clock" id="clock">🕐 --:--:--</div>
 
 <div class="time-panel jon-calendar-panel" id="jonCalendarPanel">
  <div class="time-card jon-calendar-card jon-ethiopia-card" id="jonEthiopiaCalendar">
@@ -2812,10 +2841,19 @@ function setMode(mode){
 ===================================================== */
 let savedTheme=localStorage.getItem("jonTheme")||"dark";
 
-if(savedTheme==="light"){
- document.body.classList.add("light");
- document.getElementById("themeBtn").innerHTML="☀️";
+if(savedTheme==="light") document.body.classList.add("light");
+
+function updateThemeButtonIcon(){
+ const button=document.getElementById("themeBtn");
+ if(!button)return;
+ const dark=!document.body.classList.contains("light");
+ button.innerHTML=dark
+  ? '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>'
+  : '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.4 15.2A8.5 8.5 0 0 1 8.8 3.6 8.7 8.7 0 1 0 20.4 15.2Z"/></svg>';
+ button.setAttribute("aria-label",dark?"Switch to light mode":"Switch to dark mode");
+ button.title=dark?"Switch to light mode":"Switch to dark mode";
 }
+updateThemeButtonIcon();
 
 function toggleProfilePanel(){
  const panel=document.getElementById("jonAccountPanel");
@@ -2835,7 +2873,7 @@ function toggleTheme(){
 
  localStorage.setItem("jonTheme",light?"light":"dark");
 
- document.getElementById("themeBtn").innerHTML=light?"☀️":"🌙";
+ updateThemeButtonIcon();
 }
 
 /* =====================================================
