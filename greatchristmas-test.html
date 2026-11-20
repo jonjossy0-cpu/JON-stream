@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07111f">
+<title>JON Stream — Great! Christmas TV test</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.7.3"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#07111f;color:#f7f9fc;font:16px Arial,sans-serif;min-height:100vh;display:grid;place-items:center;padding:18px}
+main{width:min(900px,100%)}h1{font-size:1.3rem;margin:0 0 12px}video{width:100%;aspect-ratio:16/9;background:#000;border-radius:12px}#status{padding:12px;margin:10px 0;background:#122239;border-radius:8px;overflow-wrap:anywhere}button{background:#e31b23;color:white;border:0;border-radius:8px;padding:12px 18px;font-weight:700;font-size:1rem}small{color:#aab9cc;display:block;margin-top:12px}
+</style>
+</head>
+<body><main>
+<h1>JON Stream — Great! Christmas TV diagnostic</h1>
+<video id="video" controls playsinline autoplay></video>
+<div id="status" role="status">Checking stream…</div>
+<button id="play" type="button">▶ Play</button>
+<small>This is a temporary diagnostic page. It tests the HLS player and gateway; it does not alter the main channel list.</small>
+</main>
+<script>
+const upstream = "https://amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv/ts-us-e2-n2/playlist/amg01753-narrativeuk-greatchristmas-lggb/cb543d167e6c648898d43e67d6ef41a0f9ac53fc087a8d6933fb4b926bc10f41f9e5af86a540ff1902cb5d81385e7d585677b76ec30409c0de6ada146d20436bfae3d37ac7981b09b7da0d342ab37b07418f4e558c703477dbc2131cca68e62e4b40be49267d1ab99025b1660e1c795f72fb420d9d4f1d25a282b35515bd50cf0de05534eac6eb9b57ea1316464d4da564abcfb60714205eba54bc61c0bbc94a986cd0232c45ab23b829ab8760a76c538607daa78b7ca7c24a52f04902d66bb793b8450f3b128b5fe80a52a1cf8f69f15af2fcda003def24d99460d084ce2ab7c0a171e3380be37447058d355e8d6fde4752209f8b898ad971d6b51795f7924bfcfcb3cdb82c9221856e656256b7b5957a001c47ad60f474f7a874e938f01668a0b2462bef4710d1438c798e2cfd6869c049870d1c6f13c6f085865bc210c693b80e1c30aab4a27141d7c8e0b764cb4032823b3efb58ffbac49bcfe488d42063c3b92a0552d245d716a069ed058df51ec9617dbca9cbcad2730a0f3e37e381b202d570cb25e78bdb848bfc661/16/848x480_1686360/index.m3u8";
+const src = location.origin + "/api/hls?url=" + encodeURIComponent(upstream);
+const video = document.getElementById("video");
+const status = document.getElementById("status");
+let hls;
+function setStatus(s){status.textContent=s}
+function start(){
+ if(hls){hls.destroy();hls=null}
+ setStatus("Loading playlist through JON Stream Gateway…");
+ if(window.Hls && Hls.isSupported()){
+  hls=new Hls({enableWorker:true,lowLatencyMode:false,manifestLoadingMaxRetry:2,levelLoadingMaxRetry:2});
+  hls.on(Hls.Events.ERROR,(_,data)=>{
+   if(data.fatal) setStatus("HLS error: "+data.type+" / "+data.details+(data.response&&data.response.code?" (HTTP "+data.response.code+")":""));
+  });
+  hls.on(Hls.Events.MANIFEST_PARSED,()=>setStatus("Playlist loaded. Tap Play if playback does not start automatically."));
+  hls.loadSource(src);hls.attachMedia(video);
+ } else if(video.canPlayType("application/vnd.apple.mpegurl")){
+  video.src=src;setStatus("Using native HLS playback. Tap Play.");
+ } else setStatus("This browser does not support HLS playback.");
+}
+video.addEventListener("playing",()=>setStatus("Playing Great! Christmas TV."));
+video.addEventListener("error",()=>{const e=video.error;setStatus("Video error"+(e?" (code "+e.code+")":"")+". The source or gateway may have rejected the request.")});
+document.getElementById("play").addEventListener("click",()=>video.play().then(()=>setStatus("Playing Great! Christmas TV.")).catch(e=>setStatus("Play blocked or failed: "+e.message)));
+start();
+</script></body></html>
