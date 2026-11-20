@@ -164,11 +164,32 @@ button{
 button:active{transform:scale(.98)}
 
 .topbar{
- display:flex;
- justify-content:space-between;
+ display:grid;
+ grid-template-columns:1fr auto 1fr;
  align-items:center;
- margin-bottom:10px;
+ gap:10px;
+ margin-bottom:5px;
 }
+.topbar-left,.topbar-right{display:flex;align-items:center;min-width:0}
+.topbar-left{justify-content:flex-start}
+.topbar-right{justify-content:flex-end}
+.topbar-inbox-link{
+ display:inline-flex;align-items:center;justify-content:center;gap:8px;
+ min-width:116px;min-height:46px;padding:8px 15px;border-radius:15px;
+ color:#eaf7ff;text-decoration:none;font-size:12px;font-weight:900;
+ letter-spacing:1.25px;border:1px solid rgba(0,190,255,.48);
+ background:linear-gradient(135deg,rgba(10,45,75,.96),rgba(12,25,46,.96) 62%,rgba(55,15,30,.94));
+ box-shadow:0 0 14px rgba(0,153,255,.15),inset 0 1px rgba(255,255,255,.08);
+ transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.topbar-inbox-link:hover{transform:translateY(-1px);border-color:rgba(0,210,255,.85);box-shadow:0 0 19px rgba(0,153,255,.28)}
+.topbar-inbox-link:focus-visible{outline:2px solid #55caff;outline-offset:3px}
+.topbar-inbox-link svg,.topbar-theme-btn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.topbar-inbox-link svg{color:#55caff;filter:drop-shadow(0 0 5px rgba(0,190,255,.45))}
+.topbar-clock{text-align:right;margin:0 2px 8px 0}
+.topbar-theme-btn{display:grid;place-items:center;color:#f8d66d;background:linear-gradient(145deg,#172b43,#101a2d);border:1px solid rgba(245,190,75,.42);box-shadow:0 0 12px rgba(245,190,75,.12)}
+.topbar-theme-btn svg{width:22px;height:22px}
+@media(max-width:380px){.topbar-inbox-link{min-width:94px;padding:7px 10px;gap:6px;font-size:11px}.topbar-inbox-link svg{width:20px;height:20px}}
 
 .clock{
  color:var(--muted);
@@ -1727,13 +1748,21 @@ img.jon-ad-media{
 <body>
 <div class="container">
 
-<div class="topbar">
- <div class="clock" id="clock">🕐 --:--:--</div>
- <div class="topbar-actions">
+<div class="topbar" aria-label="JON Stream quick navigation">
+ <div class="topbar-left">
   <button class="theme-btn jon-profile-trigger jon-profile-state-unknown" id="profileToggleBtn" type="button" onclick="toggleProfilePanel()" aria-label="Open profile" aria-controls="jonAccountPanel" aria-expanded="false" title="Profile"><span class="jon-profile-glyph" id="jonHomeProfileFallback" aria-hidden="true">👤</span><img class="jon-home-profile-photo" id="jonHomeProfilePhoto" alt="" hidden><span class="jon-profile-tier-label" id="jonHomeProfileTier" hidden></span><span class="jon-profile-verified" id="jonProfileVerifiedBadge" aria-label="Verified Premium member" hidden>✓</span></button>
-  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme" title="Theme">🌙</button>
+ </div>
+ <a class="topbar-inbox-link" href="https://jon-stream-inbox.vercel.app" id="jonInboxNavLink" aria-label="Open JON Stream Inbox" title="Inbox">
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 4.75h16a1.25 1.25 0 0 1 1.25 1.25v12A1.25 1.25 0 0 1 20 19.25H4A1.25 1.25 0 0 1 2.75 18V6A1.25 1.25 0 0 1 4 4.75Z"/><path d="M3.25 13.25h4.1l1.45 2h6.4l1.45-2h4.1M3.2 7.1l8.8 6.2 8.8-6.2"/></svg>
+  <span>INBOX</span>
+ </a>
+ <div class="topbar-right">
+  <button class="theme-btn topbar-theme-btn" id="themeBtn" type="button" onclick="toggleTheme()" aria-label="Switch to light mode" title="Toggle theme">
+   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+  </button>
  </div>
 </div>
+<div class="clock topbar-clock" id="clock">🕐 --:--:--</div>
 
 <div class="time-panel jon-calendar-panel" id="jonCalendarPanel">
  <div class="time-card jon-calendar-card jon-ethiopia-card" id="jonEthiopiaCalendar">
@@ -1791,6 +1820,21 @@ img.jon-ad-media{
  </div>
  <p id="jonAccountError" class="jon-account-error" role="status" aria-live="polite"></p>
 </section>
+
+<div id="jonInboxGate" class="jon-inbox-gate" hidden>
+ <div class="jon-inbox-gate-card" role="dialog" aria-modal="true" aria-labelledby="jonInboxGateTitle" aria-describedby="jonInboxGateMessage">
+  <button type="button" class="jon-inbox-gate-close" id="jonInboxGateClose" aria-label="Close">×</button>
+  <div class="jon-inbox-gate-icon" aria-hidden="true">
+   <svg viewBox="0 0 24 24" focusable="false"><path d="M4 4.75h16a1.25 1.25 0 0 1 1.25 1.25v12A1.25 1.25 0 0 1 20 19.25H4A1.25 1.25 0 0 1 2.75 18V6A1.25 1.25 0 0 1 4 4.75Z"/><path d="M3.25 13.25h4.1l1.45 2h6.4l1.45-2h4.1M3.2 7.1l8.8 6.2 8.8-6.2"/></svg>
+  </div>
+  <div class="jon-inbox-gate-kicker">JON STREAM PRIVATE MESSAGING</div>
+  <h2 id="jonInboxGateTitle">Sign in to JON Stream</h2>
+  <p id="jonInboxGateMessage">JON Stream Inbox is a private messaging space for JON Stream members. Sign in with your verified JON Stream account to chat with other eligible members.</p>
+  <div class="jon-inbox-gate-note"><span aria-hidden="true">🔒</span> Only signed-in accounts with verified email can access Inbox.</div>
+  <button type="button" id="jonInboxGateSignIn" class="jon-inbox-gate-primary">SIGN IN TO JON STREAM</button>
+  <button type="button" id="jonInboxGateCloseSecondary" class="jon-inbox-gate-secondary">NOT NOW</button>
+ </div>
+</div>
 
 <div class="brand">
  <div class="brand-inner">
@@ -2812,10 +2856,19 @@ function setMode(mode){
 ===================================================== */
 let savedTheme=localStorage.getItem("jonTheme")||"dark";
 
-if(savedTheme==="light"){
- document.body.classList.add("light");
- document.getElementById("themeBtn").innerHTML="☀️";
+if(savedTheme==="light") document.body.classList.add("light");
+
+function updateThemeButtonIcon(){
+ const button=document.getElementById("themeBtn");
+ if(!button)return;
+ const dark=!document.body.classList.contains("light");
+ button.innerHTML=dark
+  ? '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>'
+  : '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.4 15.2A8.5 8.5 0 0 1 8.8 3.6 8.7 8.7 0 1 0 20.4 15.2Z"/></svg>';
+ button.setAttribute("aria-label",dark?"Switch to light mode":"Switch to dark mode");
+ button.title=dark?"Switch to light mode":"Switch to dark mode";
 }
+updateThemeButtonIcon();
 
 function toggleProfilePanel(){
  const panel=document.getElementById("jonAccountPanel");
@@ -2835,7 +2888,7 @@ function toggleTheme(){
 
  localStorage.setItem("jonTheme",light?"light":"dark");
 
- document.getElementById("themeBtn").innerHTML=light?"☀️":"🌙";
+ updateThemeButtonIcon();
 }
 
 /* =====================================================
@@ -5064,6 +5117,64 @@ window.jonPremiumAccess={ready:false,allowed:false,status:"checking"};
 if(authPanel){
  const auth=getAuth(getApp());
  const $=id=>document.getElementById(id);
+ let jonInboxPendingSignIn=false;
+ let jonAuthStateReady=false;
+ let jonInboxVerificationRefresh=false;
+ const JON_INBOX_URL="https://jon-stream-inbox.vercel.app";
+ const inboxGate=$("jonInboxGate");
+ const closeInboxGate=()=>{if(inboxGate)inboxGate.hidden=true;};
+ const showInboxGate=(messageText,buttonText="SIGN IN TO JON STREAM")=>{
+   $("jonInboxGateMessage").textContent=messageText;
+   $("jonInboxGateSignIn").textContent=buttonText;
+   if(inboxGate)inboxGate.hidden=false;
+ };
+ const enterJonInbox=()=>{
+   jonInboxPendingSignIn=false;
+   closeInboxGate();
+   window.location.assign(JON_INBOX_URL);
+ };
+ const inboxNav=$("jonInboxNavLink");
+ if(inboxNav)inboxNav.addEventListener("click",event=>{
+   event.preventDefault();
+   if(!jonAuthStateReady){
+     jonInboxPendingSignIn=true;
+     showInboxGate("Checking your JON Stream sign-in. Please wait…","PLEASE WAIT");
+     return;
+   }
+   const user=auth.currentUser;
+   if(user&&user.emailVerified){enterJonInbox();return;}
+   if(user&&!user.emailVerified){
+     jonInboxPendingSignIn=true;
+     showInboxGate("Your JON Stream account is signed in, but your email is not verified yet. Verify your email, then return to JON Stream to continue.","OPEN ACCOUNT");
+     return;
+   }
+   jonInboxPendingSignIn=true;
+   showInboxGate("JON Stream Inbox is a private messaging space for JON Stream members. Sign in to your JON Stream account and verify your email to continue.","SIGN IN TO JON STREAM");
+ });
+ const openAccountForInbox=()=>{
+   if(auth.currentUser&&auth.currentUser.emailVerified){enterJonInbox();return;}
+   closeInboxGate();
+   if(typeof window.toggleProfilePanel==="function"&&$("jonAccountPanel")?.hidden)window.toggleProfilePanel();
+   $("jonAccountPanel")?.scrollIntoView({behavior:"smooth",block:"center"});
+   if(!auth.currentUser)$("jonAccountEmail")?.focus({preventScroll:true});
+ };
+ $("jonInboxGateSignIn").addEventListener("click",openAccountForInbox);
+ $("jonInboxGateClose").addEventListener("click",()=>{jonInboxPendingSignIn=false;closeInboxGate();});
+ $("jonInboxGateCloseSecondary").addEventListener("click",()=>{jonInboxPendingSignIn=false;closeInboxGate();});
+ async function refreshInboxVerification(){
+   if(!jonInboxPendingSignIn||jonInboxVerificationRefresh||!auth.currentUser)return;
+   jonInboxVerificationRefresh=true;
+   try{
+     await reload(auth.currentUser);
+     if(auth.currentUser&&auth.currentUser.emailVerified){enterJonInbox();return;}
+     if(auth.currentUser&&!auth.currentUser.emailVerified){
+       showInboxGate("Your JON Stream email is still waiting for verification. Verify it, then return here to continue.","OPEN ACCOUNT");
+     }
+   }catch(error){console.warn("JON Inbox verification refresh failed:",error);}
+   finally{jonInboxVerificationRefresh=false;}
+ }
+ window.addEventListener("focus",()=>{void refreshInboxVerification();});
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden)void refreshInboxVerification();});
  const message=(text,isError=false)=>{ $("jonAccountError").textContent=text||""; $("jonAccountError").style.color=isError?"#fca5a5":"#86efac"; };
  const authErrorText=(error,action)=>{
    const code=String(error&&error.code||"");
@@ -5195,6 +5306,12 @@ if(authPanel){
  document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkCurrentSubscription();});
  window.addEventListener("focus",checkCurrentSubscription);
  onAuthStateChanged(auth,async user=>{
+   jonAuthStateReady=true;
+   if(jonInboxPendingSignIn){
+     if(user&&user.emailVerified){enterJonInbox();}
+     else if(user&&!user.emailVerified){showInboxGate("Your JON Stream account is signed in, but your email is not verified yet. Verify it, then return here to continue.","OPEN ACCOUNT");}
+     else{showInboxGate("JON Stream Inbox is a private messaging space for JON Stream members. Sign in to your JON Stream account and verify your email to continue.","SIGN IN TO JON STREAM");}
+   }
    subscriptionStatusRequest++;
    clearInterval(subscriptionRecheckTimer);
    subscriptionRecheckTimer=null;
@@ -6378,5 +6495,22 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 }
 </style>
 
+<style id="jonInboxAccessGateStyles">
+.jon-inbox-gate[hidden]{display:none!important}
+.jon-inbox-gate{position:fixed;inset:0;z-index:2147482500;display:grid;place-items:center;padding:18px;background:rgba(2,7,16,.84);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.jon-inbox-gate-card{position:relative;width:min(440px,100%);padding:28px 24px 22px;text-align:center;color:#f5faff;border:1px solid rgba(65,185,255,.52);border-radius:25px;background:radial-gradient(ellipse at 50% 0%,rgba(0,153,255,.2),transparent 48%),linear-gradient(145deg,#102a46 0%,#071426 62%,#210d1b 100%);box-shadow:0 28px 90px rgba(0,0,0,.72),0 0 38px rgba(0,156,255,.2),inset 0 1px rgba(255,255,255,.09)}
+.jon-inbox-gate-close{position:absolute;top:10px;right:12px;width:34px;height:34px;padding:0;border:1px solid rgba(155,190,220,.25);border-radius:11px;background:rgba(255,255,255,.06);color:#dcecff;font-size:25px;line-height:1}
+.jon-inbox-gate-icon{width:66px;height:66px;margin:0 auto 17px;display:grid;place-items:center;border:1px solid rgba(83,198,255,.6);border-radius:21px;background:linear-gradient(145deg,rgba(0,145,255,.2),rgba(227,27,35,.13));box-shadow:0 0 25px rgba(0,164,255,.2)}
+.jon-inbox-gate-icon svg{width:34px;height:34px;fill:none;stroke:#68d4ff;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.jon-inbox-gate-kicker{color:#8bdcff;font-size:10px;font-weight:900;letter-spacing:.17em}
+.jon-inbox-gate-card h2{margin:9px 0 11px;color:#fff;font-size:23px;font-weight:950;text-shadow:0 0 15px rgba(0,174,255,.28)}
+.jon-inbox-gate-card p{margin:0;color:#d1e2f2;font-size:14px;line-height:1.65}
+.jon-inbox-gate-note{margin:17px 0;padding:11px 12px;border:1px solid rgba(68,168,224,.22);border-radius:13px;background:rgba(5,20,37,.58);color:#9ec9e8;font-size:11px;line-height:1.5}
+.jon-inbox-gate-primary,.jon-inbox-gate-secondary{width:100%;min-height:48px;margin-top:9px;border-radius:13px;font-size:12px;font-weight:900;letter-spacing:.04em}
+.jon-inbox-gate-primary{color:#fff;border:1px solid rgba(125,220,255,.65);background:linear-gradient(110deg,#087fc7 0%,#1455b7 58%,#b7192b 100%);box-shadow:0 0 20px rgba(0,145,255,.2)}
+.jon-inbox-gate-secondary{color:#dce9f6;border:1px solid rgba(135,169,199,.28);background:linear-gradient(145deg,#243b54,#111e30)}
+.jon-inbox-gate-primary:focus-visible,.jon-inbox-gate-secondary:focus-visible,.jon-inbox-gate-close:focus-visible{outline:2px solid #7bdcff;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.jon-inbox-gate-card{scroll-behavior:auto}}
+</style>
 </body>
 </html>
