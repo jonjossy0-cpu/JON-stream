@@ -78,7 +78,7 @@ dependencies {
 android.sourceSets.mobile.assets.srcDir(layout.buildDirectory.dir("generated/mobile/assets"))
 
 def prepareMobileFullscreenControls = tasks.register("prepareMobileFullscreenControls") {
-    def sourceFile = layout.projectDirectory.file("../../index.html")
+    def sourceFile = layout.projectDirectory.file("src/main/assets/index.html")
     def outputFile = layout.buildDirectory.file("generated/mobile/assets/index.html")
     def sponsorCssFile = layout.projectDirectory.file("src/mobile/assets/jon-sponsor-carousel.css")
     def sponsorJsFile = layout.projectDirectory.file("src/mobile/assets/jon-sponsor-carousel.js")
