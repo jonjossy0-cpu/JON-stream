@@ -161,6 +161,9 @@ module.exports = async function handler(req, res) {
       return res.status(403).json({ error: "Premium subscription or active trial required", errorCode: "PREMIUM_ENTITLEMENT_REQUIRED", stage: "entitlement" });
     }
 
+    // Always bind the ticket and gateway URL to the actual private catalog document ID.
+    // The request may use a public alias, but api/hls.js resolves by document ID only.
+    const canonicalChannelId = channelSnap.id;
     const expiresAt = Math.floor(now / 1000) + TICKET_TTL_SECONDS;
     const ticket = sign({
       v: 1,
