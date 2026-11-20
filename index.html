@@ -5118,7 +5118,9 @@ if(authPanel){
  const auth=getAuth(getApp());
  const $=id=>document.getElementById(id);
  let jonInboxPendingSignIn=false;
- let jonInboxHandoffInProgress=false;
+ let jonAuthStateReady=false;
+ let jonInboxVerificationRefresh=false;
+ const JON_INBOX_URL="https://jon-stream-inbox.vercel.app";
  const inboxGate=$("jonInboxGate");
  const closeInboxGate=()=>{if(inboxGate)inboxGate.hidden=true;};
  const showInboxGate=(messageText,buttonText="SIGN IN TO JON STREAM")=>{
@@ -5126,48 +5128,53 @@ if(authPanel){
    $("jonInboxGateSignIn").textContent=buttonText;
    if(inboxGate)inboxGate.hidden=false;
  };
- async function handoffToJonInbox(user){
-   if(!user||!user.emailVerified){showInboxGate("Please sign in to JON Stream and verify your email before entering JON Inbox.","OPEN ACCOUNT");return;}
-   if(jonInboxHandoffInProgress)return;
-   jonInboxHandoffInProgress=true;
-   try{
-     const idToken=await user.getIdToken();
-     const form=document.createElement("form");
-     form.method="POST";
-     form.action="https://jon-stream-inbox.vercel.app/api/auth/sso";
-     form.style.display="none";
-     const tokenInput=document.createElement("input");
-     tokenInput.type="hidden";tokenInput.name="idToken";tokenInput.value=idToken;
-     form.appendChild(tokenInput);document.body.appendChild(form);form.submit();
-   }catch(error){
-     jonInboxHandoffInProgress=false;
-     showInboxGate("We couldn't securely connect to JON Inbox right now. Please try again in a moment.","TRY AGAIN");
-   }
- }
+ const enterJonInbox=()=>{
+   jonInboxPendingSignIn=false;
+   closeInboxGate();
+   window.location.assign(JON_INBOX_URL);
+ };
  const inboxNav=$("jonInboxNavLink");
  if(inboxNav)inboxNav.addEventListener("click",event=>{
    event.preventDefault();
+   if(!jonAuthStateReady){
+     jonInboxPendingSignIn=true;
+     showInboxGate("Checking your JON Stream sign-in. Please wait…","PLEASE WAIT");
+     return;
+   }
    const user=auth.currentUser;
-   if(user&&user.emailVerified){void handoffToJonInbox(user);return;}
+   if(user&&user.emailVerified){enterJonInbox();return;}
    if(user&&!user.emailVerified){
-     showInboxGate("Your JON Stream account is signed in, but its email is not verified yet. Open your account, verify your email, then return to Inbox.","OPEN ACCOUNT");
+     jonInboxPendingSignIn=true;
+     showInboxGate("Your JON Stream account is signed in, but your email is not verified yet. Verify your email, then return to JON Stream to continue.","OPEN ACCOUNT");
      return;
    }
    jonInboxPendingSignIn=true;
-   showInboxGate("JON Stream Inbox is a private messaging space for JON Stream members. Sign in with your JON Stream account to continue. You must also have a verified email address.","SIGN IN TO JON STREAM");
+   showInboxGate("JON Stream Inbox is a private messaging space for JON Stream members. Sign in to your JON Stream account and verify your email to continue.","SIGN IN TO JON STREAM");
  });
  const openAccountForInbox=()=>{
+   if(auth.currentUser&&auth.currentUser.emailVerified){enterJonInbox();return;}
    closeInboxGate();
    if(typeof window.toggleProfilePanel==="function"&&$("jonAccountPanel")?.hidden)window.toggleProfilePanel();
    $("jonAccountPanel")?.scrollIntoView({behavior:"smooth",block:"center"});
    if(!auth.currentUser)$("jonAccountEmail")?.focus({preventScroll:true});
  };
- $("jonInboxGateSignIn").addEventListener("click",()=>{
-   if(auth.currentUser&&auth.currentUser.emailVerified){void handoffToJonInbox(auth.currentUser);return;}
-   openAccountForInbox();
- });
+ $("jonInboxGateSignIn").addEventListener("click",openAccountForInbox);
  $("jonInboxGateClose").addEventListener("click",()=>{jonInboxPendingSignIn=false;closeInboxGate();});
  $("jonInboxGateCloseSecondary").addEventListener("click",()=>{jonInboxPendingSignIn=false;closeInboxGate();});
+ async function refreshInboxVerification(){
+   if(!jonInboxPendingSignIn||jonInboxVerificationRefresh||!auth.currentUser)return;
+   jonInboxVerificationRefresh=true;
+   try{
+     await reload(auth.currentUser);
+     if(auth.currentUser&&auth.currentUser.emailVerified){enterJonInbox();return;}
+     if(auth.currentUser&&!auth.currentUser.emailVerified){
+       showInboxGate("Your JON Stream email is still waiting for verification. Verify it, then return here to continue.","OPEN ACCOUNT");
+     }
+   }catch(error){console.warn("JON Inbox verification refresh failed:",error);}
+   finally{jonInboxVerificationRefresh=false;}
+ }
+ window.addEventListener("focus",()=>{void refreshInboxVerification();});
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden)void refreshInboxVerification();});
  const message=(text,isError=false)=>{ $("jonAccountError").textContent=text||""; $("jonAccountError").style.color=isError?"#fca5a5":"#86efac"; };
  const authErrorText=(error,action)=>{
    const code=String(error&&error.code||"");
@@ -5299,9 +5306,11 @@ if(authPanel){
  document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkCurrentSubscription();});
  window.addEventListener("focus",checkCurrentSubscription);
  onAuthStateChanged(auth,async user=>{
-   if(user&&user.emailVerified&&jonInboxPendingSignIn){
-     jonInboxPendingSignIn=false;
-     void handoffToJonInbox(user);
+   jonAuthStateReady=true;
+   if(jonInboxPendingSignIn){
+     if(user&&user.emailVerified){enterJonInbox();}
+     else if(user&&!user.emailVerified){showInboxGate("Your JON Stream account is signed in, but your email is not verified yet. Verify it, then return here to continue.","OPEN ACCOUNT");}
+     else{showInboxGate("JON Stream Inbox is a private messaging space for JON Stream members. Sign in to your JON Stream account and verify your email to continue.","SIGN IN TO JON STREAM");}
    }
    subscriptionStatusRequest++;
    clearInterval(subscriptionRecheckTimer);
