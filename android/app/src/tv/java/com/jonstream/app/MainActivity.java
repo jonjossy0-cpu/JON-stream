@@ -7,9 +7,12 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.KeyEvent;
+import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -20,6 +23,7 @@ import android.webkit.WebViewClient;
 import android.webkit.WebSettings;
 import androidx.webkit.WebViewAssetLoader;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.os.AsyncTask;
 import org.json.JSONObject;
 import java.io.BufferedReader;
@@ -30,12 +34,17 @@ import java.net.URL;
 public class MainActivity extends Activity {
     private WebView webView;
     private FrameLayout root;
+    private FrameLayout loadingOverlay;
+    private TextView loadingMessage;
+    private boolean bootMinimumElapsed = false;
+    private boolean homePageLoaded = false;
+    private static final long BOOT_LOGO_DURATION_MS = 10000L;
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
     private WebChromeClient chromeClient;
-    private static final String HOME = "https://appassets.androidplatform.net/assets/index.html";
+    private static final String HOME = "https://jonjossy0-cpu.github.io/JON-stream/?jonNativeTv=1";
     private WebViewAssetLoader assetLoader;
-    private static final int CURRENT_VERSION_CODE = 7;
+    private static final int CURRENT_VERSION_CODE = 9;
     private static final String UPDATE_URL = "https://raw.githubusercontent.com/jonjossy0-cpu/JON-stream/mainv/android/update.json";
     private final StringBuilder numberBuffer = new StringBuilder();
     private final Handler handler = new Handler();
@@ -77,6 +86,45 @@ public class MainActivity extends Activity {
         webView.setFocusableInTouchMode(true);
         webView.requestFocus(View.FOCUS_DOWN);
         root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
+
+        // TV boot screen: a dedicated ImageView prevents launcher-logo clipping.
+        loadingOverlay = new FrameLayout(this);
+        loadingOverlay.setBackgroundColor(Color.rgb(7, 17, 31));
+        loadingOverlay.setFocusable(false);
+        android.widget.LinearLayout bootContent = new android.widget.LinearLayout(this);
+        bootContent.setOrientation(android.widget.LinearLayout.VERTICAL);
+        bootContent.setGravity(Gravity.CENTER);
+        float density = getResources().getDisplayMetrics().density;
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int screenHeight = getResources().getDisplayMetrics().heightPixels;
+        bootContent.setPadding((int)(24 * density), (int)(16 * density),
+            (int)(24 * density), (int)(16 * density));
+        android.widget.ImageView bootLogo = new android.widget.ImageView(this);
+        // Fit the complete source image inside a generous TV-sized area; never crop.
+        bootLogo.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+        bootLogo.setAdjustViewBounds(true);
+        bootLogo.setCropToPadding(false);
+        bootLogo.setImageResource(R.drawable.jon_stream_boot_logo);
+        int logoWidth = (int) (screenWidth * 0.78f);
+        int logoHeight = (int) (screenHeight * 0.58f);
+        android.widget.LinearLayout.LayoutParams logoParams =
+            new android.widget.LinearLayout.LayoutParams(logoWidth, logoHeight);
+        logoParams.gravity = Gravity.CENTER_HORIZONTAL;
+        logoParams.bottomMargin = (int) (18 * density);
+        bootContent.addView(bootLogo, logoParams);
+        loadingMessage = new TextView(this);
+        loadingMessage.setText("JON STREAM IS LOADING...");
+        loadingMessage.setTextColor(Color.WHITE);
+        loadingMessage.setTextSize(25);
+        loadingMessage.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        loadingMessage.setGravity(Gravity.CENTER);
+        loadingMessage.setIncludeFontPadding(true);
+        bootContent.addView(loadingMessage, new android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
+        loadingOverlay.addView(bootContent, new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.CENTER));
+        root.addView(loadingOverlay, new FrameLayout.LayoutParams(-1, -1));
 
         WebView.setWebContentsDebuggingEnabled(false);
         WebSettings settings = webView.getSettings();
@@ -133,6 +181,15 @@ public class MainActivity extends Activity {
                 return assetLoader.shouldInterceptRequest(request.getUrl());
             }
 
+            @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+                if (!bootMinimumElapsed && loadingOverlay != null) {
+                    loadingMessage.setText("JON STREAM IS LOADING...");
+                    loadingOverlay.setVisibility(View.VISIBLE);
+                }
+                enterImmersive();
+            }
+
             @Override public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 view.evaluateJavascript(
@@ -148,12 +205,16 @@ public class MainActivity extends Activity {
                     "if(a)a.textContent=et;if(b)b.textContent=ut;if(d)d.textContent=et;}" +
                     "c();if(!window.__jonNativeClock)window.__jonNativeClock=setInterval(c,1000);" +
                     "}catch(e){}})();", null);
+                homePageLoaded = true;
+                hideBootLogoWhenReady();
+                enterImmersive();
             }
 
             @Override public void onReceivedError(WebView view, WebResourceRequest request, android.webkit.WebResourceError error) {
                 super.onReceivedError(view, request, error);
-                if (request.isForMainFrame() && isOnline()) {
-                    handler.postDelayed(() -> view.reload(), 1200);
+                if (request.isForMainFrame() && loadingOverlay != null) {
+                    loadingMessage.setText("JON STREAM COULDN'T LOAD\nCHECK INTERNET CONNECTION");
+                    loadingOverlay.setVisibility(View.VISIBLE);
                 }
             }
 
@@ -168,6 +229,13 @@ public class MainActivity extends Activity {
         });
 
         setContentView(root);
+        enterImmersive();
+        // Keep the landscape boot screen visible for at least ten seconds
+        // while the WebView loads the website underneath it.
+        handler.postDelayed(() -> {
+            bootMinimumElapsed = true;
+            hideBootLogoWhenReady();
+        }, BOOT_LOGO_DURATION_MS);
         if (savedInstanceState != null && savedInstanceState.getBundle("webview_state") != null) {
             webView.restoreState(savedInstanceState.getBundle("webview_state"));
         } else {
@@ -232,10 +300,25 @@ public class MainActivity extends Activity {
     }
 
     private void exitImmersive() {
-        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
+        // Keep Android TV system navigation controls hidden after video playback.
+        enterImmersive();
+    }
+
+    private void hideBootLogoWhenReady() {
+        // The boot layer is a minimum ten-second intro, independent of how
+        // quickly the page finishes. WebView keeps loading underneath it.
+        // Keep a real main-frame error visible instead of hiding the error.
+        if (bootMinimumElapsed && homePageLoaded && loadingOverlay != null
+                && "JON STREAM IS LOADING...".contentEquals(loadingMessage.getText())) {
+            loadingOverlay.setVisibility(View.GONE);
+        }
     }
 
     private void loadHome() {
+        if (loadingOverlay != null) {
+            loadingMessage.setText("JON STREAM IS LOADING...");
+            loadingOverlay.setVisibility(View.VISIBLE);
+        }
         webView.loadUrl(HOME);
     }
 
@@ -248,7 +331,28 @@ public class MainActivity extends Activity {
         return c!=null && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
     }
 
+    // Consume MENU at the Activity level so the TV remote cannot open
+    // an Android or WebView menu through either key-down or key-up dispatch.
+    @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_MENU || keyCode == KeyEvent.KEYCODE_SETTINGS) return true;
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_MENU || keyCode == KeyEvent.KEYCODE_SETTINGS) return true;
+        return super.onKeyUp(keyCode, event);
+    }
+
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        int keyCode = event.getKeyCode();
+        // Ignore the remote MENU key and common refresh/reload shortcuts.
+        if (keyCode == KeyEvent.KEYCODE_MENU
+                || keyCode == KeyEvent.KEYCODE_SETTINGS
+                || keyCode == KeyEvent.KEYCODE_REFRESH
+                || keyCode == KeyEvent.KEYCODE_F5
+                || (keyCode == KeyEvent.KEYCODE_R && event.isCtrlPressed())) {
+            return true;
+        }
         if(event.getAction()==KeyEvent.ACTION_DOWN && event.getRepeatCount()==0) {
             int k=event.getKeyCode();
 
@@ -350,12 +454,16 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         keepScreenAwake();
+        enterImmersive();
     }
 
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) keepScreenAwake();
+        if (hasFocus) {
+            keepScreenAwake();
+            enterImmersive();
+        }
     }
 
     private void keepScreenAwake() {
