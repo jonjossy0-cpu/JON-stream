@@ -55,7 +55,8 @@ function setCors(req, res) {
   ]);
   // Permit only this project's Vercel preview hostnames, never arbitrary origins.
   const isProjectPreview = /^https:\/\/jon-stream-[a-z0-9-]+-jonjossy0-5772\.vercel\.app$/.test(origin);
-  const isAllowed = allowedOrigins.has(origin) || isProjectPreview;
+  const isAdminPreview = /^https:\/\/jon-admin-preview-[a-z0-9-]+-jonjossy0-5772\.vercel\.app$/.test(origin);
+  const isAllowed = allowedOrigins.has(origin) || isProjectPreview || isAdminPreview;
   if (isAllowed) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
