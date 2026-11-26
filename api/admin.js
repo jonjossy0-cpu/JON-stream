@@ -71,6 +71,21 @@ module.exports = async function handler(req, res) {
 
     if (mode === "users" && req.method === "GET") {
       const auth = getServices().auth;
+      const email = String(req.query && req.query.email || "").trim().toLowerCase();
+      if (email) {
+        if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+          return res.status(400).json({ error: "Enter a valid email address" });
+        }
+        try {
+          const user = await auth.getUserByEmail(email);
+          return res.status(200).json({ user: safeUser(user) });
+        } catch (error) {
+          if (error && error.code === "auth/user-not-found") {
+            return res.status(404).json({ error: "No account found for that email" });
+          }
+          throw error;
+        }
+      }
       const requestedLimit = Number(req.query && req.query.limit || 50);
       const limit = Math.max(1, Math.min(100, Number.isFinite(requestedLimit) ? Math.floor(requestedLimit) : 50));
       const pageToken = String(req.query && req.query.pageToken || "").trim() || undefined;
