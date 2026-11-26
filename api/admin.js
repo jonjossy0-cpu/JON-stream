@@ -70,12 +70,16 @@ module.exports = async function handler(req, res) {
     }
 
     if (mode === "users" && req.method === "GET") {
-      const email = String(req.query && req.query.email || "").trim().toLowerCase();
-      if (!email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
-        return res.status(400).json({ error: "Enter a valid email address" });
-      }
-      const user = await getServices().auth.getUserByEmail(email);
-      return res.status(200).json({ user: safeUser(user) });
+      const auth = getServices().auth;
+      const requestedLimit = Number(req.query && req.query.limit || 50);
+      const limit = Math.max(1, Math.min(100, Number.isFinite(requestedLimit) ? Math.floor(requestedLimit) : 50));
+      const pageToken = String(req.query && req.query.pageToken || "").trim() || undefined;
+      const page = await auth.listUsers(limit, pageToken);
+      return res.status(200).json({
+        users: page.users.map(safeUser),
+        nextPageToken: page.pageToken || null,
+        pageSize: page.users.length
+      });
     }
 
     if (mode === "users" && req.method === "POST") {
