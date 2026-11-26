@@ -83,7 +83,7 @@ module.exports = async function handler(req, res) {
       const auth = getServices().auth;
       const email = String(req.query && req.query.email || "").trim().toLowerCase();
       if (email) {
-        if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
           return res.status(400).json({ error: "Enter a valid email address" });
         }
         try {
