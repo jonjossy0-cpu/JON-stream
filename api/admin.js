@@ -41,32 +41,42 @@ module.exports = async function handler(req, res) {
 
     if (mode === "summary" && req.method === "GET") {
       const force = String(req.query && req.query.refresh || "") === "1";
-      if (!force && cachedSummary && Date.now() - cachedAt < CACHE_MS) {
+      if (!force && cachedSummary && Date.now() - cachedAt < CACHE_MS && !cachedSummary.metricErrors) {
         return res.status(200).json({ ...cachedSummary, cached: true, cacheAgeSeconds: Math.floor((Date.now() - cachedAt) / 1000) });
       }
       const { auth, db, Timestamp } = getServices();
       const now = Date.now();
-      const [totalUsers, activeSessions, activeTrials, premiumSnap] = await Promise.all([
+      const checks = await Promise.allSettled([
         countAuthUsers(auth),
         db.collection("activeUserSessions").where("lastSeenAt", ">", Timestamp.fromMillis(now - ACTIVE_WINDOW_MS)).count().get(),
         db.collection("subscriptionProfiles").where("trialEndsAt", ">", Timestamp.fromMillis(now)).count().get(),
         db.collection("premiumEntitlements").where("active", "==", true).get()
       ]);
-      const premiumSubscribers = premiumSnap.docs.filter(doc => {
+      const metricErrors = {};
+      const value = (index, key, convert) => {
+        const result = checks[index];
+        if (result.status === "rejected") {
+          metricErrors[key] = String(result.reason && (result.reason.code || result.reason.message) || "Query failed");
+          return null;
+        }
+        try { return convert(result.value); }
+        catch (error) { metricErrors[key] = String(error && error.message || "Invalid result"); return null; }
+      };
+      const totalUsers = value(0, "totalUsers", result => result);
+      const activeUsers = value(1, "activeUsers", result => result.data().count);
+      const activeTrials = value(2, "activeTrials", result => result.data().count);
+      const premiumSubscribers = value(3, "premiumSubscribers", snap => snap.docs.filter(doc => {
         const data = doc.data() || {};
         if (data.unlimited === true) return true;
         return !!(data.expiresAt && typeof data.expiresAt.toMillis === "function" && data.expiresAt.toMillis() > now);
-      }).length;
-      cachedSummary = {
-        totalUsers,
-        activeUsers: activeSessions.data().count,
-        activeWindowMinutes: 5,
-        activeTrials: activeTrials.data().count,
-        premiumSubscribers,
-        generatedAt: new Date(now).toISOString()
+      }).length);
+      const summary = {
+        totalUsers, activeUsers, activeWindowMinutes: 5, activeTrials, premiumSubscribers,
+        generatedAt: new Date(now).toISOString(),
+        ...(Object.keys(metricErrors).length ? { metricErrors } : {})
       };
-      cachedAt = now;
-      return res.status(200).json({ ...cachedSummary, cached: false, cacheAgeSeconds: 0 });
+      if (!summary.metricErrors) { cachedSummary = summary; cachedAt = now; }
+      return res.status(200).json({ ...summary, cached: false, cacheAgeSeconds: 0 });
     }
 
     if (mode === "users" && req.method === "GET") {
