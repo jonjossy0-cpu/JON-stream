@@ -86,7 +86,7 @@ module.exports = async function handler(req, res) {
       const body = req.body && typeof req.body === "object" ? req.body : {};
       const email = String(body.email || "").trim().toLowerCase();
       const action = String(body.action || "").trim().toLowerCase();
-      if (!email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return res.status(400).json({ error: "Enter a valid email address" });
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: "Enter a valid email address" });
       if (!["block", "unblock"].includes(action)) return res.status(400).json({ error: "Action must be block or unblock" });
       const { auth } = getServices();
       const target = await auth.getUserByEmail(email);
